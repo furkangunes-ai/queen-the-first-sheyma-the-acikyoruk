@@ -54,7 +54,8 @@ export default function ExamsPage() {
       if (Array.isArray(data)) {
         setExams(data);
       }
-    } catch {
+    } catch (err) {
+      console.error('Denemeler yüklenirken hata:', err);
       toast.error('Denemeler yüklenirken hata oluştu');
       setExams([]);
     } finally {
@@ -70,7 +71,8 @@ export default function ExamsPage() {
       if (Array.isArray(data)) {
         setExamTypes(data);
       }
-    } catch {
+    } catch (err) {
+      console.error('Sınav türleri yüklenirken hata:', err);
       toast.error('Sınav türleri yüklenemedi');
       setExamTypes([]);
     }

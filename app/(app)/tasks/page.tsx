@@ -48,18 +48,21 @@ export default function TasksPage() {
     try {
       setLoadingFolders(true);
       const res = await fetch('/api/folders');
-      if (!res.ok) throw new Error('Fetch failed');
+      if (!res.ok) throw new Error(`Folders fetch failed: ${res.status}`);
       const data = await res.json();
       setFolders(data);
-      if (data.length > 0 && !activeFolderId) {
-        setActiveFolderId(data[0].id);
-      }
-    } catch {
+      // İlk yükleme için aktif klasörü ayarla
+      setActiveFolderId(prev => {
+        if (!prev && data.length > 0) return data[0].id;
+        return prev;
+      });
+    } catch (err) {
+      console.error('Klasörler yüklenirken hata:', err);
       toast.error('Klasörler yüklenirken hata oluştu');
     } finally {
       setLoadingFolders(false);
     }
-  }, [activeFolderId]);
+  }, []);
 
   // Fetch tasks for active folder
   const fetchTasks = useCallback(async () => {
@@ -70,7 +73,8 @@ export default function TasksPage() {
       if (!res.ok) throw new Error('Fetch failed');
       const data = await res.json();
       setTasks(data);
-    } catch {
+    } catch (err) {
+      console.error('Görevler yüklenirken hata:', err);
       toast.error('Görevler yüklenirken hata oluştu');
     } finally {
       setLoadingTasks(false);

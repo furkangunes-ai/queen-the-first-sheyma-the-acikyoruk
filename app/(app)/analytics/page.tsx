@@ -103,7 +103,8 @@ export default function AnalyticsPage() {
         if (!res.ok) throw new Error();
         setRegression(await res.json());
       }
-    } catch {
+    } catch (err) {
+      console.error('Analytics veriler yüklenirken hata:', err);
       toast.error('Veriler yüklenirken hata oluştu');
     } finally {
       setLoading(false);

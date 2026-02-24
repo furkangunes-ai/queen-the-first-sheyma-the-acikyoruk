@@ -83,7 +83,8 @@ export default function DashboardPage() {
           }
         }
       }
-    } catch {
+    } catch (err) {
+      console.error('Dashboard verileri yüklenirken hata:', err);
       toast.error('Dashboard verileri yüklenirken hata oluştu');
     } finally {
       setLoading(false);
