@@ -1,0 +1,308 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== KULLANICILAR ====================
+
+model User {
+  id            String    @id @default(cuid())
+  username      String    @unique
+  displayName   String
+  role          String    @default("user") // "admin" | "user"
+  passwordHash  String
+  createdAt     DateTime  @default(now())
+
+  folders        Folder[]
+  tasks          Task[]
+  taskCompletions TaskCompletion[]
+  taskComments   TaskComment[]
+  exams          Exam[]
+  metricDefs     MetricDefinition[]
+  metricEntries  MetricEntry[]
+  checkIns       DailyCheckIn[]
+  errorReasons   ErrorReason[]
+  files          UserFile[]
+  notificationsReceived Notification[] @relation("NotificationRecipient")
+  notificationsSent     Notification[] @relation("NotificationSender")
+}
+
+// ==================== KLASÖRLER & GÖREVLER ====================
+
+model Folder {
+  id        String   @id @default(cuid())
+  name      String
+  color     String
+  parentId  String?
+  parent    Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children  Folder[] @relation("FolderHierarchy")
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  tasks     Task[]
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([parentId])
+}
+
+model Task {
+  id           String           @id @default(cuid())
+  title        String
+  description  String?
+  completed    Boolean          @default(false)
+  priority     String           @default("medium") // "low" | "medium" | "high"
+  dueDate      DateTime?
+  isRecurring  Boolean          @default(false)
+  recurrence   String?          // "daily" | "weekly" | "monthly"
+  folderId     String
+  folder       Folder           @relation(fields: [folderId], references: [id])
+  assignedById String
+  assignedBy   User             @relation(fields: [assignedById], references: [id])
+  completions  TaskCompletion[]
+  comments     TaskComment[]
+  sortOrder    Int              @default(0)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([folderId])
+  @@index([assignedById])
+}
+
+model TaskCompletion {
+  id          String   @id @default(cuid())
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  completedAt DateTime @default(now())
+
+  @@index([taskId])
+}
+
+model TaskComment {
+  id              String   @id @default(cuid())
+  content         String
+  isEncouragement Boolean  @default(false)
+  taskId          String
+  task            Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId        String
+  author          User     @relation(fields: [authorId], references: [id])
+  createdAt       DateTime @default(now())
+
+  @@index([taskId])
+}
+
+// ==================== DENEME ANALİZ SİSTEMİ ====================
+
+model ExamType {
+  id       String    @id @default(cuid())
+  name     String    // "TYT", "AYT"
+  slug     String    @unique
+  subjects Subject[]
+  exams    Exam[]
+
+  @@index([slug])
+}
+
+model Subject {
+  id            String   @id @default(cuid())
+  name          String   // "Matematik", "Türkçe"
+  questionCount Int      @default(40) // varsayılan soru sayısı
+  examTypeId    String
+  examType      ExamType @relation(fields: [examTypeId], references: [id])
+  topics        Topic[]
+  examResults   ExamSubjectResult[]
+  wrongQuestions ExamWrongQuestion[]
+  emptyQuestions ExamEmptyQuestion[]
+  sortOrder     Int      @default(0)
+
+  @@index([examTypeId])
+}
+
+model Topic {
+  id            String   @id @default(cuid())
+  name          String   // "Türev", "Paragraf"
+  subjectId     String
+  subject       Subject  @relation(fields: [subjectId], references: [id])
+  wrongQuestions ExamWrongQuestion[]
+  emptyQuestions ExamEmptyQuestion[]
+  sortOrder     Int      @default(0)
+
+  @@index([subjectId])
+}
+
+model ErrorReason {
+  id             String   @id @default(cuid())
+  label          String   // "Bilgi eksikliği", "Dikkatsizlik"
+  isDefault      Boolean  @default(false)
+  userId         String?  // null = sistem varsayılanı
+  user           User?    @relation(fields: [userId], references: [id])
+  wrongQuestions ExamWrongQuestion[]
+  createdAt      DateTime @default(now())
+}
+
+model Exam {
+  id            String              @id @default(cuid())
+  title         String              // "Özdebir TYT Deneme 3"
+  examTypeId    String
+  examType      ExamType            @relation(fields: [examTypeId], references: [id])
+  date          DateTime
+  userId        String
+  user          User                @relation(fields: [userId], references: [id])
+  notes         String?
+  subjectResults ExamSubjectResult[]
+  wrongQuestions ExamWrongQuestion[]
+  emptyQuestions ExamEmptyQuestion[]
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([userId])
+  @@index([examTypeId])
+  @@index([date])
+}
+
+model ExamSubjectResult {
+  id           String  @id @default(cuid())
+  examId       String
+  exam         Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
+  subjectId    String
+  subject      Subject @relation(fields: [subjectId], references: [id])
+  correctCount Int
+  wrongCount   Int
+  emptyCount   Int
+  netScore     Float   // Doğru - (Yanlış / 4)
+
+  @@unique([examId, subjectId])
+  @@index([examId])
+}
+
+model ExamWrongQuestion {
+  id            String       @id @default(cuid())
+  examId        String
+  exam          Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  subjectId     String
+  subject       Subject      @relation(fields: [subjectId], references: [id])
+  topicId       String?
+  topic         Topic?       @relation(fields: [topicId], references: [id])
+  questionNumber Int
+  errorReasonId String?
+  errorReason   ErrorReason? @relation(fields: [errorReasonId], references: [id])
+  notes         String?
+  photoUrl      String?
+  photoR2Key    String?
+  createdAt     DateTime     @default(now())
+
+  @@index([examId])
+  @@index([subjectId])
+  @@index([topicId])
+  @@index([errorReasonId])
+}
+
+model ExamEmptyQuestion {
+  id             String   @id @default(cuid())
+  examId         String
+  exam           Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  subjectId      String
+  subject        Subject  @relation(fields: [subjectId], references: [id])
+  topicId        String?
+  topic          Topic?   @relation(fields: [topicId], references: [id])
+  questionNumber Int
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  @@index([examId])
+  @@index([subjectId])
+}
+
+// ==================== METRİKLER & CHECK-IN ====================
+
+model MetricDefinition {
+  id        String        @id @default(cuid())
+  name      String        // "Kilo", "Su Tüketimi"
+  unit      String?       // "kg", "bardak"
+  icon      String?       // lucide icon adı
+  color     String?       // hex renk
+  type      String        @default("number") // "number" | "rating" | "boolean" | "duration"
+  isActive  Boolean       @default(true)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id])
+  entries   MetricEntry[]
+  sortOrder Int           @default(0)
+  createdAt DateTime      @default(now())
+
+  @@index([userId])
+}
+
+model MetricEntry {
+  id         String           @id @default(cuid())
+  value      Float
+  date       DateTime
+  note       String?
+  metricId   String
+  metric     MetricDefinition @relation(fields: [metricId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User             @relation(fields: [userId], references: [id])
+  createdAt  DateTime         @default(now())
+
+  @@unique([metricId, userId, date])
+  @@index([date])
+}
+
+model DailyCheckIn {
+  id        String   @id @default(cuid())
+  date      DateTime
+  mood      Int?     // 1-5
+  energy    Int?     // 1-5
+  sleep     Float?   // saat
+  gratitude String?
+  notes     String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+}
+
+// ==================== BİLDİRİMLER ====================
+
+model Notification {
+  id          String   @id @default(cuid())
+  type        String   // "encouragement" | "reminder" | "milestone" | "streak" | "task_assigned"
+  title       String
+  message     String
+  isRead      Boolean  @default(false)
+  recipientId String
+  recipient   User     @relation("NotificationRecipient", fields: [recipientId], references: [id])
+  senderId    String?
+  sender      User?    @relation("NotificationSender", fields: [senderId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([recipientId])
+  @@index([isRead])
+}
+
+// ==================== DOSYALAR ====================
+
+model UserFile {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  r2Key     String
+  mimeType  String
+  sizeBytes Int
+  folderId  String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
