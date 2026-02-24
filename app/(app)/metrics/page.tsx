@@ -74,7 +74,7 @@ export default function MetricsPage() {
       const data = await res.json();
       setDefinitions(data);
     } catch {
-      toast.error('Metrikler yuklenirken hata olustu');
+      toast.error('Metrikler yüklenirken hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -92,7 +92,7 @@ export default function MetricsPage() {
       const data = await res.json();
       setEntries(data);
     } catch {
-      toast.error('Veriler yuklenirken hata olustu');
+      toast.error('Veriler yüklenirken hata oluştu');
     } finally {
       setLoadingEntries(false);
     }
@@ -114,7 +114,7 @@ export default function MetricsPage() {
   const handleCreateMetric = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMetricName.trim()) {
-      toast.error('Metrik adi bos olamaz');
+      toast.error('Metrik adı boş olamaz');
       return;
     }
 
@@ -132,14 +132,14 @@ export default function MetricsPage() {
 
       if (!res.ok) throw new Error('Create failed');
 
-      toast.success('Yeni metrik olusturuldu!');
+      toast.success('Yeni metrik oluşturuldu!');
       setNewMetricName('');
       setNewMetricUnit('');
       setNewMetricType('number');
       setShowNewMetricForm(false);
       fetchDefinitions();
     } catch {
-      toast.error('Metrik olusturulurken hata olustu');
+      toast.error('Metrik oluşturulurken hata oluştu');
     } finally {
       setCreatingMetric(false);
     }
@@ -148,7 +148,7 @@ export default function MetricsPage() {
   const handleSubmitEntry = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedMetricId || !entryValue) {
-      toast.error('Deger girilmesi gerekli');
+      toast.error('Değer girilmesi gerekli');
       return;
     }
 
@@ -167,14 +167,14 @@ export default function MetricsPage() {
 
       if (!res.ok) throw new Error('Submit failed');
 
-      toast.success('Deger kaydedildi!');
+      toast.success('Değer kaydedildi!');
       setEntryValue('');
       setEntryNote('');
       setEntryDate(format(new Date(), 'yyyy-MM-dd'));
       fetchEntries(selectedMetricId);
       fetchDefinitions();
     } catch {
-      toast.error('Deger kaydedilirken hata olustu');
+      toast.error('Değer kaydedilirken hata oluştu');
     } finally {
       setSubmittingEntry(false);
     }
@@ -256,18 +256,18 @@ export default function MetricsPage() {
             className="overflow-hidden"
           >
             <Paper className="rotate-[0.3deg]">
-              <Handwriting as="h3" className="text-lg mb-4">Yeni Metrik Tanimla</Handwriting>
+              <Handwriting as="h3" className="text-lg mb-4">Yeni Metrik Tanımla</Handwriting>
               <form onSubmit={handleCreateMetric} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                      Metrik Adi
+                      Metrik Adı
                     </label>
                     <input
                       type="text"
                       value={newMetricName}
                       onChange={(e) => setNewMetricName(e.target.value)}
-                      placeholder="Orn: Kilo, Su, Adim"
+                      placeholder="Örn: Kilo, Su, Adım"
                       className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     />
                   </div>
@@ -279,23 +279,23 @@ export default function MetricsPage() {
                       type="text"
                       value={newMetricUnit}
                       onChange={(e) => setNewMetricUnit(e.target.value)}
-                      placeholder="Orn: kg, lt, adim"
+                      placeholder="Örn: kg, lt, adım"
                       className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                      Tur
+                      Tür
                     </label>
                     <select
                       value={newMetricType}
                       onChange={(e) => setNewMetricType(e.target.value)}
                       className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     >
-                      <option value="number">Sayi</option>
-                      <option value="decimal">Ondalik</option>
-                      <option value="duration">Sure</option>
-                      <option value="boolean">Evet/Hayir</option>
+                      <option value="number">Sayı</option>
+                      <option value="decimal">Ondalık</option>
+                      <option value="duration">Süre</option>
+                      <option value="boolean">Evet/Hayır</option>
                     </select>
                   </div>
                 </div>
@@ -309,12 +309,12 @@ export default function MetricsPage() {
                   {creatingMetric ? (
                     <>
                       <Loader2 size={16} className="animate-spin" />
-                      Olusturuluyor...
+                      Oluşturuluyor...
                     </>
                   ) : (
                     <>
                       <Plus size={16} />
-                      Metrik Olustur
+                      Metrik Oluştur
                     </>
                   )}
                 </motion.button>
@@ -332,9 +332,9 @@ export default function MetricsPage() {
       ) : definitions.length === 0 ? (
         <Paper className="text-center py-16">
           <Activity className="mx-auto text-slate-300 mb-4" size={48} />
-          <Handwriting className="text-xl text-slate-400">Henuz metrik tanimlanmamis</Handwriting>
+          <Handwriting className="text-xl text-slate-400">Henüz metrik tanımlanmamış</Handwriting>
           <p className="text-sm text-slate-400 mt-2">
-            &quot;Yeni Metrik&quot; butonuyla takip etmek istedigin degerleri ekleyebilirsin
+            &quot;Yeni Metrik&quot; butonuyla takip etmek istediğin değerleri ekleyebilirsin
           </p>
         </Paper>
       ) : (
@@ -415,7 +415,7 @@ export default function MetricsPage() {
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp size={18} className="text-blue-500" />
                 <Handwriting as="h3" className="text-lg">
-                  {selectedMetric.name} - Yeni Deger Ekle
+                  {selectedMetric.name} - Yeni Değer Ekle
                 </Handwriting>
               </div>
 
@@ -423,14 +423,14 @@ export default function MetricsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                      Deger ({selectedMetric.unit})
+                      Değer ({selectedMetric.unit})
                     </label>
                     <input
                       type="number"
                       step="any"
                       value={entryValue}
                       onChange={(e) => setEntryValue(e.target.value)}
-                      placeholder="Orn: 72.5"
+                      placeholder="Örn: 72.5"
                       className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     />
                   </div>
@@ -447,13 +447,13 @@ export default function MetricsPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                      Not (istege bagli)
+                      Not (isteğe bağlı)
                     </label>
                     <input
                       type="text"
                       value={entryNote}
                       onChange={(e) => setEntryNote(e.target.value)}
-                      placeholder="Kisa bir not..."
+                      placeholder="Kısa bir not..."
                       className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     />
                   </div>
@@ -486,9 +486,9 @@ export default function MetricsPage() {
             ) : chartData.length === 0 ? (
               <Paper className="text-center py-12">
                 <TrendingUp className="mx-auto text-slate-300 mb-3" size={36} />
-                <Handwriting className="text-lg text-slate-400">Henuz veri girilmemis</Handwriting>
+                <Handwriting className="text-lg text-slate-400">Henüz veri girilmemiş</Handwriting>
                 <p className="text-sm text-slate-400 mt-1">
-                  Yukardaki formu kullanarak deger eklemeye baslayabilirsin
+                  Yukarıdaki formu kullanarak değer eklemeye başlayabilirsin
                 </p>
               </Paper>
             ) : (
@@ -538,7 +538,7 @@ export default function MetricsPage() {
             {entries.length > 0 && (
               <Paper>
                 <h3 className="text-slate-500 font-bold uppercase tracking-wider text-xs mb-4">
-                  Son Girilen Degerler
+                  Son Girilen Değerler
                 </h3>
                 <div className="space-y-2">
                   {entries

@@ -173,7 +173,7 @@ export default function DashboardPage() {
                     )}
                     {todayCheckIn.sleep && (
                       <span className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-200 uppercase tracking-wide font-bold">
-                        Uyku: {todayCheckIn.sleep}s
+                        Uyku: {todayCheckIn.sleep} saat
                       </span>
                     )}
                   </div>

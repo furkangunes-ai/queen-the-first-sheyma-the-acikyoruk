@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { Paper, Handwriting } from '@/components/skeuomorphic';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -64,30 +66,41 @@ interface UserItem {
 
 const moodLabel = (v: number | null) => {
   if (v === null) return '-';
-  const labels: Record<number, string> = { 1: 'Cok Kotu', 2: 'Kotu', 3: 'Normal', 4: 'Iyi', 5: 'Harika' };
+  const labels: Record<number, string> = { 1: 'Çok Kötü', 2: 'Kötü', 3: 'Normal', 4: 'İyi', 5: 'Harika' };
   return labels[v] ?? String(v);
 };
 
 const energyLabel = (v: number | null) => {
   if (v === null) return '-';
-  const labels: Record<number, string> = { 1: 'Cok Dusuk', 2: 'Dusuk', 3: 'Orta', 4: 'Yuksek', 5: 'Cok Yuksek' };
+  const labels: Record<number, string> = { 1: 'Çok Düşük', 2: 'Düşük', 3: 'Orta', 4: 'Yüksek', 5: 'Çok Yüksek' };
   return labels[v] ?? String(v);
 };
 
 const timeAgo = (dateStr: string) => {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'az once';
-  if (mins < 60) return `${mins} dk once`;
+  if (mins < 1) return 'az önce';
+  if (mins < 60) return `${mins} dk önce`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours} saat once`;
+  if (hours < 24) return `${hours} saat önce`;
   const days = Math.floor(hours / 24);
-  return `${days} gun once`;
+  return `${days} gün önce`;
 };
 
 // ---------- component ----------
 
 export default function AdminPage() {
+  const { data: session, status: sessionStatus } = useSession();
+  const router = useRouter();
+  const isAdmin = (session?.user as any)?.role === 'admin';
+
+  // Redirect non-admin users
+  useEffect(() => {
+    if (sessionStatus === 'authenticated' && !isAdmin) {
+      router.replace('/');
+    }
+  }, [sessionStatus, isAdmin, router]);
+
   // --- data states ---
   const [trends, setTrends] = useState<TrendItem[]>([]);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
@@ -145,7 +158,7 @@ export default function AdminPage() {
         }
       }
     } catch {
-      toast.error('Veriler yuklenirken hata olustu');
+      toast.error('Veriler yüklenirken hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -180,12 +193,12 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: taskTitle.trim(), folderId: taskFolderId }),
       });
-      if (!res.ok) throw new Error('Gorev olusturulamadi');
-      toast.success('Gorev basariyla atandi!');
+      if (!res.ok) throw new Error('Görev oluşturulamadı');
+      toast.success('Görev başarıyla atandı!');
       setTaskTitle('');
       fetchAll();
     } catch {
-      toast.error('Gorev atanirken hata olustu');
+      toast.error('Görev atanırken hata oluştu');
     } finally {
       setTaskSubmitting(false);
     }
@@ -206,13 +219,13 @@ export default function AdminPage() {
           type: 'encouragement',
         }),
       });
-      if (!res.ok) throw new Error('Bildirim gonderilemedi');
-      toast.success('Tesvik mesaji gonderildi!');
+      if (!res.ok) throw new Error('Bildirim gönderilemedi');
+      toast.success('Teşvik mesajı gönderildi!');
       setMsgTitle('');
       setMsgBody('');
       fetchAll();
     } catch {
-      toast.error('Mesaj gonderilirken hata olustu');
+      toast.error('Mesaj gönderilirken hata oluştu');
     } finally {
       setMsgSubmitting(false);
     }
@@ -220,12 +233,16 @@ export default function AdminPage() {
 
   // --- render ---
 
-  if (loading) {
+  if (sessionStatus === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center py-32">
         <Loader2 className="animate-spin text-slate-400" size={36} />
       </div>
     );
+  }
+
+  if (!isAdmin) {
+    return null; // Will redirect via useEffect
   }
 
   return (
@@ -235,7 +252,7 @@ export default function AdminPage() {
         <div className="flex items-center gap-3">
           <Shield className="text-blue-600" size={28} />
           <Handwriting as="h1" className="text-3xl text-slate-900">
-            Yonetici Paneli
+            Yönetici Paneli
           </Handwriting>
         </div>
         <button
@@ -250,7 +267,7 @@ export default function AdminPage() {
       {/* ===== Section 1: Seyda'nin Genel Durumu ===== */}
       <Paper className="rotate-[-0.5deg]">
         <Handwriting as="h2" className="text-2xl mb-6 text-slate-900">
-          Seyda&apos;nin Genel Durumu
+          Şeyda&apos;nın Genel Durumu
         </Handwriting>
 
         {/* Stats cards */}
@@ -294,7 +311,7 @@ export default function AdminPage() {
           >
             <div className="flex items-center gap-2 text-green-700 mb-1">
               <CheckCircle2 size={16} />
-              <span className="font-bold text-[10px] uppercase tracking-wider">Gorev</span>
+              <span className="font-bold text-[10px] uppercase tracking-wider">Görev</span>
             </div>
             <span className="text-2xl font-serif text-slate-800">{completionRate}%</span>
             <span className="text-xs text-slate-500 ml-1">{completedCount}/{totalTasks}</span>
@@ -359,7 +376,7 @@ export default function AdminPage() {
 
         {trends.length === 0 && (
           <p className="text-sm text-slate-400 italic text-center py-4">
-            Henuz deneme verisi yok.
+            Henüz deneme verisi yok.
           </p>
         )}
       </Paper>
@@ -371,27 +388,27 @@ export default function AdminPage() {
           <div className="flex items-center gap-2 mb-6">
             <ClipboardList className="text-blue-600" size={22} />
             <Handwriting as="h2" className="text-2xl text-slate-900">
-              Gorev Ata
+              Görev Ata
             </Handwriting>
           </div>
 
           <form onSubmit={handleTaskSubmit} className="flex flex-col gap-4">
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">
-                Gorev Basligi
+                Görev Başlığı
               </label>
               <input
                 type="text"
                 value={taskTitle}
                 onChange={(e) => setTaskTitle(e.target.value)}
-                placeholder="Ornegin: Paragraf testi coz..."
+                placeholder="Örneğin: Paragraf testi çöz..."
                 className="w-full px-4 py-2.5 bg-white rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all"
               />
             </div>
 
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">
-                Klasor
+                Klasör
               </label>
               <select
                 value={taskFolderId}
@@ -399,7 +416,7 @@ export default function AdminPage() {
                 className="w-full px-4 py-2.5 bg-white rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all"
               >
                 {folders.length === 0 && (
-                  <option value="">Klasor bulunamadi</option>
+                  <option value="">Klasör bulunamadı</option>
                 )}
                 {folders.map((f) => (
                   <option key={f.id} value={f.id}>
@@ -419,7 +436,7 @@ export default function AdminPage() {
               ) : (
                 <ClipboardList size={16} />
               )}
-              Gorev Ata
+              Görev Ata
             </button>
           </form>
         </Paper>
@@ -429,7 +446,7 @@ export default function AdminPage() {
           <div className="flex items-center gap-2 mb-6">
             <Heart className="text-rose-500" size={22} />
             <Handwriting as="h2" className="text-2xl text-slate-900">
-              Tesvik Mesaji Gonder
+              Teşvik Mesajı Gönder
             </Handwriting>
           </div>
 
@@ -437,7 +454,7 @@ export default function AdminPage() {
             {users.length > 0 && (
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">
-                  Alici
+                  Alıcı
                 </label>
                 <select
                   value={msgRecipientId}
@@ -455,13 +472,13 @@ export default function AdminPage() {
 
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">
-                Baslik
+                Başlık
               </label>
               <input
                 type="text"
                 value={msgTitle}
                 onChange={(e) => setMsgTitle(e.target.value)}
-                placeholder="Ornegin: Harika gidiyorsun!"
+                placeholder="Örneğin: Harika gidiyorsun!"
                 className="w-full px-4 py-2.5 bg-white rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-rose-400 transition-all"
               />
             </div>
@@ -473,7 +490,7 @@ export default function AdminPage() {
               <textarea
                 value={msgBody}
                 onChange={(e) => setMsgBody(e.target.value)}
-                placeholder="Tesvikci bir mesaj yaz..."
+                placeholder="Teşvikçi bir mesaj yaz..."
                 rows={3}
                 className="w-full px-4 py-2.5 bg-white rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-rose-400 transition-all resize-none"
               />
@@ -489,7 +506,7 @@ export default function AdminPage() {
               ) : (
                 <Send size={16} />
               )}
-              Mesaji Gonder
+              Mesajı Gönder
             </button>
           </form>
         </Paper>
@@ -507,7 +524,7 @@ export default function AdminPage() {
         {notifications.length === 0 ? (
           <div className="text-center py-10">
             <Bell className="mx-auto text-slate-300 mb-3" size={40} />
-            <p className="text-sm text-slate-400 italic">Henuz bildirim gonderilmemis.</p>
+            <p className="text-sm text-slate-400 italic">Henüz bildirim gönderilmemiş.</p>
           </div>
         ) : (
           <div className="space-y-3">

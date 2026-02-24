@@ -29,14 +29,14 @@ interface NotificationItem {
 const timeAgo = (dateStr: string): string => {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'az once';
-  if (mins < 60) return `${mins} dk once`;
+  if (mins < 1) return 'az önce';
+  if (mins < 60) return `${mins} dk önce`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours} saat once`;
+  if (hours < 24) return `${hours} saat önce`;
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} gun once`;
+  if (days < 7) return `${days} gün önce`;
   const weeks = Math.floor(days / 7);
-  return `${weeks} hafta once`;
+  return `${weeks} hafta önce`;
 };
 
 const typeIcon = (type: string) => {
@@ -118,7 +118,7 @@ export default function NotificationBell() {
       setNotifications(data);
       setUnreadCount(data.filter(n => !n.isRead).length);
     } catch {
-      toast.error('Bildirimler yuklenemedi');
+      toast.error('Bildirimler yüklenemedi');
     } finally {
       setLoading(false);
     }
@@ -151,7 +151,7 @@ export default function NotificationBell() {
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch {
-      toast.error('Bildirim okundu olarak isaretlenemedi');
+      toast.error('Bildirim okundu olarak işaretlenemedi');
     }
   };
 
@@ -182,7 +182,7 @@ export default function NotificationBell() {
             Bildirimler
             {unreadCount > 0 && (
               <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
-                {unreadCount} okunmamis
+                {unreadCount} okunmamış
               </span>
             )}
           </SheetTitle>
@@ -196,7 +196,7 @@ export default function NotificationBell() {
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400">
               <Inbox size={40} className="mb-3 opacity-50" />
-              <p className="text-sm italic">Henuz bildirim yok.</p>
+              <p className="text-sm italic">Henüz bildirim yok.</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-50">

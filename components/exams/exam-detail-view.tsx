@@ -60,10 +60,10 @@ interface ExamDetailViewProps {
 const CHART_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
 const TABS = [
-  { key: 'summary', label: 'Ozet', icon: BookOpen },
-  { key: 'wrong', label: 'Yanlis Analizi', icon: PieChartIcon },
-  { key: 'topics', label: 'Konu Dagilimi', icon: BarChart3 },
-  { key: 'photos', label: 'Fotograflar', icon: Image },
+  { key: 'summary', label: 'Özet', icon: BookOpen },
+  { key: 'wrong', label: 'Yanlış Analizi', icon: PieChartIcon },
+  { key: 'topics', label: 'Konu Dağılımı', icon: BarChart3 },
+  { key: 'photos', label: 'Fotoğraflar', icon: Image },
 ] as const;
 
 type TabKey = (typeof TABS)[number]['key'];
@@ -142,9 +142,9 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
       {/* Total Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Dogru', value: totals.correct, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-          { label: 'Yanlis', value: totals.wrong, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
-          { label: 'Bos', value: totals.empty, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
+          { label: 'Doğru', value: totals.correct, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+          { label: 'Yanlış', value: totals.wrong, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
+          { label: 'Boş', value: totals.empty, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
           { label: 'Net', value: totals.net.toFixed(2), color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
         ].map((stat) => (
           <div
@@ -164,9 +164,9 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
             <thead>
               <tr className="border-b-2 border-slate-300">
                 <th className="text-left py-3 px-4 font-semibold text-slate-700">Ders</th>
-                <th className="text-center py-3 px-4 font-semibold text-emerald-700">Dogru</th>
-                <th className="text-center py-3 px-4 font-semibold text-red-700">Yanlis</th>
-                <th className="text-center py-3 px-4 font-semibold text-amber-700">Bos</th>
+                <th className="text-center py-3 px-4 font-semibold text-emerald-700">Doğru</th>
+                <th className="text-center py-3 px-4 font-semibold text-red-700">Yanlış</th>
+                <th className="text-center py-3 px-4 font-semibold text-amber-700">Boş</th>
                 <th className="text-center py-3 px-4 font-semibold text-indigo-700">Net</th>
               </tr>
             </thead>
@@ -191,7 +191,7 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
       {/* Radar Chart */}
       {radarData.length >= 3 && (
         <div className="bg-white/60 border border-slate-200 rounded-xl p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-600 mb-4 text-center">Ders Bazinda Net Dagilimi</h3>
+          <h3 className="text-sm font-semibold text-slate-600 mb-4 text-center">Ders Bazında Net Dağılımı</h3>
           <ResponsiveContainer width="100%" height={320}>
             <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
               <PolarGrid stroke="#e2e8f0" />
@@ -229,7 +229,7 @@ function WrongAnalysisTab({ exam }: { exam: ExamDetail }) {
   const errorReasonData = useMemo(() => {
     const counts: Record<string, number> = {};
     exam.wrongQuestions.forEach((wq) => {
-      const label = wq.errorReason?.label ?? 'Belirtilmemis';
+      const label = wq.errorReason?.label ?? 'Belirtilmemiş';
       counts[label] = (counts[label] || 0) + 1;
     });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
@@ -239,8 +239,8 @@ function WrongAnalysisTab({ exam }: { exam: ExamDetail }) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-slate-400">
         <BookOpen className="w-12 h-12 mb-4 opacity-50" />
-        <p className="text-lg font-medium">Yanlis soru bulunamadi</p>
-        <p className="text-sm mt-1">Bu denemede yanlis yapilan soru yok.</p>
+        <p className="text-lg font-medium">Yanlış soru bulunamadı</p>
+        <p className="text-sm mt-1">Bu denemede yanlış yapılan soru yok.</p>
       </div>
     );
   }
@@ -250,7 +250,7 @@ function WrongAnalysisTab({ exam }: { exam: ExamDetail }) {
       {/* Error Reason Pie Chart */}
       {errorReasonData.length > 0 && (
         <div className="bg-white/60 border border-slate-200 rounded-xl p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-600 mb-4 text-center">Hata Nedeni Dagilimi</h3>
+          <h3 className="text-sm font-semibold text-slate-600 mb-4 text-center">Hata Nedeni Dağılımı</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -283,7 +283,7 @@ function WrongAnalysisTab({ exam }: { exam: ExamDetail }) {
       {/* Wrong Questions List */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-slate-600">
-          Yanlis Sorular ({exam.wrongQuestions.length})
+          Yanlış Sorular ({exam.wrongQuestions.length})
         </h3>
         {exam.wrongQuestions.map((wq) => (
           <motion.div
@@ -337,7 +337,7 @@ function TopicDistributionTab({ exam }: { exam: ExamDetail }) {
   const topicData = useMemo(() => {
     const topicMap: Record<string, { topic: string; subject: string; count: number }> = {};
     exam.wrongQuestions.forEach((wq) => {
-      const topicName = wq.topic?.name ?? 'Belirtilmemis';
+      const topicName = wq.topic?.name ?? 'Belirtilmemiş';
       const key = `${wq.subject.name}::${topicName}`;
       if (!topicMap[key]) {
         topicMap[key] = { topic: topicName, subject: wq.subject.name, count: 0 };
@@ -363,8 +363,8 @@ function TopicDistributionTab({ exam }: { exam: ExamDetail }) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-slate-400">
         <BarChart3 className="w-12 h-12 mb-4 opacity-50" />
-        <p className="text-lg font-medium">Konu verisi bulunamadi</p>
-        <p className="text-sm mt-1">Bu denemede konu bazli analiz icin yeterli veri yok.</p>
+        <p className="text-lg font-medium">Konu verisi bulunamadı</p>
+        <p className="text-sm mt-1">Bu denemede konu bazlı analiz için yeterli veri yok.</p>
       </div>
     );
   }
@@ -372,7 +372,7 @@ function TopicDistributionTab({ exam }: { exam: ExamDetail }) {
   return (
     <div className="space-y-8">
       <div className="bg-white/60 border border-slate-200 rounded-xl p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-600 mb-4 text-center">Konulara Gore Yanlis Sayisi</h3>
+        <h3 className="text-sm font-semibold text-slate-600 mb-4 text-center">Konulara Göre Yanlış Sayısı</h3>
         <ResponsiveContainer width="100%" height={Math.max(300, topicData.length * 40)}>
           <BarChart
             data={topicData}
@@ -394,7 +394,7 @@ function TopicDistributionTab({ exam }: { exam: ExamDetail }) {
                 props?.payload?.subject ?? '',
               ]}
             />
-            <Bar dataKey="count" name="Yanlis" radius={[0, 6, 6, 0]}>
+            <Bar dataKey="count" name="Yanlış" radius={[0, 6, 6, 0]}>
               {topicData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={subjectColorMap[entry.subject] ?? CHART_COLORS[0]} />
               ))}
@@ -430,8 +430,8 @@ function PhotosTab({ exam }: { exam: ExamDetail }) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-slate-400">
         <Image className="w-12 h-12 mb-4 opacity-50" />
-        <p className="text-lg font-medium">Fotograf bulunamadi</p>
-        <p className="text-sm mt-1">Bu denemede fotografa sahip soru yok.</p>
+        <p className="text-lg font-medium">Fotoğraf bulunamadı</p>
+        <p className="text-sm mt-1">Bu denemede fotoğrafa sahip soru yok.</p>
       </div>
     );
   }
@@ -502,7 +502,7 @@ export default function ExamDetailView({ examId, onBack }: ExamDetailViewProps) 
       try {
         const res = await fetch(`/api/exams/${examId}`);
         if (!res.ok) {
-          throw new Error(`Sinav yuklenemedi (${res.status})`);
+          throw new Error(`Sınav yüklenemedi (${res.status})`);
         }
         const data: ExamDetail = await res.json();
         if (!cancelled) {
@@ -510,7 +510,7 @@ export default function ExamDetailView({ examId, onBack }: ExamDetailViewProps) 
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Bilinmeyen bir hata olustu');
+          setError(err instanceof Error ? err.message : 'Bilinmeyen bir hata oluştu');
         }
       } finally {
         if (!cancelled) {
@@ -535,7 +535,7 @@ export default function ExamDetailView({ examId, onBack }: ExamDetailViewProps) 
         className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors mb-6 group"
       >
         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-        <span>Geri Don</span>
+        <span>Geri Dön</span>
       </button>
 
       {/* Loading */}
@@ -550,7 +550,7 @@ export default function ExamDetailView({ examId, onBack }: ExamDetailViewProps) 
             onClick={onBack}
             className="mt-4 text-sm text-indigo-600 hover:text-indigo-800 underline"
           >
-            Geri don
+            Geri dön
           </button>
         </div>
       )}

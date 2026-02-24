@@ -57,14 +57,14 @@ export async function POST(
         correctCount: result.correctCount,
         wrongCount: result.wrongCount,
         emptyCount: result.emptyCount,
-        netScore: result.correctCount - result.wrongCount / 4,
+        netScore: result.correctCount - (result.wrongCount / 4),
       })),
     });
 
     // Compute total net score locally for the response
     const totalNet = results.reduce(
       (sum: number, r: { correctCount: number; wrongCount: number }) =>
-        sum + r.correctCount - r.wrongCount / 4,
+        sum + (r.correctCount - (r.wrongCount / 4)),
       0
     );
 

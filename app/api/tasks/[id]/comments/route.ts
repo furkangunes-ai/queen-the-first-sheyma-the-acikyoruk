@@ -54,15 +54,29 @@ export async function POST(
     const userId = (session.user as any).id;
     const { id } = await params;
 
-    // Any user can comment (admin sends encouragements)
+    // Verify the task exists and user is authorized to comment
     const task = await prisma.task.findFirst({
       where: { id },
+      include: { folder: { select: { userId: true } } },
     });
 
     if (!task) {
       return NextResponse.json(
         { error: "Task not found" },
         { status: 404 }
+      );
+    }
+
+    // Allow comment if user is the task assigner, the task assignee (folder owner), or admin
+    const currentUser = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    const isTaskAssigner = task.assignedById === userId;
+    const isTaskOwner = task.folder?.userId === userId;
+    const isAdmin = currentUser?.role === 'admin';
+
+    if (!isTaskAssigner && !isTaskOwner && !isAdmin) {
+      return NextResponse.json(
+        { error: "Not authorized to comment on this task" },
+        { status: 403 }
       );
     }
 

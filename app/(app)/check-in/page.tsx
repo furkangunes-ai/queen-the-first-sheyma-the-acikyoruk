@@ -20,19 +20,19 @@ interface CheckIn {
 }
 
 const MOODS = [
-  { value: 1, emoji: '\u{1F61E}', label: 'Kotu' },
+  { value: 1, emoji: '\u{1F61E}', label: 'Kötü' },
   { value: 2, emoji: '\u{1F615}', label: 'Durgun' },
   { value: 3, emoji: '\u{1F610}', label: 'Normal' },
-  { value: 4, emoji: '\u{1F642}', label: 'Iyi' },
+  { value: 4, emoji: '\u{1F642}', label: 'İyi' },
   { value: 5, emoji: '\u{1F60A}', label: 'Harika' },
 ];
 
 const ENERGY_LEVELS = [
-  { value: 1, label: 'Cok Dusuk' },
-  { value: 2, label: 'Dusuk' },
+  { value: 1, label: 'Çok Düşük' },
+  { value: 2, label: 'Düşük' },
   { value: 3, label: 'Orta' },
-  { value: 4, label: 'Yuksek' },
-  { value: 5, label: 'Cok Yuksek' },
+  { value: 4, label: 'Yüksek' },
+  { value: 5, label: 'Çok Yüksek' },
 ];
 
 export default function CheckInPage() {
@@ -69,11 +69,11 @@ export default function CheckInPage() {
     e.preventDefault();
 
     if (mood === 0) {
-      toast.error('Lutfen ruh halini sec');
+      toast.error('Lütfen ruh halini seç');
       return;
     }
     if (energy === 0) {
-      toast.error('Lutfen enerji seviyeni sec');
+      toast.error('Lütfen enerji seviyeni seç');
       return;
     }
 
@@ -103,7 +103,7 @@ export default function CheckInPage() {
       setDate(format(new Date(), 'yyyy-MM-dd'));
       fetchRecentCheckIns();
     } catch {
-      toast.error('Kaydederken hata olustu');
+      toast.error('Kaydederken hata oluştu');
     } finally {
       setSubmitting(false);
     }
@@ -121,7 +121,7 @@ export default function CheckInPage() {
     <div className="h-full flex flex-col gap-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Handwriting as="h1" className="text-3xl">Gunluk Check-in</Handwriting>
+        <Handwriting as="h1" className="text-3xl">Günlük Check-in</Handwriting>
         <span className="text-sm text-slate-400">
           {format(new Date(), 'd MMMM EEEE', { locale: tr })}
         </span>
@@ -197,7 +197,7 @@ export default function CheckInPage() {
           <div>
             <label className="flex items-center gap-2 text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">
               <Clock size={16} className="text-indigo-400" />
-              Uyku Suresi (saat)
+              Uyku Süresi (saat)
             </label>
             <input
               type="number"
@@ -206,7 +206,7 @@ export default function CheckInPage() {
               step="0.5"
               value={sleep}
               onChange={(e) => setSleep(e.target.value)}
-              placeholder="Orn: 7.5"
+              placeholder="Örn: 7.5"
               className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-shadow"
             />
           </div>
@@ -215,12 +215,12 @@ export default function CheckInPage() {
           <div>
             <label className="flex items-center gap-2 text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">
               <Heart size={16} className="text-rose-400" />
-              Minnettarlik
+              Minnettarlık
             </label>
             <textarea
               value={gratitude}
               onChange={(e) => setGratitude(e.target.value)}
-              placeholder="Bugun neler icin minnetarsin?"
+              placeholder="Bugün neler için minnettarsın?"
               rows={3}
               className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-shadow resize-none"
             />
@@ -235,7 +235,7 @@ export default function CheckInPage() {
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Gunle ilgili notlarin..."
+              placeholder="Günle ilgili notların..."
               rows={3}
               className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-shadow resize-none"
             />
@@ -289,9 +289,9 @@ export default function CheckInPage() {
         ) : recentCheckIns.length === 0 ? (
           <Paper className="text-center py-12">
             <Calendar className="mx-auto text-slate-300 mb-4" size={40} />
-            <Handwriting className="text-lg text-slate-400">Henuz check-in yok</Handwriting>
+            <Handwriting className="text-lg text-slate-400">Henüz check-in yok</Handwriting>
             <p className="text-sm text-slate-400 mt-2">
-              Ilk check-inini yukardaki formu doldurarak yapabilirsin
+              İlk check-inini yukarıdaki formu doldurarak yapabilirsin
             </p>
           </Paper>
         ) : (
@@ -326,7 +326,7 @@ export default function CheckInPage() {
                               </span>
                               {checkIn.sleep != null && (
                                 <span className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-200 uppercase tracking-wide font-bold">
-                                  Uyku: {checkIn.sleep}s
+                                  Uyku: {checkIn.sleep} saat
                                 </span>
                               )}
                             </div>
@@ -339,7 +339,7 @@ export default function CheckInPage() {
 
                       {checkIn.gratitude && (
                         <div className="mt-2 bg-rose-50 rounded p-2 border border-rose-100">
-                          <span className="text-[10px] text-rose-400 font-bold uppercase tracking-wider block mb-0.5">Minnettarlik</span>
+                          <span className="text-[10px] text-rose-400 font-bold uppercase tracking-wider block mb-0.5">Minnettarlık</span>
                           <p className="text-sm text-slate-600 leading-relaxed">{checkIn.gratitude}</p>
                         </div>
                       )}

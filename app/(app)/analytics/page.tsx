@@ -7,13 +7,14 @@ import {
   AreaChart, Area, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   Legend,
 } from 'recharts';
-import { TrendingUp, Target, Award, BookOpen, AlertTriangle, Loader2 } from 'lucide-react';
+import { TrendingUp, Target, Award, BookOpen, AlertTriangle, Loader2, Crosshair } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
+import { RegressionChart, type RegressionData } from '@/components/analytics/regression-chart';
 
 const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
-type Tab = 'trends' | 'topics' | 'errors';
+type Tab = 'trends' | 'topics' | 'errors' | 'regression';
 
 interface TrendData {
   examId: string;
@@ -59,6 +60,7 @@ export default function AnalyticsPage() {
     totalWrongQuestions: 0,
     errorReasons: [],
   });
+  const [regression, setRegression] = useState<RegressionData | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch exam types
@@ -83,10 +85,14 @@ export default function AnalyticsPage() {
         const res = await fetch(`/api/analytics/topics?${typeParam}`);
         if (!res.ok) throw new Error();
         setTopics(await res.json());
-      } else {
+      } else if (activeTab === 'errors') {
         const res = await fetch(`/api/analytics/errors?${typeParam}`);
         if (!res.ok) throw new Error();
         setErrors(await res.json());
+      } else if (activeTab === 'regression') {
+        const res = await fetch(`/api/analytics/regression?${typeParam}&targets=70,80,90,100`);
+        if (!res.ok) throw new Error();
+        setRegression(await res.json());
       }
     } catch {
       toast.error('Veriler yüklenirken hata oluştu');
@@ -141,6 +147,7 @@ export default function AnalyticsPage() {
     { key: 'trends', label: 'Deneme Gidişatı', icon: <TrendingUp size={16} /> },
     { key: 'topics', label: 'Konu Analizi', icon: <BookOpen size={16} /> },
     { key: 'errors', label: 'Hata Analizi', icon: <AlertTriangle size={16} /> },
+    { key: 'regression', label: 'Projeksiyon', icon: <Crosshair size={16} /> },
   ];
 
   return (
@@ -420,7 +427,7 @@ export default function AnalyticsPage() {
                             innerRadius={40}
                             dataKey="count"
                             nameKey="errorReasonName"
-                            label={({ errorReasonName, count, percent }) =>
+                            label={({ errorReasonName, count }) =>
                               `${errorReasonName} (${count})`
                             }
                             labelLine
@@ -466,6 +473,29 @@ export default function AnalyticsPage() {
                     </div>
                   </Paper>
                 </>
+              )}
+            </motion.div>
+          )}
+
+          {/* REGRESSION TAB */}
+          {activeTab === 'regression' && (
+            <motion.div
+              key="regression"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex flex-col gap-6"
+            >
+              {!regression || regression.n === 0 ? (
+                <Paper className="text-center py-16">
+                  <Crosshair className="mx-auto text-slate-300 mb-4" size={48} />
+                  <Handwriting className="text-lg text-slate-400">Projeksiyon için veri yetersiz</Handwriting>
+                  <p className="text-sm text-slate-400 mt-2">
+                    En az 2 deneme sonucu girildikten sonra net projeksiyon grafiği burada görünecek
+                  </p>
+                </Paper>
+              ) : (
+                <RegressionChart data={regression} />
               )}
             </motion.div>
           )}
