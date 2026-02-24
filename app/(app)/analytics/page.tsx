@@ -65,10 +65,19 @@ export default function AnalyticsPage() {
 
   // Fetch exam types
   useEffect(() => {
-    fetch('/api/exam-types')
-      .then(r => r.json())
-      .then(setExamTypes)
-      .catch(() => {});
+    const fetchExamTypes = async () => {
+      try {
+        const res = await fetch('/api/exam-types');
+        if (!res.ok) throw new Error('Failed to fetch');
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setExamTypes(data);
+        }
+      } catch {
+        setExamTypes([]);
+      }
+    };
+    fetchExamTypes();
   }, []);
 
   // Fetch data based on active tab

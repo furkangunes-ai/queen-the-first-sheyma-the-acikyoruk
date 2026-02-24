@@ -51,9 +51,12 @@ export default function ExamsPage() {
       const res = await fetch(`/api/exams${params}`);
       if (!res.ok) throw new Error('Fetch failed');
       const data = await res.json();
-      setExams(data);
+      if (Array.isArray(data)) {
+        setExams(data);
+      }
     } catch {
       toast.error('Denemeler yüklenirken hata oluştu');
+      setExams([]);
     } finally {
       setLoading(false);
     }
@@ -64,9 +67,12 @@ export default function ExamsPage() {
       const res = await fetch('/api/exam-types');
       if (!res.ok) throw new Error('Fetch failed');
       const data = await res.json();
-      setExamTypes(data);
+      if (Array.isArray(data)) {
+        setExamTypes(data);
+      }
     } catch {
-      // Silently fail
+      toast.error('Sınav türleri yüklenemedi');
+      setExamTypes([]);
     }
   }, []);
 

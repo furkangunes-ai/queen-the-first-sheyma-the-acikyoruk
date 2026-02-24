@@ -61,10 +61,15 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
       try {
         const res = await fetch('/api/exam-types');
         if (!res.ok) throw new Error('Sınav türleri yüklenemedi');
-        const data: ExamType[] = await res.json();
-        setExamTypes(data);
-      } catch (err) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setExamTypes(data);
+        } else {
+          throw new Error('Beklenmeyen veri formatı');
+        }
+      } catch {
         toast.error('Sınav türleri yüklenirken hata oluştu');
+        setExamTypes([]);
       } finally {
         setLoadingExamTypes(false);
       }
@@ -85,10 +90,11 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
       try {
         const res = await fetch(`/api/subjects/${examTypeId}`);
         if (!res.ok) throw new Error('Dersler yüklenemedi');
-        const data: Subject[] = await res.json();
+        const data = await res.json();
+        if (!Array.isArray(data)) throw new Error('Beklenmeyen veri formatı');
         setSubjects(data);
         setResults(
-          data.map((s) => ({
+          data.map((s: Subject) => ({
             subjectId: s.id,
             subjectName: s.name,
             correctCount: 0,
@@ -96,8 +102,10 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
             emptyCount: 0,
           }))
         );
-      } catch (err) {
+      } catch {
         toast.error('Dersler yüklenirken hata oluştu');
+        setSubjects([]);
+        setResults([]);
       } finally {
         setLoadingSubjects(false);
       }
