@@ -13,6 +13,7 @@ export default function ExamDetailPage() {
     <ExamDetailView
       examId={examId}
       onBack={() => router.push('/exams')}
+      onDeleted={() => router.push('/exams')}
     />
   );
 }

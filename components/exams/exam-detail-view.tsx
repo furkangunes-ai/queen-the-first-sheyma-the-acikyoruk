@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Paper, Handwriting, Tape } from '@/components/skeuomorphic';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Camera, BookOpen, PieChart as PieChartIcon, BarChart3, Image } from 'lucide-react';
+import { ArrowLeft, Camera, BookOpen, PieChart as PieChartIcon, BarChart3, Image, Trash2, Pencil, Check, X, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   PieChart, Pie, Cell,
@@ -53,6 +54,7 @@ interface ExamDetail {
 interface ExamDetailViewProps {
   examId: string;
   onBack: () => void;
+  onDeleted?: () => void;
 }
 
 // ---------- Constants ----------
@@ -486,11 +488,69 @@ function PhotosTab({ exam }: { exam: ExamDetail }) {
 
 // ---------- Main Component ----------
 
-export default function ExamDetailView({ examId, onBack }: ExamDetailViewProps) {
+export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetailViewProps) {
   const [exam, setExam] = useState<ExamDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>('summary');
+
+  // Delete state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  // Edit state
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/exams/${examId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Silme başarısız');
+      toast.success('Deneme silindi');
+      onDeleted ? onDeleted() : onBack();
+    } catch {
+      toast.error('Deneme silinirken hata oluştu');
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const startEditing = () => {
+    if (!exam) return;
+    setEditTitle(exam.title);
+    setEditDate(new Date(exam.date).toISOString().split('T')[0]);
+    setEditNotes('');
+    setEditing(true);
+  };
+
+  const handleSaveEdit = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/exams/${examId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editTitle,
+          date: editDate,
+          ...(editNotes && { notes: editNotes }),
+        }),
+      });
+      if (!res.ok) throw new Error('Güncelleme başarısız');
+      const updated = await res.json();
+      setExam(prev => prev ? { ...prev, title: updated.title, date: updated.date } : prev);
+      toast.success('Deneme güncellendi');
+      setEditing(false);
+    } catch {
+      toast.error('Deneme güncellenirken hata oluştu');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -529,14 +589,124 @@ export default function ExamDetailView({ examId, onBack }: ExamDetailViewProps) 
 
   return (
     <Paper className="rounded-2xl min-h-[60vh]">
-      {/* Back Button */}
-      <button
-        onClick={onBack}
-        className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors mb-6 group"
-      >
-        <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-        <span>Geri Dön</span>
-      </button>
+      {/* Top Bar */}
+      <div className="flex items-center justify-between mb-6">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors group"
+        >
+          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+          <span>Geri Dön</span>
+        </button>
+
+        {exam && !loading && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={startEditing}
+              className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              title="Düzenle"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              title="Sil"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Delete Confirmation */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden mb-6"
+          >
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-800 font-medium mb-3">
+                Bu denemeyi silmek istediğine emin misin? Bu işlem geri alınamaz.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  Evet, Sil
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50"
+                >
+                  İptal
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Form */}
+      <AnimatePresence>
+        {editing && exam && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden mb-6"
+          >
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-blue-800">Denemeyi Düzenle</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-600 block mb-1">Başlık</label>
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={e => setEditTitle(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-600 block mb-1">Tarih</label>
+                  <input
+                    type="date"
+                    value={editDate}
+                    onChange={e => setEditDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={saving || !editTitle.trim()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  Kaydet
+                </button>
+                <button
+                  onClick={() => setEditing(false)}
+                  disabled={saving}
+                  className="px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  İptal
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Loading */}
       {loading && <DetailSkeleton />}
