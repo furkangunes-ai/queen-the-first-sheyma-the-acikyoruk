@@ -63,31 +63,31 @@ const DIFFICULTY_OPTIONS = [
 ];
 
 const CONFIDENCE_OPTIONS = [
-  { value: "", label: "Ozguven..." },
-  { value: "dusuk", label: "Dusuk" },
+  { value: "", label: "Özgüven..." },
+  { value: "dusuk", label: "Düşük" },
   { value: "orta", label: "Orta" },
-  { value: "yuksek", label: "Yuksek" },
+  { value: "yuksek", label: "Yüksek" },
 ];
 
 const METHOD_OPTIONS = [
-  { value: "", label: "Yontem..." },
+  { value: "", label: "Yöntem..." },
   { value: "video", label: "Video" },
   { value: "kitap", label: "Kitap" },
   { value: "ders_notu", label: "Ders Notu" },
-  { value: "soru_cozumu", label: "Soru Cozumu" },
-  { value: "diger", label: "Diger" },
+  { value: "soru_cozumu", label: "Soru Çözümü" },
+  { value: "diger", label: "Diğer" },
 ];
 
 const CONFIDENCE_MAP: Record<string, { label: string; color: string }> = {
-  dusuk: { label: "Dusuk", color: "bg-red-100 text-red-700 border-red-200" },
-  orta: { label: "Orta", color: "bg-amber-100 text-amber-700 border-amber-200" },
-  yuksek: { label: "Yuksek", color: "bg-green-100 text-green-700 border-green-200" },
+  dusuk: { label: "Düşük", color: "bg-rose-500/10 text-rose-400 border-rose-500/20" },
+  orta: { label: "Orta", color: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
+  yuksek: { label: "Yüksek", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
 };
 
 const DIFFICULTY_MAP: Record<string, { label: string; color: string }> = {
-  kolay: { label: "Kolay", color: "bg-green-100 text-green-700 border-green-200" },
-  orta: { label: "Orta", color: "bg-amber-100 text-amber-700 border-amber-200" },
-  zor: { label: "Zor", color: "bg-red-100 text-red-700 border-red-200" },
+  kolay: { label: "Kolay", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+  orta: { label: "Orta", color: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
+  zor: { label: "Zor", color: "bg-rose-500/10 text-rose-400 border-rose-500/20" },
 };
 
 // ---------- Helper: Upload Photo ----------
@@ -98,14 +98,14 @@ async function uploadPhoto(file: File): Promise<{ photoUrl: string; photoR2Key: 
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ filename: file.name, contentType: file.type }),
   });
-  if (!presignRes.ok) throw new Error("Upload URL alinamadi");
+  if (!presignRes.ok) throw new Error("Upload alınamadı");
   const { uploadUrl, publicUrl, r2Key } = await presignRes.json();
   const uploadRes = await fetch(uploadUrl, {
     method: "PUT",
     headers: { "Content-Type": file.type },
     body: file,
   });
-  if (!uploadRes.ok) throw new Error("Dosya yuklenemedi");
+  if (!uploadRes.ok) throw new Error("Dosya yüklenemedi");
   return { photoUrl: publicUrl, photoR2Key: r2Key };
 }
 
@@ -210,7 +210,7 @@ export default function StudyPage() {
       if (studyRes.ok) setStudies(await studyRes.json());
       if (reviewRes.ok) setReviews(await reviewRes.json());
     } catch (err) {
-      console.error("Veri yuklenirken hata:", err);
+      console.error("Veri yüklenirken hata:", err);
     } finally {
       setLoading(false);
     }
@@ -233,7 +233,7 @@ export default function StudyPage() {
 
   async function handleSaveStudy() {
     if (!sSubjectId || !sQuestionCount) {
-      toast.error("Ders ve soru sayisi zorunlu");
+      toast.error("Ders ve soru sayısı zorunlu");
       return;
     }
     setSaving(true);
@@ -269,12 +269,12 @@ export default function StudyPage() {
           photoR2Key,
         }),
       });
-      if (!res.ok) throw new Error("Kayit basarisiz");
-      toast.success("Soru cozumu kaydedildi");
+      if (!res.ok) throw new Error("Kayıt başarısız");
+      toast.success("Soru çözümü kaydedildi");
       resetStudyForm();
       fetchData();
     } catch {
-      toast.error("Kayit sirasinda hata olustu");
+      toast.error("Kayıt sırasında hata oluştu");
     } finally {
       setSaving(false);
     }
@@ -328,12 +328,12 @@ export default function StudyPage() {
           photoR2Key,
         }),
       });
-      if (!res.ok) throw new Error("Kayit basarisiz");
-      toast.success("Konu tekrari kaydedildi");
+      if (!res.ok) throw new Error("Kayıt başarısız");
+      toast.success("Konu tekrarı kaydedildi");
       resetReviewForm();
       fetchData();
     } catch {
-      toast.error("Kayit sirasinda hata olustu");
+      toast.error("Kayıt sırasında hata oluştu");
     } finally {
       setSaving(false);
     }
@@ -380,7 +380,7 @@ export default function StudyPage() {
 
   async function handleAddTopic() {
     if (!newTopicName.trim() || !newTopicSubjectId) {
-      toast.error("Konu adi ve ders zorunlu");
+      toast.error("Konu adı ve ders zorunlu");
       return;
     }
     setAddingTopic(true);
@@ -439,8 +439,8 @@ export default function StudyPage() {
   if (loading) {
     return (
       <Paper className="flex items-center justify-center py-16">
-        <Loader2 className="animate-spin text-blue-500 mr-3" size={24} />
-        <span className="text-slate-600 text-sm">Yukleniyor...</span>
+        <Loader2 className="animate-spin text-pink-400/50 mr-3" size={24} />
+        <span className="text-white/50 text-sm">Yükleniyor...</span>
       </Paper>
     );
   }
@@ -450,39 +450,39 @@ export default function StudyPage() {
       {/* Header */}
       <Paper className="space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <Handwriting className="text-2xl sm:text-3xl">Gunluk Calisma</Handwriting>
+          <Handwriting className="text-2xl sm:text-3xl">Günlük Çalışma</Handwriting>
           <div className="flex items-center gap-2">
-            <Calendar size={16} className="text-slate-400" />
+            <Calendar size={16} className="text-white/40" />
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
+              className="px-3 py-1.5 text-sm bg-white/[0.06] border border-pink-500/[0.12] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent rounded-lg [color-scheme:dark]"
             />
           </div>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-blue-700">{totalQuestions}</p>
-            <p className="text-[10px] text-blue-600 uppercase font-medium">Soru</p>
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 text-center">
+            <p className="text-2xl font-bold text-blue-400">{totalQuestions}</p>
+            <p className="text-[10px] text-pink-400 uppercase font-medium">Soru</p>
           </div>
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-emerald-700">{totalCorrect}</p>
-            <p className="text-[10px] text-emerald-600 uppercase font-medium">Dogru</p>
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-center">
+            <p className="text-2xl font-bold text-emerald-400">{totalCorrect}</p>
+            <p className="text-[10px] text-emerald-400 uppercase font-medium">Doğru</p>
           </div>
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-red-700">{totalWrong}</p>
-            <p className="text-[10px] text-red-600 uppercase font-medium">Yanlis</p>
+          <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 text-center">
+            <p className="text-2xl font-bold text-rose-400">{totalWrong}</p>
+            <p className="text-[10px] text-rose-400 uppercase font-medium">Yanlış</p>
           </div>
-          <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-purple-700">{totalReviews}</p>
-            <p className="text-[10px] text-purple-600 uppercase font-medium">Tekrar</p>
+          <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3 text-center">
+            <p className="text-2xl font-bold text-purple-400">{totalReviews}</p>
+            <p className="text-[10px] text-purple-400 uppercase font-medium">Tekrar</p>
           </div>
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-amber-700">{totalStudyMinutes}</p>
-            <p className="text-[10px] text-amber-600 uppercase font-medium">Dakika</p>
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-center">
+            <p className="text-2xl font-bold text-amber-400">{totalStudyMinutes}</p>
+            <p className="text-[10px] text-amber-400 uppercase font-medium">Dakika</p>
           </div>
         </div>
       </Paper>
@@ -495,37 +495,37 @@ export default function StudyPage() {
               onClick={() => setActiveTab("questions")}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === "questions"
-                  ? "bg-blue-600 text-white shadow"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  ? "bg-pink-500 text-white shadow-md shadow-pink-500/10"
+                  : "bg-white/[0.06] text-white/60 active:bg-white/10"
               }`}
             >
               <PenTool size={16} />
-              Soru Cozumu
+              Soru Çözümü
             </button>
             <button
               onClick={() => setActiveTab("reviews")}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === "reviews"
-                  ? "bg-purple-600 text-white shadow"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  ? "bg-purple-600 text-white shadow-md shadow-pink-500/10"
+                  : "bg-white/[0.06] text-white/60 active:bg-white/10"
               }`}
             >
               <BookOpen size={16} />
-              Konu Tekrari
+              Konu Tekrarı
             </button>
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={() => setShowNewTopic(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-white/[0.06] text-white/60 active:bg-white/10 transition-colors"
             >
               <Plus size={14} />
               Konu Ekle
             </button>
             <button
               onClick={() => activeTab === "questions" ? setShowStudyForm(true) : setShowReviewForm(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-pink-500 text-white active:bg-pink-400 transition-colors shadow-md shadow-pink-500/10"
             >
               <Plus size={16} />
               Ekle
@@ -542,15 +542,15 @@ export default function StudyPage() {
               exit={{ opacity: 0, height: 0 }}
               className="overflow-hidden mb-4"
             >
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-slate-700">Yeni Konu Ekle</h3>
+              <div className="bg-white/[0.03] border border-pink-500/15 rounded-lg p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-white/70">Yeni Konu Ekle</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <select
                     value={newTopicSubjectId}
                     onChange={(e) => setNewTopicSubjectId(e.target.value)}
-                    className="p-2 text-sm border border-slate-200 rounded-lg"
+                    className="p-2 text-sm bg-white/[0.06] border border-pink-500/[0.12] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent rounded-lg"
                   >
-                    <option value="">Ders secin...</option>
+                    <option value="">Ders seçin...</option>
                     {Object.entries(groupedSubjects).map(([etName, subs]) => (
                       <optgroup key={etName} label={etName}>
                         {subs.map((s) => (
@@ -561,25 +561,25 @@ export default function StudyPage() {
                   </select>
                   <input
                     type="text"
-                    placeholder="Konu adi..."
+                    placeholder="Konu adı..."
                     value={newTopicName}
                     onChange={(e) => setNewTopicName(e.target.value)}
-                    className="p-2 text-sm border border-slate-200 rounded-lg"
+                    className="p-2 text-sm bg-white/[0.06] border border-pink-500/[0.12] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent rounded-lg"
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={handleAddTopic}
                       disabled={addingTopic}
-                      className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="flex-1 px-3 py-2 bg-pink-500 text-white text-sm rounded-lg active:bg-pink-400 disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       {addingTopic ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                       Ekle
                     </button>
                     <button
                       onClick={() => setShowNewTopic(false)}
-                      className="px-3 py-2 bg-white border border-slate-200 text-sm rounded-lg hover:bg-slate-50"
+                      className="px-3 py-2 bg-white/[0.04] border border-pink-500/15 text-sm rounded-lg active:bg-white/5"
                     >
-                      Iptal
+                      İptal
                     </button>
                   </div>
                 </div>
@@ -597,53 +597,53 @@ export default function StudyPage() {
               exit={{ opacity: 0, height: 0 }}
               className="overflow-hidden mb-4"
             >
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-blue-800">Soru Cozumu Kaydet</h3>
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-pink-300">Soru Çözümü Kaydet</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <select value={sSubjectId} onChange={(e) => { setSSubjectId(e.target.value); setSTopicId(""); }} className="p-2 text-sm border border-slate-200 rounded-lg">
-                    <option value="">Ders secin...</option>
+                  <select value={sSubjectId} onChange={(e) => { setSSubjectId(e.target.value); setSTopicId(""); }} className="p-2 text-sm bg-white/[0.06] border border-pink-500/[0.12] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent rounded-lg">
+                    <option value="">Ders seçin...</option>
                     {Object.entries(groupedSubjects).map(([etName, subs]) => (
                       <optgroup key={etName} label={etName}>
                         {subs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </optgroup>
                     ))}
                   </select>
-                  <select value={sTopicId} onChange={(e) => setSTopicId(e.target.value)} className="p-2 text-sm border border-slate-200 rounded-lg">
+                  <select value={sTopicId} onChange={(e) => setSTopicId(e.target.value)} className="p-2 text-sm bg-white/[0.06] border border-pink-500/[0.12] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent rounded-lg">
                     <option value="">Konu (opsiyonel)...</option>
                     {sTopics.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
-                  <input type="number" min={0} placeholder="Soru sayisi *" value={sQuestionCount} onChange={(e) => setSQuestionCount(e.target.value)} className="p-2 text-sm border border-slate-200 rounded-lg" />
-                  <input type="number" min={0} placeholder="Dogru" value={sCorrectCount} onChange={(e) => setSCorrectCount(e.target.value)} className="p-2 text-sm border border-slate-200 rounded-lg" />
-                  <input type="number" min={0} placeholder="Yanlis" value={sWrongCount} onChange={(e) => setSWrongCount(e.target.value)} className="p-2 text-sm border border-slate-200 rounded-lg" />
-                  <select value={sDifficulty} onChange={(e) => setSDifficulty(e.target.value)} className="p-2 text-sm border border-slate-200 rounded-lg">
+                  <input type="number" min={0} placeholder="Soru sayısı *" value={sQuestionCount} onChange={(e) => setSQuestionCount(e.target.value)} className="p-2 text-sm bg-white/[0.06] border border-pink-500/[0.12] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent rounded-lg" />
+                  <input type="number" min={0} placeholder="Doğru" value={sCorrectCount} onChange={(e) => setSCorrectCount(e.target.value)} className="p-2 text-sm bg-white/[0.06] border border-pink-500/[0.12] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent rounded-lg" />
+                  <input type="number" min={0} placeholder="Yanlış" value={sWrongCount} onChange={(e) => setSWrongCount(e.target.value)} className="p-2 text-sm bg-white/[0.06] border border-pink-500/[0.12] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent rounded-lg" />
+                  <select value={sDifficulty} onChange={(e) => setSDifficulty(e.target.value)} className="p-2 text-sm bg-white/[0.06] border border-pink-500/[0.12] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent rounded-lg">
                     {DIFFICULTY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="text" placeholder="Kaynak (opsiyonel)" value={sSource} onChange={(e) => setSSource(e.target.value)} className="p-2 text-sm border border-slate-200 rounded-lg" />
-                  <input type="number" min={0} placeholder="Sure (dk)" value={sDuration} onChange={(e) => setSDuration(e.target.value)} className="p-2 text-sm border border-slate-200 rounded-lg" />
-                  <input type="text" placeholder="Not (opsiyonel)" value={sNotes} onChange={(e) => setSNotes(e.target.value)} className="p-2 text-sm border border-slate-200 rounded-lg" />
+                  <input type="text" placeholder="Kaynak (opsiyonel)" value={sSource} onChange={(e) => setSSource(e.target.value)} className="p-2 text-sm bg-white/[0.06] border border-pink-500/[0.12] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent rounded-lg" />
+                  <input type="number" min={0} placeholder="Süre (dk)" value={sDuration} onChange={(e) => setSDuration(e.target.value)} className="p-2 text-sm bg-white/[0.06] border border-pink-500/[0.12] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent rounded-lg" />
+                  <input type="text" placeholder="Not (opsiyonel)" value={sNotes} onChange={(e) => setSNotes(e.target.value)} className="p-2 text-sm bg-white/[0.06] border border-pink-500/[0.12] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent rounded-lg" />
                 </div>
 
                 {/* Photo */}
                 <div className="flex items-center gap-3">
                   <input type="file" accept="image/*" capture="environment" className="hidden" ref={sFileRef} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleStudyPhoto(f); }} />
                   {sPhotoPreview ? (
-                    <div className="relative w-12 h-12 rounded overflow-hidden border border-blue-300">
+                    <div className="relative w-12 h-12 rounded overflow-hidden border border-blue-500/30">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={sPhotoPreview} alt="Preview" className="w-full h-full object-cover" />
                       <button onClick={() => { setSPhotoFile(null); if (sPhotoPreview) URL.revokeObjectURL(sPhotoPreview); setSPhotoPreview(null); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center"><X size={10} /></button>
                     </div>
                   ) : (
-                    <button onClick={() => sFileRef.current?.click()} className="px-3 py-2 bg-white border border-blue-200 text-blue-600 text-sm rounded-lg hover:bg-blue-50 flex items-center gap-1">
+                    <button onClick={() => sFileRef.current?.click()} className="px-3 py-2 bg-white/[0.04] border border-blue-500/20 text-pink-400 text-sm rounded-lg active:bg-blue-500/10 flex items-center gap-1">
                       <Camera size={14} /> Foto
                     </button>
                   )}
                 </div>
 
                 <div className="flex gap-2">
-                  <button onClick={handleSaveStudy} disabled={saving} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1">
+                  <button onClick={handleSaveStudy} disabled={saving} className="px-4 py-2 bg-pink-500 text-white text-sm rounded-lg active:bg-pink-400 disabled:opacity-50 flex items-center gap-1">
                     {saving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />} Kaydet
                   </button>
-                  <button onClick={resetStudyForm} className="px-4 py-2 bg-white border border-slate-200 text-sm rounded-lg hover:bg-slate-50">Iptal</button>
+                  <button onClick={resetStudyForm} className="px-4 py-2 bg-white/[0.04] border border-pink-500/15 text-sm rounded-lg active:bg-white/5">İptal</button>
                 </div>
               </div>
             </motion.div>
@@ -659,42 +659,42 @@ export default function StudyPage() {
               exit={{ opacity: 0, height: 0 }}
               className="overflow-hidden mb-4"
             >
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-purple-800">Konu Tekrari Kaydet</h3>
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-purple-300">Konu Tekrarı Kaydet</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <select value={rSubjectId} onChange={(e) => { setRSubjectId(e.target.value); setRTopicId(""); }} className="p-2 text-sm border border-slate-200 rounded-lg">
-                    <option value="">Ders secin...</option>
+                  <select value={rSubjectId} onChange={(e) => { setRSubjectId(e.target.value); setRTopicId(""); }} className="p-2 text-sm bg-white/[0.06] border border-pink-500/[0.12] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent rounded-lg">
+                    <option value="">Ders seçin...</option>
                     {Object.entries(groupedSubjects).map(([etName, subs]) => (
                       <optgroup key={etName} label={etName}>
                         {subs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </optgroup>
                     ))}
                   </select>
-                  <select value={rTopicId} onChange={(e) => setRTopicId(e.target.value)} className="p-2 text-sm border border-slate-200 rounded-lg">
-                    <option value="">Konu secin *...</option>
+                  <select value={rTopicId} onChange={(e) => setRTopicId(e.target.value)} className="p-2 text-sm bg-white/[0.06] border border-pink-500/[0.12] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent rounded-lg">
+                    <option value="">Konu seçin *...</option>
                     {rTopics.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
-                  <input type="number" min={0} placeholder="Sure (dk)" value={rDuration} onChange={(e) => setRDuration(e.target.value)} className="p-2 text-sm border border-slate-200 rounded-lg" />
-                  <select value={rConfidence} onChange={(e) => setRConfidence(e.target.value)} className="p-2 text-sm border border-slate-200 rounded-lg">
+                  <input type="number" min={0} placeholder="Süre (dk)" value={rDuration} onChange={(e) => setRDuration(e.target.value)} className="p-2 text-sm bg-white/[0.06] border border-pink-500/[0.12] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent rounded-lg" />
+                  <select value={rConfidence} onChange={(e) => setRConfidence(e.target.value)} className="p-2 text-sm bg-white/[0.06] border border-pink-500/[0.12] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent rounded-lg">
                     {CONFIDENCE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <select value={rMethod} onChange={(e) => setRMethod(e.target.value)} className="p-2 text-sm border border-slate-200 rounded-lg">
+                  <select value={rMethod} onChange={(e) => setRMethod(e.target.value)} className="p-2 text-sm bg-white/[0.06] border border-pink-500/[0.12] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent rounded-lg">
                     {METHOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="text" placeholder="Not (opsiyonel)" value={rNotes} onChange={(e) => setRNotes(e.target.value)} className="p-2 text-sm border border-slate-200 rounded-lg" />
+                  <input type="text" placeholder="Not (opsiyonel)" value={rNotes} onChange={(e) => setRNotes(e.target.value)} className="p-2 text-sm bg-white/[0.06] border border-pink-500/[0.12] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent rounded-lg" />
                 </div>
 
                 {/* Photo */}
                 <div className="flex items-center gap-3">
                   <input type="file" accept="image/*" capture="environment" className="hidden" ref={rFileRef} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleReviewPhoto(f); }} />
                   {rPhotoPreview ? (
-                    <div className="relative w-12 h-12 rounded overflow-hidden border border-purple-300">
+                    <div className="relative w-12 h-12 rounded overflow-hidden border border-purple-500/30">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={rPhotoPreview} alt="Preview" className="w-full h-full object-cover" />
                       <button onClick={() => { setRPhotoFile(null); if (rPhotoPreview) URL.revokeObjectURL(rPhotoPreview); setRPhotoPreview(null); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center"><X size={10} /></button>
                     </div>
                   ) : (
-                    <button onClick={() => rFileRef.current?.click()} className="px-3 py-2 bg-white border border-purple-200 text-purple-600 text-sm rounded-lg hover:bg-purple-50 flex items-center gap-1">
+                    <button onClick={() => rFileRef.current?.click()} className="px-3 py-2 bg-white/[0.04] border border-purple-500/20 text-purple-400 text-sm rounded-lg active:bg-purple-500/10 flex items-center gap-1">
                       <Camera size={14} /> Foto
                     </button>
                   )}
@@ -704,7 +704,7 @@ export default function StudyPage() {
                   <button onClick={handleSaveReview} disabled={saving} className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1">
                     {saving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />} Kaydet
                   </button>
-                  <button onClick={resetReviewForm} className="px-4 py-2 bg-white border border-slate-200 text-sm rounded-lg hover:bg-slate-50">Iptal</button>
+                  <button onClick={resetReviewForm} className="px-4 py-2 bg-white/[0.04] border border-pink-500/15 text-sm rounded-lg active:bg-white/5">İptal</button>
                 </div>
               </div>
             </motion.div>
@@ -716,11 +716,11 @@ export default function StudyPage() {
           {activeTab === "questions" ? (
             <motion.div key="questions" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               {studies.length === 0 ? (
-                <div className="text-center py-12 text-slate-400">
+                <div className="text-center py-12 text-white/40">
                   <PenTool className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                  <p className="text-sm">Bugun soru cozumu kaydi yok</p>
-                  <button onClick={() => setShowStudyForm(true)} className="mt-3 text-blue-600 text-sm font-medium hover:text-blue-800 flex items-center gap-1 mx-auto">
-                    <Plus size={14} /> Ilk kaydini ekle
+                  <p className="text-sm">Bugün soru çözümü kaydı yok</p>
+                  <button onClick={() => setShowStudyForm(true)} className="mt-3 text-pink-400 text-sm font-medium hover:text-pink-300 flex items-center gap-1 mx-auto">
+                    <Plus size={14} /> İlk kaydını ekle
                   </button>
                 </div>
               ) : (
@@ -728,28 +728,28 @@ export default function StudyPage() {
                   {studies.map((s) => {
                     const diffInfo = s.difficulty ? DIFFICULTY_MAP[s.difficulty] : null;
                     return (
-                      <motion.div key={s.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+                      <motion.div key={s.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white/[0.04] border border-pink-500/15 rounded-lg p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-bold text-slate-800 text-sm">{s.subject.name}</span>
-                              <span className="text-xs text-slate-400">{s.subject.examType.name}</span>
-                              {s.topic && <span className="text-xs bg-slate-100 px-2 py-0.5 rounded-full text-slate-600">{s.topic.name}</span>}
+                              <span className="font-bold text-white/90 text-sm">{s.subject.name}</span>
+                              <span className="text-xs text-white/40">{s.subject.examType.name}</span>
+                              {s.topic && <span className="text-xs bg-white/[0.06] px-2 py-0.5 rounded-full text-white/60">{s.topic.name}</span>}
                               {diffInfo && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${diffInfo.color}`}>{diffInfo.label}</span>}
                             </div>
                             <div className="flex items-center gap-4 mt-2 text-sm">
-                              <span className="text-blue-600 font-semibold">{s.questionCount} soru</span>
-                              <span className="text-emerald-600">{s.correctCount} D</span>
-                              <span className="text-red-600">{s.wrongCount} Y</span>
-                              <span className="text-amber-600">{s.emptyCount} B</span>
-                              {s.duration && <span className="text-slate-400 flex items-center gap-1"><Clock size={12} /> {s.duration} dk</span>}
+                              <span className="text-pink-400 font-semibold">{s.questionCount} soru</span>
+                              <span className="text-emerald-400">{s.correctCount} D</span>
+                              <span className="text-rose-400">{s.wrongCount} Y</span>
+                              <span className="text-amber-400">{s.emptyCount} B</span>
+                              {s.duration && <span className="text-white/40 flex items-center gap-1"><Clock size={12} /> {s.duration} dk</span>}
                             </div>
-                            {s.source && <p className="text-xs text-slate-500 mt-1">Kaynak: {s.source}</p>}
-                            {s.notes && <p className="text-xs text-slate-500 mt-1 italic">{s.notes}</p>}
+                            {s.source && <p className="text-xs text-white/50 mt-1">Kaynak: {s.source}</p>}
+                            {s.notes && <p className="text-xs text-white/50 mt-1 italic">{s.notes}</p>}
                           </div>
                           <div className="flex items-center gap-2">
                             {s.photoUrl && <Camera size={14} className="text-blue-400" />}
-                            <button onClick={() => handleDeleteStudy(s.id)} className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded transition-colors">
+                            <button onClick={() => handleDeleteStudy(s.id)} className="p-1.5 text-white/40 hover:text-rose-400 active:bg-rose-500/10 rounded transition-colors">
                               <Trash2 size={14} />
                             </button>
                           </div>
@@ -763,11 +763,11 @@ export default function StudyPage() {
           ) : (
             <motion.div key="reviews" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               {reviews.length === 0 ? (
-                <div className="text-center py-12 text-slate-400">
+                <div className="text-center py-12 text-white/40">
                   <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                  <p className="text-sm">Bugun konu tekrari kaydi yok</p>
-                  <button onClick={() => setShowReviewForm(true)} className="mt-3 text-purple-600 text-sm font-medium hover:text-purple-800 flex items-center gap-1 mx-auto">
-                    <Plus size={14} /> Ilk kaydini ekle
+                  <p className="text-sm">Bugün konu tekrarı kaydı yok</p>
+                  <button onClick={() => setShowReviewForm(true)} className="mt-3 text-purple-400 text-sm font-medium hover:text-purple-300 flex items-center gap-1 mx-auto">
+                    <Plus size={14} /> İlk kaydını ekle
                   </button>
                 </div>
               ) : (
@@ -775,23 +775,23 @@ export default function StudyPage() {
                   {reviews.map((r) => {
                     const confInfo = r.confidence ? CONFIDENCE_MAP[r.confidence] : null;
                     return (
-                      <motion.div key={r.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+                      <motion.div key={r.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white/[0.04] border border-pink-500/15 rounded-lg p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-bold text-slate-800 text-sm">{r.topic.name}</span>
-                              <span className="text-xs text-slate-400">{r.subject.name} - {r.subject.examType.name}</span>
+                              <span className="font-bold text-white/90 text-sm">{r.topic.name}</span>
+                              <span className="text-xs text-white/40">{r.subject.name} - {r.subject.examType.name}</span>
                               {confInfo && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${confInfo.color}`}>{confInfo.label}</span>}
-                              {r.method && <span className="text-xs bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full border border-purple-200">{r.method === "video" ? "Video" : r.method === "kitap" ? "Kitap" : r.method === "ders_notu" ? "Ders Notu" : r.method === "soru_cozumu" ? "Soru Cozumu" : "Diger"}</span>}
+                              {r.method && <span className="text-xs bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded-full border border-purple-500/20">{r.method === "video" ? "Video" : r.method === "kitap" ? "Kitap" : r.method === "ders_notu" ? "Ders Notu" : r.method === "soru_cozumu" ? "Soru Çözümü" : "Diğer"}</span>}
                             </div>
                             <div className="flex items-center gap-4 mt-2 text-sm">
-                              {r.duration && <span className="text-slate-500 flex items-center gap-1"><Clock size={12} /> {r.duration} dk</span>}
+                              {r.duration && <span className="text-white/50 flex items-center gap-1"><Clock size={12} /> {r.duration} dk</span>}
                             </div>
-                            {r.notes && <p className="text-xs text-slate-500 mt-1 italic">{r.notes}</p>}
+                            {r.notes && <p className="text-xs text-white/50 mt-1 italic">{r.notes}</p>}
                           </div>
                           <div className="flex items-center gap-2">
                             {r.photoUrl && <Camera size={14} className="text-purple-400" />}
-                            <button onClick={() => handleDeleteReview(r.id)} className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded transition-colors">
+                            <button onClick={() => handleDeleteReview(r.id)} className="p-1.5 text-white/40 hover:text-rose-400 active:bg-rose-500/10 rounded transition-colors">
                               <Trash2 size={14} />
                             </button>
                           </div>

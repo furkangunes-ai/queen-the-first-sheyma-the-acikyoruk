@@ -62,7 +62,7 @@ interface ExamDetailViewProps {
 
 // ---------- Constants ----------
 
-const CHART_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+const CHART_COLORS = ['#f472b6', '#fbbf24', '#34d399', '#fb7185', '#a78bfa', '#ec4899', '#2dd4bf', '#f97316'];
 
 const TABS = [
   { key: 'summary', label: 'Ozet', icon: BookOpen },
@@ -75,15 +75,15 @@ const TABS = [
 type TabKey = (typeof TABS)[number]['key'];
 
 const DIFFICULTY_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  kolay: { label: 'Kolay', color: 'text-green-700', bg: 'bg-green-100 border-green-200' },
-  orta: { label: 'Orta', color: 'text-amber-700', bg: 'bg-amber-100 border-amber-200' },
-  zor: { label: 'Zor', color: 'text-red-700', bg: 'bg-red-100 border-red-200' },
+  kolay: { label: 'Kolay', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+  orta: { label: 'Orta', color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
+  zor: { label: 'Zor', color: 'text-rose-400', bg: 'bg-rose-500/10 border-rose-500/20' },
 };
 
 const STATUS_MAP: Record<string, { label: string; icon: React.ElementType; color: string; bg: string }> = {
-  anladim: { label: 'Anladim', icon: CheckCircle, color: 'text-emerald-700', bg: 'bg-emerald-100 border-emerald-200' },
-  tekrar: { label: 'Tekrar Lazim', icon: RefreshCw, color: 'text-amber-700', bg: 'bg-amber-100 border-amber-200' },
-  anlamadim: { label: 'Anlamadim', icon: AlertTriangle, color: 'text-red-700', bg: 'bg-red-100 border-red-200' },
+  anladim: { label: 'Anladim', icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+  tekrar: { label: 'Tekrar Lazim', icon: RefreshCw, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
+  anlamadim: { label: 'Anlamadim', icon: AlertTriangle, color: 'text-rose-400', bg: 'bg-rose-500/10 border-rose-500/20' },
 };
 
 // ---------- Helpers ----------
@@ -106,16 +106,16 @@ function DetailSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
       <div className="flex items-center gap-4">
-        <div className="w-8 h-8 bg-slate-200 rounded" />
-        <div className="h-8 w-64 bg-slate-200 rounded" />
+        <div className="w-8 h-8 bg-white/10 rounded" />
+        <div className="h-8 w-64 bg-white/10 rounded" />
       </div>
       <div className="grid grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-24 bg-slate-200 rounded-lg" />
+          <div key={i} className="h-24 bg-white/10 rounded-lg" />
         ))}
       </div>
-      <div className="h-64 bg-slate-200 rounded-lg" />
-      <div className="h-48 bg-slate-200 rounded-lg" />
+      <div className="h-64 bg-white/10 rounded-lg" />
+      <div className="h-48 bg-white/10 rounded-lg" />
     </div>
   );
 }
@@ -150,8 +150,8 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
           {exam.title}
         </Handwriting>
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-sm text-slate-500">{formatDateTR(exam.date)}</span>
-          <span className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-700 px-3 py-0.5 text-xs font-medium border border-indigo-200">
+          <span className="text-sm text-white/50">{formatDateTR(exam.date)}</span>
+          <span className="inline-flex items-center rounded-full bg-pink-500/10 text-pink-400 px-3 py-0.5 text-xs font-medium border border-pink-500/20">
             {exam.examType.name}
           </span>
         </div>
@@ -160,16 +160,16 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
       {/* Total Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Dogru', value: totals.correct, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-          { label: 'Yanlis', value: totals.wrong, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
-          { label: 'Bos', value: totals.empty, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
-          { label: 'Net', value: totals.net.toFixed(2), color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
+          { label: 'Dogru', value: totals.correct, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+          { label: 'Yanlis', value: totals.wrong, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
+          { label: 'Bos', value: totals.empty, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+          { label: 'Net', value: totals.net.toFixed(2), color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/20' },
         ].map((stat) => (
           <div
             key={stat.label}
-            className={`${stat.bg} ${stat.border} border rounded-xl p-4 text-center shadow-sm`}
+            className={`${stat.bg} ${stat.border} border rounded-xl p-4 text-center`}
           >
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{stat.label}</p>
+            <p className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1">{stat.label}</p>
             <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
           </div>
         ))}
@@ -180,25 +180,25 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b-2 border-slate-300">
-                <th className="text-left py-3 px-4 font-semibold text-slate-700">Ders</th>
-                <th className="text-center py-3 px-4 font-semibold text-emerald-700">Dogru</th>
-                <th className="text-center py-3 px-4 font-semibold text-red-700">Yanlis</th>
-                <th className="text-center py-3 px-4 font-semibold text-amber-700">Bos</th>
-                <th className="text-center py-3 px-4 font-semibold text-indigo-700">Net</th>
+              <tr className="border-b-2 border-pink-500/15">
+                <th className="text-left py-3 px-4 font-semibold text-white/70">Ders</th>
+                <th className="text-center py-3 px-4 font-semibold text-emerald-400">Dogru</th>
+                <th className="text-center py-3 px-4 font-semibold text-rose-400">Yanlis</th>
+                <th className="text-center py-3 px-4 font-semibold text-amber-400">Bos</th>
+                <th className="text-center py-3 px-4 font-semibold text-pink-400">Net</th>
               </tr>
             </thead>
             <tbody>
               {exam.subjectResults.map((sr, idx) => (
                 <tr
                   key={sr.subjectId}
-                  className={`border-b border-slate-200 ${idx % 2 === 0 ? 'bg-white/60' : 'bg-slate-50/60'}`}
+                  className={`border-b border-white/10 ${idx % 2 === 0 ? 'bg-white/[0.02]' : 'bg-white/[0.04]'}`}
                 >
-                  <td className="py-3 px-4 font-medium text-slate-800">{sr.subject.name}</td>
-                  <td className="py-3 px-4 text-center text-emerald-600 font-semibold">{sr.correctCount}</td>
-                  <td className="py-3 px-4 text-center text-red-600 font-semibold">{sr.wrongCount}</td>
-                  <td className="py-3 px-4 text-center text-amber-600 font-semibold">{sr.emptyCount}</td>
-                  <td className="py-3 px-4 text-center text-indigo-600 font-bold">{sr.netScore.toFixed(2)}</td>
+                  <td className="py-3 px-4 font-medium text-white/90">{sr.subject.name}</td>
+                  <td className="py-3 px-4 text-center text-emerald-400 font-semibold">{sr.correctCount}</td>
+                  <td className="py-3 px-4 text-center text-rose-400 font-semibold">{sr.wrongCount}</td>
+                  <td className="py-3 px-4 text-center text-amber-400 font-semibold">{sr.emptyCount}</td>
+                  <td className="py-3 px-4 text-center text-pink-400 font-bold">{sr.netScore.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -208,30 +208,32 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
 
       {/* Radar Chart */}
       {radarData.length >= 3 && (
-        <div className="bg-white/60 border border-slate-200 rounded-xl p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-600 mb-4 text-center">Ders Bazinda Net Dagilimi</h3>
+        <div className="bg-white/[0.04] border border-pink-500/[0.12] rounded-xl p-4">
+          <h3 className="text-sm font-semibold text-white/60 mb-4 text-center">Ders Bazinda Net Dagilimi</h3>
           <ResponsiveContainer width="100%" height={320}>
             <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-              <PolarGrid stroke="#e2e8f0" />
+              <PolarGrid stroke="rgba(244,114,182,0.15)" />
               <PolarAngleAxis
                 dataKey="subject"
-                tick={{ fontSize: 12, fill: '#475569' }}
+                tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.7)' }}
               />
               <PolarRadiusAxis
                 angle={30}
-                tick={{ fontSize: 10, fill: '#94a3b8' }}
+                tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }}
               />
               <Radar
                 name="Net"
                 dataKey="net"
-                stroke="#6366f1"
-                fill="#6366f1"
+                stroke="#f472b6"
+                fill="#f472b6"
                 fillOpacity={0.25}
                 strokeWidth={2}
               />
               <Tooltip
                 formatter={(value: number) => [value.toFixed(2), 'Net']}
-                contentStyle={{ borderRadius: '8px', fontSize: '12px' }}
+                contentStyle={{ borderRadius: '8px', fontSize: '12px', background: '#151528', border: '1px solid rgba(244,114,182,0.2)', color: '#fff' }}
+                itemStyle={{ color: '#f472b6' }}
+                labelStyle={{ color: 'rgba(255,255,255,0.7)' }}
               />
             </RadarChart>
           </ResponsiveContainer>
@@ -288,7 +290,7 @@ function QuestionsTab({
 
   if (exam.wrongQuestions.length === 0 && exam.emptyQuestions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+      <div className="flex flex-col items-center justify-center py-20 text-white/40">
         <ListOrdered className="w-12 h-12 mb-4 opacity-50" />
         <p className="text-lg font-medium">Soru bulunamadi</p>
         <p className="text-sm mt-1">Bu denemede kayitli soru yok.</p>
@@ -301,25 +303,25 @@ function QuestionsTab({
       {/* Status Summary Bar */}
       {exam.wrongQuestions.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
-            <CheckCircle className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
-            <p className="text-lg font-bold text-emerald-700">{statusCounts.anladim}</p>
-            <p className="text-[10px] text-emerald-600 uppercase font-medium">Anladim</p>
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-center">
+            <CheckCircle className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
+            <p className="text-lg font-bold text-emerald-400">{statusCounts.anladim}</p>
+            <p className="text-[10px] text-emerald-400/70 uppercase font-medium">Anladim</p>
           </div>
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
-            <RefreshCw className="w-5 h-5 text-amber-500 mx-auto mb-1" />
-            <p className="text-lg font-bold text-amber-700">{statusCounts.tekrar}</p>
-            <p className="text-[10px] text-amber-600 uppercase font-medium">Tekrar Lazim</p>
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-center">
+            <RefreshCw className="w-5 h-5 text-amber-400 mx-auto mb-1" />
+            <p className="text-lg font-bold text-amber-400">{statusCounts.tekrar}</p>
+            <p className="text-[10px] text-amber-400/70 uppercase font-medium">Tekrar Lazim</p>
           </div>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
-            <AlertTriangle className="w-5 h-5 text-red-500 mx-auto mb-1" />
-            <p className="text-lg font-bold text-red-700">{statusCounts.anlamadim}</p>
-            <p className="text-[10px] text-red-600 uppercase font-medium">Anlamadim</p>
+          <div className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-3 text-center">
+            <AlertTriangle className="w-5 h-5 text-rose-400 mx-auto mb-1" />
+            <p className="text-lg font-bold text-rose-400">{statusCounts.anlamadim}</p>
+            <p className="text-[10px] text-rose-400/70 uppercase font-medium">Anlamadim</p>
           </div>
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
-            <Target className="w-5 h-5 text-slate-400 mx-auto mb-1" />
-            <p className="text-lg font-bold text-slate-600">{statusCounts.none}</p>
-            <p className="text-[10px] text-slate-500 uppercase font-medium">Belirtilmemis</p>
+          <div className="bg-white/[0.04] border border-white/10 rounded-lg p-3 text-center">
+            <Target className="w-5 h-5 text-white/40 mx-auto mb-1" />
+            <p className="text-lg font-bold text-white/60">{statusCounts.none}</p>
+            <p className="text-[10px] text-white/40 uppercase font-medium">Belirtilmemis</p>
           </div>
         </div>
       )}
@@ -327,11 +329,11 @@ function QuestionsTab({
       {/* Filters */}
       <div className="flex gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <Filter size={14} className="text-slate-400" />
+          <Filter size={14} className="text-white/40" />
           <select
             value={subjectFilter}
             onChange={(e) => setSubjectFilter(e.target.value)}
-            className="text-sm p-1.5 rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+            className="text-sm p-1.5 rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
           >
             <option value="all">Tum Dersler</option>
             {allSubjects.map(s => (
@@ -342,7 +344,7 @@ function QuestionsTab({
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="text-sm p-1.5 rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+          className="text-sm p-1.5 rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
         >
           <option value="all">Tum Durumlar</option>
           <option value="anladim">Anladim</option>
@@ -355,8 +357,8 @@ function QuestionsTab({
       {/* Wrong Questions */}
       {filteredWrong.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-red-600 mb-3 flex items-center gap-2">
-            <span className="w-2 h-2 bg-red-500 rounded-full" />
+          <h3 className="text-sm font-semibold text-rose-400 mb-3 flex items-center gap-2">
+            <span className="w-2 h-2 bg-rose-400 rounded-full" />
             Yanlis Sorular ({filteredWrong.length})
           </h3>
           <div className="space-y-2">
@@ -372,28 +374,28 @@ function QuestionsTab({
                   onClick={() => onQuestionClick(globalIdx)}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
-                  className="w-full text-left bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-blue-300 transition-all"
+                  className="w-full text-left bg-white/[0.04] border border-pink-500/[0.12] rounded-lg p-4 hover:bg-white/[0.08] hover:border-pink-500/25 transition-all"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-slate-800 text-sm">
+                        <span className="font-bold text-white/90 text-sm">
                           S.{wq.questionNumber}
                         </span>
-                        <span className="text-xs text-slate-400">{wq.subject.name}</span>
+                        <span className="text-xs text-white/40">{wq.subject.name}</span>
                         {wq.topic && (
-                          <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                          <span className="text-xs text-white/50 bg-white/[0.06] px-2 py-0.5 rounded-full">
                             {wq.topic.name}
                           </span>
                         )}
                         {wq.errorReason && (
-                          <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 px-2 py-0.5 text-[11px] font-medium border border-red-200">
+                          <span className="inline-flex items-center rounded-full bg-rose-500/10 text-rose-400 px-2 py-0.5 text-[11px] font-medium border border-rose-500/20">
                             {wq.errorReason.label}
                           </span>
                         )}
                       </div>
                       {wq.notes && (
-                        <p className="text-xs text-slate-500 mt-1 italic truncate">{wq.notes}</p>
+                        <p className="text-xs text-white/50 mt-1 italic truncate">{wq.notes}</p>
                       )}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -409,7 +411,7 @@ function QuestionsTab({
                         </span>
                       )}
                       {wq.photoUrl && (
-                        <Camera className="w-4 h-4 text-blue-400" />
+                        <Camera className="w-4 h-4 text-pink-400" />
                       )}
                     </div>
                   </div>
@@ -423,27 +425,27 @@ function QuestionsTab({
       {/* Empty Questions */}
       {filteredEmpty.length > 0 && statusFilter === 'all' && (
         <div>
-          <h3 className="text-sm font-semibold text-amber-600 mb-3 flex items-center gap-2">
-            <span className="w-2 h-2 bg-amber-500 rounded-full" />
+          <h3 className="text-sm font-semibold text-amber-400 mb-3 flex items-center gap-2">
+            <span className="w-2 h-2 bg-amber-400 rounded-full" />
             Bos Sorular ({filteredEmpty.length})
           </h3>
           <div className="space-y-2">
             {filteredEmpty.map((eq) => (
               <div
                 key={eq.id}
-                className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm"
+                className="bg-white/[0.04] border border-pink-500/[0.12] rounded-lg p-3"
               >
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-slate-800 text-sm">S.{eq.questionNumber}</span>
-                  <span className="text-xs text-slate-400">{eq.subject.name}</span>
+                  <span className="font-bold text-white/90 text-sm">S.{eq.questionNumber}</span>
+                  <span className="text-xs text-white/40">{eq.subject.name}</span>
                   {eq.topic && (
-                    <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                    <span className="text-xs text-white/50 bg-white/[0.06] px-2 py-0.5 rounded-full">
                       {eq.topic.name}
                     </span>
                   )}
                 </div>
                 {eq.notes && (
-                  <p className="text-xs text-slate-500 mt-1 italic">{eq.notes}</p>
+                  <p className="text-xs text-white/50 mt-1 italic">{eq.notes}</p>
                 )}
               </div>
             ))}
@@ -468,7 +470,7 @@ function WrongAnalysisTab({ exam }: { exam: ExamDetail }) {
 
   if (exam.wrongQuestions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+      <div className="flex flex-col items-center justify-center py-20 text-white/40">
         <BookOpen className="w-12 h-12 mb-4 opacity-50" />
         <p className="text-lg font-medium">Yanlis soru bulunamadi</p>
         <p className="text-sm mt-1">Bu denemede yanlis yapilan soru yok.</p>
@@ -480,8 +482,8 @@ function WrongAnalysisTab({ exam }: { exam: ExamDetail }) {
     <div className="space-y-8">
       {/* Error Reason Pie Chart */}
       {errorReasonData.length > 0 && (
-        <div className="bg-white/60 border border-slate-200 rounded-xl p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-600 mb-4 text-center">Hata Nedeni Dagilimi</h3>
+        <div className="bg-white/[0.04] border border-pink-500/[0.12] rounded-xl p-4">
+          <h3 className="text-sm font-semibold text-white/60 mb-4 text-center">Hata Nedeni Dagilimi</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -494,17 +496,18 @@ function WrongAnalysisTab({ exam }: { exam: ExamDetail }) {
                 dataKey="value"
                 nameKey="name"
                 label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                labelLine={{ stroke: '#94a3b8' }}
+                labelLine={{ stroke: 'rgba(255,255,255,0.3)' }}
               >
                 {errorReasonData.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                 ))}
               </Pie>
               <Tooltip
-                contentStyle={{ borderRadius: '8px', fontSize: '12px' }}
+                contentStyle={{ borderRadius: '8px', fontSize: '12px', background: '#151528', border: '1px solid rgba(244,114,182,0.2)', color: '#fff' }}
+                itemStyle={{ color: '#f472b6' }}
               />
               <Legend
-                wrapperStyle={{ fontSize: '12px' }}
+                wrapperStyle={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -513,7 +516,7 @@ function WrongAnalysisTab({ exam }: { exam: ExamDetail }) {
 
       {/* Wrong Questions List */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-slate-600">
+        <h3 className="text-sm font-semibold text-white/60">
           Yanlis Sorular ({exam.wrongQuestions.length})
         </h3>
         {exam.wrongQuestions.map((wq) => (
@@ -521,37 +524,37 @@ function WrongAnalysisTab({ exam }: { exam: ExamDetail }) {
             key={wq.id}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
+            className="bg-white/[0.04] border border-pink-500/[0.12] rounded-lg p-4 hover:bg-white/[0.08] transition-colors"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-slate-800 text-sm">
+                  <span className="font-semibold text-white/90 text-sm">
                     S.{wq.questionNumber}
                   </span>
                   {wq.topic && (
                     <>
-                      <span className="text-slate-300">&mdash;</span>
-                      <span className="text-sm text-slate-600">{wq.topic.name}</span>
+                      <span className="text-white/20">&mdash;</span>
+                      <span className="text-sm text-white/60">{wq.topic.name}</span>
                     </>
                   )}
                   {wq.errorReason && (
                     <>
-                      <span className="text-slate-300">&mdash;</span>
-                      <span className="inline-flex items-center rounded-full bg-red-50 text-red-700 px-2 py-0.5 text-xs font-medium border border-red-200">
+                      <span className="text-white/20">&mdash;</span>
+                      <span className="inline-flex items-center rounded-full bg-rose-500/10 text-rose-400 px-2 py-0.5 text-xs font-medium border border-rose-500/20">
                         {wq.errorReason.label}
                       </span>
                     </>
                   )}
                 </div>
-                <p className="text-xs text-slate-400 mt-0.5">{wq.subject.name}</p>
+                <p className="text-xs text-white/40 mt-0.5">{wq.subject.name}</p>
                 {wq.notes && (
-                  <p className="text-xs text-slate-500 mt-2 italic leading-relaxed">{wq.notes}</p>
+                  <p className="text-xs text-white/50 mt-2 italic leading-relaxed">{wq.notes}</p>
                 )}
               </div>
               {wq.photoUrl && (
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-50 border border-indigo-200 flex items-center justify-center">
-                  <Camera className="w-4 h-4 text-indigo-500" />
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-pink-500/10 border border-pink-500/20 flex items-center justify-center">
+                  <Camera className="w-4 h-4 text-pink-400" />
                 </div>
               )}
             </div>
@@ -592,7 +595,7 @@ function TopicDistributionTab({ exam }: { exam: ExamDetail }) {
 
   if (topicData.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+      <div className="flex flex-col items-center justify-center py-20 text-white/40">
         <BarChart3 className="w-12 h-12 mb-4 opacity-50" />
         <p className="text-lg font-medium">Konu verisi bulunamadi</p>
         <p className="text-sm mt-1">Bu denemede konu bazli analiz icin yeterli veri yok.</p>
@@ -602,24 +605,24 @@ function TopicDistributionTab({ exam }: { exam: ExamDetail }) {
 
   return (
     <div className="space-y-8">
-      <div className="bg-white/60 border border-slate-200 rounded-xl p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-600 mb-4 text-center">Konulara Gore Yanlis Sayisi</h3>
+      <div className="bg-white/[0.04] border border-pink-500/[0.12] rounded-xl p-4">
+        <h3 className="text-sm font-semibold text-white/60 mb-4 text-center">Konulara Gore Yanlis Sayisi</h3>
         <ResponsiveContainer width="100%" height={Math.max(300, topicData.length * 40)}>
           <BarChart
             data={topicData}
             layout="vertical"
             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis type="number" tick={{ fontSize: 12, fill: '#64748b' }} allowDecimals={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(244,114,182,0.1)" />
+            <XAxis type="number" tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.5)' }} allowDecimals={false} />
             <YAxis
               type="category"
               dataKey="topic"
-              tick={{ fontSize: 11, fill: '#475569' }}
+              tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.7)' }}
               width={140}
             />
             <Tooltip
-              contentStyle={{ borderRadius: '8px', fontSize: '12px' }}
+              contentStyle={{ borderRadius: '8px', fontSize: '12px', background: '#151528', border: '1px solid rgba(244,114,182,0.2)', color: '#fff' }}
               formatter={(value: any, _name: any, props: any) => [
                 value,
                 props?.payload?.subject ?? '',
@@ -634,14 +637,14 @@ function TopicDistributionTab({ exam }: { exam: ExamDetail }) {
         </ResponsiveContainer>
 
         {/* Legend */}
-        <div className="flex flex-wrap gap-4 justify-center mt-4 pt-3 border-t border-slate-100">
+        <div className="flex flex-wrap gap-4 justify-center mt-4 pt-3 border-t border-white/10">
           {subjectNames.map((name) => (
             <div key={name} className="flex items-center gap-1.5">
               <div
                 className="w-3 h-3 rounded-sm"
                 style={{ backgroundColor: subjectColorMap[name] }}
               />
-              <span className="text-xs text-slate-600">{name}</span>
+              <span className="text-xs text-white/60">{name}</span>
             </div>
           ))}
         </div>
@@ -661,7 +664,7 @@ function PhotosTab({ exam }: { exam: ExamDetail }) {
 
   if (photosQuestions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+      <div className="flex flex-col items-center justify-center py-20 text-white/40">
         <Image className="w-12 h-12 mb-4 opacity-50" />
         <p className="text-lg font-medium">Fotograf bulunamadi</p>
         <p className="text-sm mt-1">Bu denemede fotografa sahip soru yok.</p>
@@ -677,11 +680,11 @@ function PhotosTab({ exam }: { exam: ExamDetail }) {
             key={wq.id}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+            className="bg-white/[0.04] border border-pink-500/[0.12] rounded-lg overflow-hidden hover:bg-white/[0.08] transition-colors cursor-pointer"
             onClick={() => setSelectedPhoto(wq.photoUrl)}
           >
             {/* Photo area */}
-            <div className="relative bg-slate-100 aspect-[4/3] flex items-center justify-center overflow-hidden">
+            <div className="relative bg-white/[0.03] aspect-[4/3] flex items-center justify-center overflow-hidden">
               {wq.photoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -690,7 +693,7 @@ function PhotosTab({ exam }: { exam: ExamDetail }) {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <Image className="w-10 h-10 text-slate-300" />
+                <Image className="w-10 h-10 text-white/20" />
               )}
               <Tape className="top-[-4px] left-1/2 -translate-x-1/2" />
             </div>
@@ -698,16 +701,16 @@ function PhotosTab({ exam }: { exam: ExamDetail }) {
             {/* Info */}
             <div className="p-3 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-slate-800 text-sm">
+                <span className="font-semibold text-white/90 text-sm">
                   Soru {wq.questionNumber}
                 </span>
-                <span className="text-xs text-slate-400">{wq.subject.name}</span>
+                <span className="text-xs text-white/40">{wq.subject.name}</span>
               </div>
               {wq.topic && (
-                <p className="text-xs text-slate-500">{wq.topic.name}</p>
+                <p className="text-xs text-white/50">{wq.topic.name}</p>
               )}
               {wq.errorReason && (
-                <span className="inline-flex items-center rounded-full bg-red-50 text-red-700 px-2 py-0.5 text-xs font-medium border border-red-200">
+                <span className="inline-flex items-center rounded-full bg-rose-500/10 text-rose-400 px-2 py-0.5 text-xs font-medium border border-rose-500/20">
                   {wq.errorReason.label}
                 </span>
               )}
@@ -869,7 +872,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors group"
+            className="flex items-center gap-2 text-sm text-white/50 hover:text-white/90 transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
             <span>Geri Don</span>
@@ -879,14 +882,14 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
             <div className="flex items-center gap-2">
               <button
                 onClick={startEditing}
-                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                className="p-2 text-white/40 hover:text-pink-400 hover:bg-pink-500/10 rounded-lg transition-colors"
                 title="Duzenle"
               >
                 <Pencil className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                className="p-2 text-white/40 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
                 title="Sil"
               >
                 <Trash2 className="w-4 h-4" />
@@ -904,15 +907,15 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
               exit={{ opacity: 0, height: 0 }}
               className="overflow-hidden mb-6"
             >
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-sm text-red-800 font-medium mb-3">
+              <div className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-4">
+                <p className="text-sm text-rose-400 font-medium mb-3">
                   Bu denemeyi silmek istedigine emin misin? Bu islem geri alinamaz.
                 </p>
                 <div className="flex gap-2">
                   <button
                     onClick={handleDelete}
                     disabled={deleting}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+                    className="px-4 py-2 bg-rose-500 text-white rounded-lg text-sm font-medium hover:bg-rose-400 disabled:opacity-50 flex items-center gap-2"
                   >
                     {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                     Evet, Sil
@@ -920,7 +923,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
                     disabled={deleting}
-                    className="px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50"
+                    className="px-4 py-2 bg-white/[0.06] text-white/70 border border-white/10 rounded-lg text-sm font-medium hover:bg-white/10"
                   >
                     Iptal
                   </button>
@@ -939,25 +942,25 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
               exit={{ opacity: 0, height: 0 }}
               className="overflow-hidden mb-6"
             >
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-blue-800">Denemeyi Duzenle</h3>
+              <div className="bg-pink-500/10 border border-pink-500/20 rounded-lg p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-pink-400">Denemeyi Duzenle</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-slate-600 block mb-1">Baslik</label>
+                    <label className="text-xs text-white/60 block mb-1">Baslik</label>
                     <input
                       type="text"
                       value={editTitle}
                       onChange={e => setEditTitle(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full px-3 py-2 border border-pink-500/[0.12] bg-white/[0.06] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-600 block mb-1">Tarih</label>
+                    <label className="text-xs text-white/60 block mb-1">Tarih</label>
                     <input
                       type="date"
                       value={editDate}
                       onChange={e => setEditDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full px-3 py-2 border border-pink-500/[0.12] bg-white/[0.06] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
                     />
                   </div>
                 </div>
@@ -965,7 +968,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
                   <button
                     onClick={handleSaveEdit}
                     disabled={saving || !editTitle.trim()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                    className="px-4 py-2 bg-pink-500 text-white rounded-lg text-sm font-medium hover:bg-pink-400 disabled:opacity-50 flex items-center gap-2"
                   >
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                     Kaydet
@@ -973,7 +976,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
                   <button
                     onClick={() => setEditing(false)}
                     disabled={saving}
-                    className="px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 flex items-center gap-2"
+                    className="px-4 py-2 bg-white/[0.06] text-white/70 border border-white/10 rounded-lg text-sm font-medium hover:bg-white/10 flex items-center gap-2"
                   >
                     <X className="w-4 h-4" />
                     Iptal
@@ -989,12 +992,12 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
 
         {/* Error */}
         {error && !loading && (
-          <div className="flex flex-col items-center justify-center py-20 text-red-500">
+          <div className="flex flex-col items-center justify-center py-20 text-rose-400">
             <p className="text-lg font-medium">Hata</p>
             <p className="text-sm mt-1">{error}</p>
             <button
               onClick={onBack}
-              className="mt-4 text-sm text-indigo-600 hover:text-indigo-800 underline"
+              className="mt-4 text-sm text-pink-400 hover:text-pink-300 underline"
             >
               Geri don
             </button>
@@ -1005,7 +1008,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
         {exam && !loading && (
           <>
             {/* Tab Navigation */}
-            <div className="border-b border-slate-200 mb-6">
+            <div className="border-b border-pink-500/15 mb-6">
               <nav className="flex gap-1 -mb-px overflow-x-auto" aria-label="Sekmeler">
                 {TABS.map((tab) => {
                   const isActive = activeTab === tab.key;
@@ -1017,8 +1020,8 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
                       className={`
                         relative flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors
                         ${isActive
-                          ? 'text-indigo-600'
-                          : 'text-slate-500 hover:text-slate-700'
+                          ? 'text-pink-400'
+                          : 'text-white/50 hover:text-white/70'
                         }
                       `}
                     >
@@ -1027,7 +1030,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
                       {isActive && (
                         <motion.div
                           layoutId="exam-detail-tab-indicator"
-                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full"
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-pink-400 rounded-full"
                           transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                         />
                       )}

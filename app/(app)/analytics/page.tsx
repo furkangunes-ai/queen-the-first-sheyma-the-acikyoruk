@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Paper, Handwriting, TEXTURES } from '@/components/skeuomorphic';
+import { Paper, Handwriting } from '@/components/skeuomorphic';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { RegressionChart, type RegressionData } from '@/components/analytics/regression-chart';
 
-const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+const COLORS = ['#f472b6', '#fbbf24', '#34d399', '#a78bfa', '#fb7185', '#38bdf8', '#14b8a6', '#f97316'];
 
 type Tab = 'trends' | 'topics' | 'errors' | 'regression';
 
@@ -53,7 +53,6 @@ export default function AnalyticsPage() {
   const [filterType, setFilterType] = useState<string>('all');
   const [examTypes, setExamTypes] = useState<Array<{ id: string; name: string }>>([]);
 
-  // Data states
   const [trends, setTrends] = useState<TrendData[]>([]);
   const [topics, setTopics] = useState<TopicData[]>([]);
   const [errors, setErrors] = useState<{ totalWrongQuestions: number; errorReasons: ErrorData[] }>({
@@ -63,16 +62,13 @@ export default function AnalyticsPage() {
   const [regression, setRegression] = useState<RegressionData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch exam types
   useEffect(() => {
     const fetchExamTypes = async () => {
       try {
         const res = await fetch('/api/exam-types');
         if (!res.ok) throw new Error('Failed to fetch');
         const data = await res.json();
-        if (Array.isArray(data)) {
-          setExamTypes(data);
-        }
+        if (Array.isArray(data)) setExamTypes(data);
       } catch {
         setExamTypes([]);
       }
@@ -80,7 +76,6 @@ export default function AnalyticsPage() {
     fetchExamTypes();
   }, []);
 
-  // Fetch data based on active tab
   const fetchData = useCallback(async () => {
     setLoading(true);
     const typeParam = filterType !== 'all' ? `examTypeId=${filterType}` : '';
@@ -115,7 +110,6 @@ export default function AnalyticsPage() {
     fetchData();
   }, [fetchData]);
 
-  // Stats
   const stats = useMemo(() => {
     if (trends.length === 0) return { max: 0, avg: 0, count: 0, latest: 0 };
     const nets = trends.map(t => t.totalNet);
@@ -127,7 +121,6 @@ export default function AnalyticsPage() {
     };
   }, [trends]);
 
-  // Get unique subjects from trends
   const subjects = useMemo(() => {
     const subjectMap = new Map<string, string>();
     trends.forEach(t => {
@@ -138,7 +131,6 @@ export default function AnalyticsPage() {
     return Array.from(subjectMap.entries()).map(([id, name]) => ({ id, name }));
   }, [trends]);
 
-  // Chart data for trends
   const trendChartData = useMemo(() => {
     return trends.map(t => {
       const row: Record<string, any> = {
@@ -160,24 +152,32 @@ export default function AnalyticsPage() {
     { key: 'regression', label: 'Projeksiyon', icon: <Crosshair size={16} /> },
   ];
 
+  const tooltipStyle = {
+    borderRadius: '12px',
+    border: 'none',
+    backgroundColor: '#1e1e2e',
+    boxShadow: '0 4px 20px rgba(244,114,182,0.1)',
+    color: 'rgba(255,255,255,0.8)',
+  };
+
   return (
     <div className="h-full flex flex-col gap-6">
       <Handwriting className="text-3xl">Performans Analizi</Handwriting>
 
       {/* Tab Navigation */}
-      <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
+      <div className="flex gap-1 bg-white/[0.04] rounded-xl p-1 border border-pink-500/10">
         {tabs.map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === tab.key
-                ? 'bg-white text-blue-700 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-pink-500/15 text-pink-300 shadow-sm'
+                : 'text-white/40 active:text-white/60'
             }`}
           >
             {tab.icon}
-            {tab.label}
+            <span className="hidden sm:inline">{tab.label}</span>
           </button>
         ))}
       </div>
@@ -186,10 +186,10 @@ export default function AnalyticsPage() {
       <div className="flex gap-2">
         <button
           onClick={() => setFilterType('all')}
-          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
             filterType === 'all'
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              ? 'bg-pink-500 text-white'
+              : 'bg-white/[0.04] text-white/50 border border-pink-500/15 active:bg-white/[0.08]'
           }`}
         >
           Tümü
@@ -198,10 +198,10 @@ export default function AnalyticsPage() {
           <button
             key={et.id}
             onClick={() => setFilterType(et.id)}
-            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               filterType === et.id
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                ? 'bg-pink-500 text-white'
+                : 'bg-white/[0.04] text-white/50 border border-pink-500/15 active:bg-white/[0.08]'
             }`}
           >
             {et.name}
@@ -211,7 +211,7 @@ export default function AnalyticsPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="animate-spin text-slate-400" size={32} />
+          <Loader2 className="animate-spin text-pink-400/50" size={32} />
         </div>
       ) : (
         <AnimatePresence mode="wait">
@@ -226,84 +226,75 @@ export default function AnalyticsPage() {
             >
               {/* Summary Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col items-center justify-center py-5">
-                  <TrendingUp className="text-green-500 mb-1" size={20} />
-                  <span className="text-2xl font-bold text-slate-800">{stats.max.toFixed(1)}</span>
-                  <span className="text-[10px] text-slate-500 uppercase tracking-widest">En Yüksek</span>
+                <div className="bg-white/[0.04] p-4 rounded-xl border border-pink-500/[0.12] flex flex-col items-center justify-center py-5">
+                  <TrendingUp className="text-emerald-400 mb-1" size={20} />
+                  <span className="text-2xl font-bold text-white">{stats.max.toFixed(1)}</span>
+                  <span className="text-[10px] text-white/40 uppercase tracking-widest">En Yüksek</span>
                 </div>
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col items-center justify-center py-5">
-                  <Target className="text-blue-500 mb-1" size={20} />
-                  <span className="text-2xl font-bold text-slate-800">{stats.avg.toFixed(1)}</span>
-                  <span className="text-[10px] text-slate-500 uppercase tracking-widest">Ortalama</span>
+                <div className="bg-white/[0.04] p-4 rounded-xl border border-pink-500/[0.12] flex flex-col items-center justify-center py-5">
+                  <Target className="text-pink-400 mb-1" size={20} />
+                  <span className="text-2xl font-bold text-white">{stats.avg.toFixed(1)}</span>
+                  <span className="text-[10px] text-white/40 uppercase tracking-widest">Ortalama</span>
                 </div>
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col items-center justify-center py-5">
-                  <Award className="text-yellow-500 mb-1" size={20} />
-                  <span className="text-2xl font-bold text-slate-800">{stats.count}</span>
-                  <span className="text-[10px] text-slate-500 uppercase tracking-widest">Deneme</span>
+                <div className="bg-white/[0.04] p-4 rounded-xl border border-pink-500/[0.12] flex flex-col items-center justify-center py-5">
+                  <Award className="text-amber-400 mb-1" size={20} />
+                  <span className="text-2xl font-bold text-white">{stats.count}</span>
+                  <span className="text-[10px] text-white/40 uppercase tracking-widest">Deneme</span>
                 </div>
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col items-center justify-center py-5">
-                  <TrendingUp className="text-indigo-500 mb-1" size={20} />
-                  <span className="text-2xl font-bold text-slate-800">{stats.latest.toFixed(1)}</span>
-                  <span className="text-[10px] text-slate-500 uppercase tracking-widest">Son Deneme</span>
+                <div className="bg-white/[0.04] p-4 rounded-xl border border-pink-500/[0.12] flex flex-col items-center justify-center py-5">
+                  <TrendingUp className="text-purple-400 mb-1" size={20} />
+                  <span className="text-2xl font-bold text-white">{stats.latest.toFixed(1)}</span>
+                  <span className="text-[10px] text-white/40 uppercase tracking-widest">Son Deneme</span>
                 </div>
               </div>
 
-              {/* Total Net Trend Chart */}
               {trends.length === 0 ? (
                 <Paper className="text-center py-16">
-                  <Handwriting className="text-lg text-slate-400">Henüz deneme verisi yok</Handwriting>
+                  <Handwriting className="text-lg text-white/40">Henüz deneme verisi yok</Handwriting>
                 </Paper>
               ) : (
                 <>
-                  <Paper className="p-2 sm:p-4" style={{
-                    backgroundImage: `url(${TEXTURES.graph})`,
-                    backgroundSize: '300px',
-                  }}>
-                    <div className="bg-white/80 backdrop-blur-[2px] rounded-lg p-4 border border-slate-300">
-                      <h3 className="text-slate-500 font-bold uppercase tracking-wider text-xs mb-4">Toplam Net Trendi</h3>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={trendChartData}>
-                          <defs>
-                            <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                              <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                          <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} />
-                          <YAxis tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} />
-                          <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                          <Area type="monotone" dataKey="total" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorTotal)" name="Toplam Net" />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
+                  <Paper className="p-4 sm:p-6">
+                    <h3 className="text-white/50 font-bold uppercase tracking-wider text-xs mb-4">Toplam Net Trendi</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <AreaChart data={trendChartData}>
+                        <defs>
+                          <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#f472b6" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#f472b6" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }} tickLine={false} />
+                        <YAxis tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }} tickLine={false} />
+                        <Tooltip contentStyle={tooltipStyle} />
+                        <Area type="monotone" dataKey="total" stroke="#f472b6" strokeWidth={3} fillOpacity={1} fill="url(#colorTotal)" name="Toplam Net" />
+                      </AreaChart>
+                    </ResponsiveContainer>
                   </Paper>
 
-                  {/* Per-Subject Trend */}
-                  <Paper className="p-2 sm:p-4">
-                    <div className="bg-white/90 rounded-lg p-4 border border-slate-200">
-                      <h3 className="text-slate-500 font-bold uppercase tracking-wider text-xs mb-4">Ders Bazlı Net Trendi</h3>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={trendChartData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                          <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} />
-                          <YAxis tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} />
-                          <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                          <Legend />
-                          {subjects.map((s, i) => (
-                            <Line
-                              key={s.id}
-                              type="monotone"
-                              dataKey={s.name}
-                              stroke={COLORS[i % COLORS.length]}
-                              strokeWidth={2}
-                              dot={{ r: 3 }}
-                              name={s.name}
-                            />
-                          ))}
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
+                  <Paper className="p-4 sm:p-6">
+                    <h3 className="text-white/50 font-bold uppercase tracking-wider text-xs mb-4">Ders Bazlı Net Trendi</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={trendChartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }} tickLine={false} />
+                        <YAxis tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }} tickLine={false} />
+                        <Tooltip contentStyle={tooltipStyle} />
+                        <Legend wrapperStyle={{ color: 'rgba(255,255,255,0.6)' }} />
+                        {subjects.map((s, i) => (
+                          <Line
+                            key={s.id}
+                            type="monotone"
+                            dataKey={s.name}
+                            stroke={COLORS[i % COLORS.length]}
+                            strokeWidth={2}
+                            dot={{ r: 3 }}
+                            name={s.name}
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
                   </Paper>
                 </>
               )}
@@ -321,49 +312,41 @@ export default function AnalyticsPage() {
             >
               {topics.length === 0 ? (
                 <Paper className="text-center py-16">
-                  <BookOpen className="mx-auto text-slate-300 mb-4" size={48} />
-                  <Handwriting className="text-lg text-slate-400">Konu verisi bulunamadı</Handwriting>
-                  <p className="text-sm text-slate-400 mt-2">Deneme yanlışlarını girdikten sonra konu analizi burada görünecek</p>
+                  <BookOpen className="mx-auto text-white/20 mb-4" size={48} />
+                  <Handwriting className="text-lg text-white/40">Konu verisi bulunamadı</Handwriting>
+                  <p className="text-sm text-white/30 mt-2">Deneme yanlışlarını girdikten sonra konu analizi burada görünecek</p>
                 </Paper>
               ) : (
                 <>
-                  {/* Top 15 wrong topics bar chart */}
-                  <Paper className="p-2 sm:p-4">
-                    <div className="bg-white/90 rounded-lg p-4 border border-slate-200">
-                      <h3 className="text-slate-500 font-bold uppercase tracking-wider text-xs mb-4">
-                        En Çok Yanlış Yapılan Konular
-                      </h3>
-                      <ResponsiveContainer width="100%" height={Math.max(300, topics.slice(0, 15).length * 35)}>
-                        <BarChart data={topics.slice(0, 15)} layout="vertical" margin={{ left: 120 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                          <XAxis type="number" tick={{ fontSize: 10, fill: '#64748b' }} />
-                          <YAxis
-                            type="category"
-                            dataKey="topicName"
-                            tick={{ fontSize: 11, fill: '#334155' }}
-                            width={110}
-                          />
-                          <Tooltip
-                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                            formatter={(value: number, name: string) => [`${value} yanlış`, 'Sayı']}
-                          />
-                          <Bar dataKey="count" name="Yanlış Sayısı" radius={[0, 4, 4, 0]}>
-                            {topics.slice(0, 15).map((t, i) => (
-                              <Cell key={t.topicId} fill={COLORS[i % COLORS.length]} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+                  <Paper className="p-4 sm:p-6">
+                    <h3 className="text-white/50 font-bold uppercase tracking-wider text-xs mb-4">
+                      En Çok Yanlış Yapılan Konular
+                    </h3>
+                    <ResponsiveContainer width="100%" height={Math.max(300, topics.slice(0, 15).length * 35)}>
+                      <BarChart data={topics.slice(0, 15)} layout="vertical" margin={{ left: 120 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                        <XAxis type="number" tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }} />
+                        <YAxis
+                          type="category"
+                          dataKey="topicName"
+                          tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.6)' }}
+                          width={110}
+                        />
+                        <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [`${value} yanlış`, 'Sayı']} />
+                        <Bar dataKey="count" name="Yanlış Sayısı" radius={[0, 4, 4, 0]}>
+                          {topics.slice(0, 15).map((t, i) => (
+                            <Cell key={t.topicId} fill={COLORS[i % COLORS.length]} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
                   </Paper>
 
-                  {/* Topic list by subject */}
                   <Paper className="p-4 sm:p-6">
-                    <h3 className="text-slate-500 font-bold uppercase tracking-wider text-xs mb-4">
+                    <h3 className="text-white/50 font-bold uppercase tracking-wider text-xs mb-4">
                       Ders Bazlı Zayıf Konular
                     </h3>
                     <div className="space-y-4">
-                      {/* Group topics by subject */}
                       {Array.from(
                         topics.reduce((map, t) => {
                           if (!map.has(t.subjectName)) map.set(t.subjectName, []);
@@ -371,20 +354,20 @@ export default function AnalyticsPage() {
                           return map;
                         }, new Map<string, TopicData[]>())
                       ).map(([subjectName, subjectTopics]) => (
-                        <div key={subjectName} className="bg-white rounded-lg border border-slate-200 p-4">
-                          <h4 className="font-bold text-slate-700 text-sm mb-2">{subjectName}</h4>
+                        <div key={subjectName} className="bg-white/[0.04] rounded-xl border border-pink-500/10 p-4">
+                          <h4 className="font-bold text-white/80 text-sm mb-2">{subjectName}</h4>
                           <div className="space-y-1">
                             {subjectTopics.map(t => (
                               <div key={t.topicId} className="flex items-center justify-between text-sm">
-                                <span className="text-slate-600">{t.topicName}</span>
+                                <span className="text-white/60">{t.topicName}</span>
                                 <div className="flex items-center gap-2">
-                                  <div className="w-24 bg-slate-100 rounded-full h-2">
+                                  <div className="w-24 bg-white/[0.06] rounded-full h-2">
                                     <div
-                                      className="bg-red-400 h-2 rounded-full"
+                                      className="bg-rose-400 h-2 rounded-full"
                                       style={{ width: `${Math.min(100, (t.count / (topics[0]?.count || 1)) * 100)}%` }}
                                     />
                                   </div>
-                                  <span className="text-red-500 font-bold text-xs w-6 text-right">{t.count}</span>
+                                  <span className="text-rose-400 font-bold text-xs w-6 text-right">{t.count}</span>
                                 </div>
                               </div>
                             ))}
@@ -409,62 +392,55 @@ export default function AnalyticsPage() {
             >
               {errors.errorReasons.length === 0 ? (
                 <Paper className="text-center py-16">
-                  <AlertTriangle className="mx-auto text-slate-300 mb-4" size={48} />
-                  <Handwriting className="text-lg text-slate-400">Hata nedeni verisi bulunamadı</Handwriting>
-                  <p className="text-sm text-slate-400 mt-2">Deneme yanlışlarına hata nedeni ekledikten sonra analiz burada görünecek</p>
+                  <AlertTriangle className="mx-auto text-white/20 mb-4" size={48} />
+                  <Handwriting className="text-lg text-white/40">Hata nedeni verisi bulunamadı</Handwriting>
+                  <p className="text-sm text-white/30 mt-2">Deneme yanlışlarına hata nedeni ekledikten sonra analiz burada görünecek</p>
                 </Paper>
               ) : (
                 <>
-                  {/* Summary */}
-                  <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 text-center">
-                    <span className="text-3xl font-bold text-slate-800">{errors.totalWrongQuestions}</span>
-                    <span className="text-sm text-slate-500 block mt-1">Toplam Yanlış Soru (Hata Nedeni Belirlenmiş)</span>
+                  <div className="bg-white/[0.04] p-4 rounded-xl border border-pink-500/[0.12] text-center">
+                    <span className="text-3xl font-bold text-white">{errors.totalWrongQuestions}</span>
+                    <span className="text-sm text-white/40 block mt-1">Toplam Yanlış Soru (Hata Nedeni Belirlenmiş)</span>
                   </div>
 
-                  {/* Pie Chart */}
-                  <Paper className="p-2 sm:p-4">
-                    <div className="bg-white/90 rounded-lg p-4 border border-slate-200">
-                      <h3 className="text-slate-500 font-bold uppercase tracking-wider text-xs mb-4">
-                        Hata Nedeni Dağılımı
-                      </h3>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                          <Pie
-                            data={errors.errorReasons}
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={100}
-                            innerRadius={40}
-                            dataKey="count"
-                            nameKey="errorReasonName"
-                            label={({ errorReasonName, count }) =>
-                              `${errorReasonName} (${count})`
-                            }
-                            labelLine
-                          >
-                            {errors.errorReasons.map((_, i) => (
-                              <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                          <Legend />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
+                  <Paper className="p-4 sm:p-6">
+                    <h3 className="text-white/50 font-bold uppercase tracking-wider text-xs mb-4">
+                      Hata Nedeni Dağılımı
+                    </h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={errors.errorReasons}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={100}
+                          innerRadius={40}
+                          dataKey="count"
+                          nameKey="errorReasonName"
+                          label={({ errorReasonName, count }) => `${errorReasonName} (${count})`}
+                          labelLine
+                        >
+                          {errors.errorReasons.map((_, i) => (
+                            <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={tooltipStyle} />
+                        <Legend wrapperStyle={{ color: 'rgba(255,255,255,0.6)' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </Paper>
 
-                  {/* Error breakdown by subject */}
                   <Paper className="p-4 sm:p-6">
-                    <h3 className="text-slate-500 font-bold uppercase tracking-wider text-xs mb-4">
+                    <h3 className="text-white/50 font-bold uppercase tracking-wider text-xs mb-4">
                       Hata Nedeni × Ders Detayı
                     </h3>
                     <div className="space-y-4">
                       {errors.errorReasons.map((er, i) => (
-                        <div key={er.errorReasonId} className="bg-white rounded-lg border border-slate-200 p-4">
+                        <div key={er.errorReasonId} className="bg-white/[0.04] rounded-xl border border-pink-500/10 p-4">
                           <div className="flex items-center gap-3 mb-3">
                             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                            <h4 className="font-bold text-slate-700 text-sm">{er.errorReasonName}</h4>
-                            <span className="text-xs bg-slate-100 px-2 py-0.5 rounded font-medium text-slate-600">
+                            <h4 className="font-bold text-white/80 text-sm">{er.errorReasonName}</h4>
+                            <span className="text-xs bg-white/[0.06] px-2 py-0.5 rounded font-medium text-white/50">
                               {er.count} soru
                             </span>
                           </div>
@@ -472,9 +448,9 @@ export default function AnalyticsPage() {
                             {er.subjectBreakdown.map(sb => (
                               <span
                                 key={sb.subjectId}
-                                className="text-xs bg-slate-50 border border-slate-200 px-2 py-1 rounded"
+                                className="text-xs bg-white/[0.04] border border-pink-500/10 px-2 py-1 rounded text-white/60"
                               >
-                                {sb.subjectName}: <span className="font-bold text-red-500">{sb.count}</span>
+                                {sb.subjectName}: <span className="font-bold text-rose-400">{sb.count}</span>
                               </span>
                             ))}
                           </div>
@@ -498,9 +474,9 @@ export default function AnalyticsPage() {
             >
               {!regression || regression.n === 0 ? (
                 <Paper className="text-center py-16">
-                  <Crosshair className="mx-auto text-slate-300 mb-4" size={48} />
-                  <Handwriting className="text-lg text-slate-400">Projeksiyon için veri yetersiz</Handwriting>
-                  <p className="text-sm text-slate-400 mt-2">
+                  <Crosshair className="mx-auto text-white/20 mb-4" size={48} />
+                  <Handwriting className="text-lg text-white/40">Projeksiyon için veri yetersiz</Handwriting>
+                  <p className="text-sm text-white/30 mt-2">
                     En az 2 deneme sonucu girildikten sonra net projeksiyon grafiği burada görünecek
                   </p>
                 </Paper>

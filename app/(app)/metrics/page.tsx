@@ -239,7 +239,7 @@ export default function MetricsPage() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setShowNewMetricForm(!showNewMetricForm)}
-          className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition-colors font-medium text-sm flex items-center gap-2"
+          className="bg-pink-500 text-white px-4 py-2 rounded shadow hover:bg-pink-400 transition-colors font-medium text-sm flex items-center gap-2"
         >
           {showNewMetricForm ? <X size={16} /> : <Plus size={16} />}
           {showNewMetricForm ? 'Vazgec' : 'Yeni Metrik'}
@@ -255,12 +255,12 @@ export default function MetricsPage() {
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <Paper className="rotate-[0.3deg]">
+            <Paper>
               <Handwriting as="h3" className="text-lg mb-4">Yeni Metrik Tanımla</Handwriting>
               <form onSubmit={handleCreateMetric} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    <label className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-1">
                       Metrik Adı
                     </label>
                     <input
@@ -268,11 +268,11 @@ export default function MetricsPage() {
                       value={newMetricName}
                       onChange={(e) => setNewMetricName(e.target.value)}
                       placeholder="Örn: Kilo, Su, Adım"
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full bg-white/[0.06] border border-pink-500/[0.12] rounded-lg px-3 py-2 text-sm text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    <label className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-1">
                       Birim
                     </label>
                     <input
@@ -280,17 +280,17 @@ export default function MetricsPage() {
                       value={newMetricUnit}
                       onChange={(e) => setNewMetricUnit(e.target.value)}
                       placeholder="Örn: kg, lt, adım"
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full bg-white/[0.06] border border-pink-500/[0.12] rounded-lg px-3 py-2 text-sm text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    <label className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-1">
                       Tür
                     </label>
                     <select
                       value={newMetricType}
                       onChange={(e) => setNewMetricType(e.target.value)}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full bg-white/[0.06] border border-pink-500/[0.12] rounded-lg px-3 py-2 text-sm text-white/90 focus:outline-none focus:ring-2 focus:ring-pink-400/50 [color-scheme:dark]"
                     >
                       <option value="number">Sayı</option>
                       <option value="decimal">Ondalık</option>
@@ -304,7 +304,7 @@ export default function MetricsPage() {
                   disabled={creatingMetric}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                  className="bg-pink-500 text-white px-6 py-2 rounded-lg font-medium text-sm hover:bg-pink-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                 >
                   {creatingMetric ? (
                     <>
@@ -327,13 +327,13 @@ export default function MetricsPage() {
       {/* Metric Cards Grid */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="animate-spin text-slate-400" size={32} />
+          <Loader2 className="animate-spin text-white/40" size={32} />
         </div>
       ) : definitions.length === 0 ? (
         <Paper className="text-center py-16">
-          <Activity className="mx-auto text-slate-300 mb-4" size={48} />
-          <Handwriting className="text-xl text-slate-400">Henüz metrik tanımlanmamış</Handwriting>
-          <p className="text-sm text-slate-400 mt-2">
+          <Activity className="mx-auto text-white/20 mb-4" size={48} />
+          <Handwriting className="text-xl text-white/40">Henüz metrik tanımlanmamış</Handwriting>
+          <p className="text-sm text-white/40 mt-2">
             &quot;Yeni Metrik&quot; butonuyla takip etmek istediğin değerleri ekleyebilirsin
           </p>
         </Paper>
@@ -348,28 +348,28 @@ export default function MetricsPage() {
             >
               <button
                 onClick={() => handleSelectMetric(metric.id)}
-                className={`w-full text-left p-4 rounded-lg border-2 transition-all duration-200 bg-white shadow-sm hover:shadow-md ${
+                className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 bg-white/[0.04] shadow-lg shadow-pink-500/[0.03] hover:shadow-lg ${
                   selectedMetricId === metric.id
-                    ? 'border-blue-400 bg-blue-50/50 shadow-md'
-                    : 'border-slate-100 hover:border-slate-200'
+                    ? 'border-pink-400 bg-pink-500/10 shadow-lg'
+                    : 'border-white/10 hover:border-pink-500/15'
                 }`}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      selectedMetricId === metric.id ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'
+                      selectedMetricId === metric.id ? 'bg-pink-500/10 text-pink-400' : 'bg-white/[0.04] text-white/50'
                     }`}>
                       {getMetricIcon(metric.name)}
                     </div>
                     <div>
-                      <h3 className="font-bold text-slate-700 text-sm">{metric.name}</h3>
-                      <span className="text-[10px] text-slate-400 uppercase tracking-wider">{metric.unit}</span>
+                      <h3 className="font-bold text-white/70 text-sm">{metric.name}</h3>
+                      <span className="text-[10px] text-white/40 uppercase tracking-wider">{metric.unit}</span>
                     </div>
                   </div>
                   <ChevronRight
                     size={16}
-                    className={`text-slate-300 transition-transform duration-200 ${
-                      selectedMetricId === metric.id ? 'rotate-90 text-blue-400' : ''
+                    className={`text-white/20 transition-transform duration-200 ${
+                      selectedMetricId === metric.id ? 'rotate-90 text-pink-400' : ''
                     }`}
                   />
                 </div>
@@ -378,18 +378,18 @@ export default function MetricsPage() {
                   <div>
                     {metric.latestValue != null ? (
                       <>
-                        <span className="text-2xl font-bold text-slate-800">
+                        <span className="text-2xl font-bold text-white">
                           {metric.latestValue}
                         </span>
-                        <span className="text-xs text-slate-400 ml-1">{metric.unit}</span>
+                        <span className="text-xs text-white/40 ml-1">{metric.unit}</span>
                         {metric.latestDate && (
-                          <p className="text-[10px] text-slate-400 mt-0.5">
+                          <p className="text-[10px] text-white/40 mt-0.5">
                             {format(new Date(metric.latestDate), 'd MMM', { locale: tr })}
                           </p>
                         )}
                       </>
                     ) : (
-                      <span className="text-sm text-slate-300 italic">Veri yok</span>
+                      <span className="text-sm text-white/20 italic">Veri yok</span>
                     )}
                   </div>
                   <MiniSparkline values={metric.recentValues} />
@@ -411,9 +411,9 @@ export default function MetricsPage() {
             className="flex flex-col gap-6"
           >
             {/* Entry Form */}
-            <Paper className="rotate-[-0.3deg]">
+            <Paper>
               <div className="flex items-center gap-2 mb-4">
-                <TrendingUp size={18} className="text-blue-500" />
+                <TrendingUp size={18} className="text-pink-400" />
                 <Handwriting as="h3" className="text-lg">
                   {selectedMetric.name} - Yeni Değer Ekle
                 </Handwriting>
@@ -422,7 +422,7 @@ export default function MetricsPage() {
               <form onSubmit={handleSubmitEntry} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    <label className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-1">
                       Değer ({selectedMetric.unit})
                     </label>
                     <input
@@ -431,22 +431,22 @@ export default function MetricsPage() {
                       value={entryValue}
                       onChange={(e) => setEntryValue(e.target.value)}
                       placeholder="Örn: 72.5"
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full bg-white/[0.06] border border-pink-500/[0.12] rounded-lg px-3 py-2 text-sm text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    <label className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-1">
                       Tarih
                     </label>
                     <input
                       type="date"
                       value={entryDate}
                       onChange={(e) => setEntryDate(e.target.value)}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full bg-white/[0.06] border border-pink-500/[0.12] rounded-lg px-3 py-2 text-sm text-white/90 focus:outline-none focus:ring-2 focus:ring-pink-400/50 [color-scheme:dark]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    <label className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-1">
                       Not (isteğe bağlı)
                     </label>
                     <input
@@ -454,7 +454,7 @@ export default function MetricsPage() {
                       value={entryNote}
                       onChange={(e) => setEntryNote(e.target.value)}
                       placeholder="Kısa bir not..."
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full bg-white/[0.06] border border-pink-500/[0.12] rounded-lg px-3 py-2 text-sm text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50"
                     />
                   </div>
                 </div>
@@ -464,7 +464,7 @@ export default function MetricsPage() {
                   disabled={submittingEntry}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                  className="bg-pink-500 text-white px-6 py-2 rounded-lg font-medium text-sm hover:bg-pink-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                 >
                   {submittingEntry ? (
                     <>
@@ -481,20 +481,20 @@ export default function MetricsPage() {
             {/* Trend Chart */}
             {loadingEntries ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="animate-spin text-slate-400" size={28} />
+                <Loader2 className="animate-spin text-white/40" size={28} />
               </div>
             ) : chartData.length === 0 ? (
               <Paper className="text-center py-12">
-                <TrendingUp className="mx-auto text-slate-300 mb-3" size={36} />
-                <Handwriting className="text-lg text-slate-400">Henüz veri girilmemiş</Handwriting>
-                <p className="text-sm text-slate-400 mt-1">
+                <TrendingUp className="mx-auto text-white/20 mb-3" size={36} />
+                <Handwriting className="text-lg text-white/40">Henüz veri girilmemiş</Handwriting>
+                <p className="text-sm text-white/40 mt-1">
                   Yukarıdaki formu kullanarak değer eklemeye başlayabilirsin
                 </p>
               </Paper>
             ) : (
-              <Paper className="p-2 sm:p-4 rotate-[0.2deg]">
-                <div className="bg-white/90 rounded-lg p-4 border border-slate-200">
-                  <h3 className="text-slate-500 font-bold uppercase tracking-wider text-xs mb-4">
+              <Paper className="p-2 sm:p-4">
+                <div className="bg-white/[0.04] rounded-xl p-4 border border-pink-500/15">
+                  <h3 className="text-white/50 font-bold uppercase tracking-wider text-xs mb-4">
                     {selectedMetric.name} Trendi
                   </h3>
                   <ResponsiveContainer width="100%" height={300}>

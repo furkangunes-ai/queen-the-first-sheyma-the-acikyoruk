@@ -1,10 +1,9 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { TEXTURES } from '@/components/skeuomorphic';
 import {
   LayoutDashboard,
   CheckSquare,
@@ -16,10 +15,12 @@ import {
   Activity,
   Shield,
   LogOut,
-  Bell,
   BookOpenCheck,
+  Menu,
+  X,
+  Sparkles,
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import NotificationBell from '@/components/notifications/notification-bell';
 
 const NAV_ITEMS = [
@@ -37,9 +38,82 @@ const ADMIN_NAV_ITEMS = [
   { path: '/admin', label: 'Admin Paneli', icon: Shield },
 ];
 
+function SidebarContent({ pathname, allNavItems, userName, isAdmin, onNavClick }: {
+  pathname: string;
+  allNavItems: typeof NAV_ITEMS;
+  userName: string;
+  isAdmin: boolean;
+  onNavClick?: () => void;
+}) {
+  return (
+    <>
+      {/* Logo / Brand */}
+      <div className="p-6 pt-8">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-amber-400" />
+          <h1 className="font-display text-xl text-gradient-gold tracking-wide">
+            Şeyda
+          </h1>
+        </div>
+        <div className="mt-2 h-px bg-gradient-to-r from-pink-500/30 via-pink-500/10 to-transparent" />
+      </div>
+
+      {/* Navigation Links */}
+      <nav className="flex-1 py-4 flex flex-col gap-1 px-3 overflow-y-auto">
+        {allNavItems.map((item) => {
+          const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path));
+          return (
+            <Link
+              key={item.path}
+              href={item.path}
+              onClick={onNavClick}
+              className={`
+                flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
+                ${isActive
+                  ? 'bg-pink-500/15 text-pink-300 border-l-2 border-pink-400 pl-[10px]'
+                  : 'text-white/40 active:bg-white/5 active:text-white/70'
+                }
+              `}
+            >
+              <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
+              <span className="text-sm font-medium tracking-wide">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* User Profile + Logout */}
+      <div className="p-4 border-t border-pink-500/10">
+        <div className="flex items-center gap-3 px-2 py-2">
+          <div className="w-8 h-8 rounded-full bg-pink-500/20 border border-pink-500/30 flex items-center justify-center flex-shrink-0">
+            <UserCircle className="w-5 h-5 text-pink-300" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-white/80 font-medium truncate">{userName}</p>
+            {isAdmin && (
+              <span className="text-[10px] text-amber-400 uppercase tracking-widest font-semibold">Admin</span>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={() => signOut({ callbackUrl: '/login' })}
+          className="flex items-center gap-2 w-full px-4 py-2 mt-1 rounded-lg text-white/30 text-xs font-medium tracking-wide active:bg-white/5 active:text-white/50 transition-colors"
+        >
+          <LogOut size={14} />
+          <span>Çıkış Yap</span>
+        </button>
+      </div>
+
+      {/* Subtle glow at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-pink-500/[0.03] to-transparent pointer-events-none" />
+    </>
+  );
+}
+
 export function BinderLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const userName = session?.user?.name || 'Kullanıcı';
   const isAdmin = (session?.user as any)?.role === 'admin';
@@ -47,110 +121,83 @@ export function BinderLayout({ children }: { children: React.ReactNode }) {
   const allNavItems = isAdmin ? [...NAV_ITEMS, ...ADMIN_NAV_ITEMS] : NAV_ITEMS;
 
   return (
-    <div
-      className="min-h-screen w-full flex items-center justify-center p-4 sm:p-8 overflow-hidden"
-      style={{
-        backgroundImage: `url(${TEXTURES.wood})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
-    >
-      {/* Binder Container */}
-      <div className="relative w-full max-w-6xl h-[85vh] flex rounded-3xl overflow-hidden shadow-2xl bg-slate-900 border-8 border-slate-800 ring-1 ring-white/10">
+    <div className="min-h-screen w-full bg-[#0a0a1a] flex">
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-64 h-screen sticky top-0 flex-col relative bg-[#0a0a1a]/80 backdrop-blur-xl border-r border-pink-500/10">
+        <SidebarContent
+          pathname={pathname}
+          allNavItems={allNavItems}
+          userName={userName}
+          isAdmin={isAdmin}
+        />
+      </aside>
 
-        {/* Binder Spine (Left Side Navigation) */}
-        <div
-          className="w-24 sm:w-64 h-full flex flex-col relative z-20 shadow-2xl"
-          style={{
-            backgroundImage: `url(${TEXTURES.leather})`,
-            backgroundSize: 'cover',
-          }}
-        >
-          {/* Stitching effect */}
-          <div className="absolute top-0 bottom-0 left-2 w-1 border-l-2 border-dashed border-yellow-700/50"></div>
-          <div className="absolute top-0 bottom-0 right-2 w-1 border-r-2 border-dashed border-yellow-700/50"></div>
-
-          {/* User Profile */}
-          <div className="p-6 pt-10 flex flex-col items-center gap-3 border-b border-white/10 bg-black/20 backdrop-blur-sm">
-            <div className="w-16 h-16 rounded-full bg-slate-200 border-2 border-yellow-600 shadow-inner flex items-center justify-center overflow-hidden">
-              <UserCircle className="w-12 h-12 text-slate-500" />
-            </div>
-            <div className="text-center">
-              <h2 className="text-yellow-50 font-serif text-lg tracking-wide hidden sm:block">{userName}</h2>
-              {isAdmin && (
-                <span className="text-[10px] text-yellow-500 uppercase tracking-widest font-bold">Admin</span>
-              )}
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <motion.aside
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed left-0 top-0 bottom-0 w-[280px] bg-[#0a0a1a] border-r border-pink-500/10 z-50 flex flex-col lg:hidden"
+            >
               <button
-                onClick={() => signOut({ callbackUrl: '/login' })}
-                className="flex items-center gap-1 text-yellow-500 text-xs hover:text-yellow-300 transition-colors uppercase tracking-widest font-bold mt-2 mx-auto"
+                onClick={() => setMobileMenuOpen(false)}
+                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg text-white/40 active:bg-white/10 z-10"
               >
-                <LogOut size={12} />
-                <span className="hidden sm:inline">Çıkış Yap</span>
+                <X size={18} />
               </button>
-            </div>
-          </div>
+              <SidebarContent
+                pathname={pathname}
+                allNavItems={allNavItems}
+                userName={userName}
+                isAdmin={isAdmin}
+                onNavClick={() => setMobileMenuOpen(false)}
+              />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
 
-          {/* Navigation Links */}
-          <nav className="flex-1 py-8 flex flex-col gap-2 px-3 overflow-y-auto">
-            {allNavItems.map((item) => {
-              const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path));
-              return (
-                <Link
-                  key={item.path}
-                  href={item.path}
-                  className={`
-                    flex items-center gap-3 p-3 rounded-lg transition-all duration-300 group
-                    ${isActive
-                      ? 'bg-yellow-50 text-yellow-900 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] translate-x-2'
-                      : 'text-yellow-100/70 hover:bg-white/10 hover:text-yellow-50 hover:translate-x-1'
-                    }
-                  `}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="hidden sm:block font-medium tracking-wide">{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Bottom Branding */}
-          <div className="p-6 text-center text-yellow-900/40 font-serif text-xs italic">
-            Life Tracker v1.0
-          </div>
-        </div>
-
-        {/* Binder Rings */}
-        <div className="absolute left-[5.5rem] sm:left-[15.5rem] top-0 bottom-0 w-8 z-30 flex flex-col justify-evenly py-10 pointer-events-none">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="w-8 h-12 bg-gradient-to-r from-slate-400 via-slate-100 to-slate-400 rounded-lg shadow-xl ring-1 ring-black/20 flex items-center justify-center">
-              <div className="w-6 h-1 bg-slate-800/10 rounded-full"></div>
-            </div>
-          ))}
-        </div>
-
-        {/* Main Content Area */}
-        <div className="flex-1 bg-slate-100 relative overflow-hidden flex flex-col">
-          {/* Inner Shadow for depth */}
-          <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-black/20 to-transparent z-10 pointer-events-none"></div>
-
-          {/* Top Bar with Notification Bell */}
-          <div className="flex items-center justify-end px-4 sm:px-8 md:px-12 pt-3 pb-0 relative z-20">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+        {/* Top Bar */}
+        <header className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 border-b border-pink-500/[0.06]">
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="lg:hidden w-9 h-9 flex items-center justify-center rounded-lg text-white/50 active:bg-white/10"
+          >
+            <Menu size={20} />
+          </button>
+          <div className="hidden lg:block" />
+          <div className="flex items-center gap-3">
             <NotificationBell />
           </div>
+        </header>
 
-          {/* Content Render */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-8 md:p-12 pt-2 relative z-0">
-            <motion.div
-              key={pathname}
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3 }}
-              className="h-full"
-            >
-              {children}
-            </motion.div>
-          </div>
-        </div>
+        {/* Decorative pink line */}
+        <div className="h-px bg-gradient-to-r from-transparent via-pink-500/20 to-transparent" />
+
+        {/* Content */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <motion.div
+            key={pathname}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            {children}
+          </motion.div>
+        </main>
       </div>
     </div>
   );

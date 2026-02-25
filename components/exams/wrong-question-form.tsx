@@ -424,8 +424,8 @@ export default function WrongQuestionForm({
   if (loading) {
     return (
       <Paper className="flex items-center justify-center py-16">
-        <Loader2 className="animate-spin text-blue-500 mr-3" size={24} />
-        <span className="text-slate-600 text-sm">Veriler yukleniyor...</span>
+        <Loader2 className="animate-spin text-pink-400 mr-3" size={24} />
+        <span className="text-white/60 text-sm">Veriler yukleniyor...</span>
       </Paper>
     );
   }
@@ -433,12 +433,12 @@ export default function WrongQuestionForm({
   if (activeSubjects.length === 0) {
     return (
       <Paper className="text-center py-12">
-        <Handwriting className="text-xl text-slate-500">
+        <Handwriting className="text-xl text-white/50">
           Yanlis veya bos soru bulunmuyor.
         </Handwriting>
         <button
           onClick={onComplete}
-          className="mt-6 bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700 transition-colors font-bold text-sm inline-flex items-center gap-2"
+          className="mt-6 bg-pink-500 text-white px-6 py-2 rounded shadow hover:bg-pink-400 transition-colors font-bold text-sm inline-flex items-center gap-2"
         >
           <CheckCircle size={16} />
           Tamamla
@@ -469,8 +469,8 @@ export default function WrongQuestionForm({
               className={`
                 relative px-4 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors
                 ${isActive
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-white/70 text-slate-600 hover:bg-blue-50 border border-b-0 border-slate-200'
+                  ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/[0.03]'
+                  : 'bg-white/[0.04] text-white/60 hover:bg-white/[0.08] border border-b-0 border-pink-500/[0.12]'
                 }
               `}
             >
@@ -478,10 +478,10 @@ export default function WrongQuestionForm({
               {isSaved && (
                 <CheckCircle
                   size={14}
-                  className={`inline-block ml-1.5 ${isActive ? 'text-green-200' : 'text-green-500'}`}
+                  className={`inline-block ml-1.5 ${isActive ? 'text-emerald-200' : 'text-emerald-400'}`}
                 />
               )}
-              <span className={`ml-1 text-xs ${isActive ? 'text-blue-200' : 'text-slate-400'}`}>
+              <span className={`ml-1 text-xs ${isActive ? 'text-pink-200' : 'text-white/40'}`}>
                 ({s.wrongCount}Y {s.emptyCount}B)
               </span>
             </button>
@@ -504,11 +504,11 @@ export default function WrongQuestionForm({
             {currentData.wrongRows.length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <Handwriting className="text-lg text-red-700">Yanlislar</Handwriting>
+                  <Handwriting className="text-lg text-rose-400">Yanlislar</Handwriting>
                   <button
                     type="button"
                     onClick={() => addWrongRow(activeTab)}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-medium inline-flex items-center gap-1"
+                    className="text-xs text-pink-400 hover:text-pink-300 font-medium inline-flex items-center gap-1"
                   >
                     <Plus size={14} />
                     Satir Ekle
@@ -519,7 +519,7 @@ export default function WrongQuestionForm({
                   {currentData.wrongRows.map((row, idx) => (
                     <div
                       key={row.id}
-                      className="bg-white/60 rounded-lg px-3 py-3 border border-slate-100 space-y-2"
+                      className="bg-white/[0.04] rounded-lg px-3 py-3 border border-white/10 space-y-2"
                     >
                       {/* Row 1: Soru No + Konu + Hata Nedeni + Zorluk + Sil */}
                       <div className="grid grid-cols-[50px_1fr_1fr_80px_32px] gap-2 items-center">
@@ -529,13 +529,13 @@ export default function WrongQuestionForm({
                           placeholder={`${idx + 1}`}
                           value={row.questionNumber}
                           onChange={(e) => updateWrongRow(activeTab, row.id, 'questionNumber', e.target.value)}
-                          className="w-full p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-center"
+                          className="w-full p-1.5 text-sm rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400 text-center"
                         />
 
                         <select
                           value={row.topicId}
                           onChange={(e) => updateWrongRow(activeTab, row.id, 'topicId', e.target.value)}
-                          className="w-full p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                          className="w-full p-1.5 text-sm rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
                         >
                           <option value="">Konu secin...</option>
                           {currentTopics.map((t) => (
@@ -546,7 +546,7 @@ export default function WrongQuestionForm({
                         <select
                           value={row.errorReasonId}
                           onChange={(e) => updateWrongRow(activeTab, row.id, 'errorReasonId', e.target.value)}
-                          className="w-full p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                          className="w-full p-1.5 text-sm rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
                         >
                           <option value="">Neden secin...</option>
                           {errorReasons.map((er) => (
@@ -557,10 +557,10 @@ export default function WrongQuestionForm({
                         <select
                           value={row.difficulty}
                           onChange={(e) => updateWrongRow(activeTab, row.id, 'difficulty', e.target.value)}
-                          className={`w-full p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 ${
-                            row.difficulty === 'kolay' ? 'text-green-600' :
-                            row.difficulty === 'orta' ? 'text-amber-600' :
-                            row.difficulty === 'zor' ? 'text-red-600' : ''
+                          className={`w-full p-1.5 text-sm rounded bg-white/[0.06] border border-pink-500/[0.12] focus:outline-none focus:ring-2 focus:ring-pink-400 ${
+                            row.difficulty === 'kolay' ? 'text-emerald-400' :
+                            row.difficulty === 'orta' ? 'text-amber-400' :
+                            row.difficulty === 'zor' ? 'text-rose-400' : 'text-white'
                           }`}
                         >
                           {DIFFICULTY_OPTIONS.map((opt) => (
@@ -571,7 +571,7 @@ export default function WrongQuestionForm({
                         <button
                           type="button"
                           onClick={() => removeWrongRow(activeTab, row.id)}
-                          className="mx-auto w-7 h-7 flex items-center justify-center rounded text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          className="mx-auto w-7 h-7 flex items-center justify-center rounded text-rose-400/60 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                           title="Satiri sil"
                         >
                           <Trash2 size={14} />
@@ -585,7 +585,7 @@ export default function WrongQuestionForm({
                           placeholder="Not..."
                           value={row.notes}
                           onChange={(e) => updateWrongRow(activeTab, row.id, 'notes', e.target.value)}
-                          className="flex-1 p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                          className="flex-1 p-1.5 text-sm rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
                         />
 
                         {/* Photo upload */}
@@ -602,13 +602,13 @@ export default function WrongQuestionForm({
                         />
 
                         {row.photoPreview ? (
-                          <div className="relative w-10 h-10 rounded overflow-hidden border border-blue-300 flex-shrink-0">
+                          <div className="relative w-10 h-10 rounded overflow-hidden border border-pink-500/30 flex-shrink-0">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={row.photoPreview} alt="Preview" className="w-full h-full object-cover" />
                             <button
                               type="button"
                               onClick={() => removePhoto(activeTab, row.id)}
-                              className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center"
+                              className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center"
                             >
                               <X size={10} />
                             </button>
@@ -618,7 +618,7 @@ export default function WrongQuestionForm({
                             type="button"
                             onClick={() => fileInputRefs.current[row.id]?.click()}
                             title="Fotograf yukle"
-                            className="w-10 h-10 flex items-center justify-center rounded bg-blue-50 hover:bg-blue-100 text-blue-400 hover:text-blue-600 transition-colors border border-blue-200 flex-shrink-0"
+                            className="w-10 h-10 flex items-center justify-center rounded bg-pink-500/10 hover:bg-pink-500/20 text-pink-400/60 hover:text-pink-400 transition-colors border border-pink-500/20 flex-shrink-0"
                           >
                             <Camera size={18} />
                           </button>
@@ -634,11 +634,11 @@ export default function WrongQuestionForm({
             {currentData.emptyRows.length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <Handwriting className="text-lg text-amber-700">Boslar</Handwriting>
+                  <Handwriting className="text-lg text-amber-400">Boslar</Handwriting>
                   <button
                     type="button"
                     onClick={() => addEmptyRow(activeTab)}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-medium inline-flex items-center gap-1"
+                    className="text-xs text-pink-400 hover:text-pink-300 font-medium inline-flex items-center gap-1"
                   >
                     <Plus size={14} />
                     Satir Ekle
@@ -647,9 +647,9 @@ export default function WrongQuestionForm({
 
                 {/* Header */}
                 <div className="hidden sm:grid sm:grid-cols-[60px_1fr_1fr_32px] gap-2 mb-1 px-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Soru No</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Konu</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Not</span>
+                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-wide">Soru No</span>
+                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-wide">Konu</span>
+                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-wide">Not</span>
                   <span />
                 </div>
 
@@ -657,7 +657,7 @@ export default function WrongQuestionForm({
                   {currentData.emptyRows.map((row, idx) => (
                     <div
                       key={row.id}
-                      className="grid grid-cols-1 sm:grid-cols-[60px_1fr_1fr_32px] gap-2 items-center bg-white/60 rounded px-2 py-2 border border-slate-100"
+                      className="grid grid-cols-1 sm:grid-cols-[60px_1fr_1fr_32px] gap-2 items-center bg-white/[0.04] rounded px-2 py-2 border border-white/10"
                     >
                       <input
                         type="number"
@@ -665,13 +665,13 @@ export default function WrongQuestionForm({
                         placeholder={`${idx + 1}`}
                         value={row.questionNumber}
                         onChange={(e) => updateEmptyRow(activeTab, row.id, 'questionNumber', e.target.value)}
-                        className="w-full p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-center"
+                        className="w-full p-1.5 text-sm rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400 text-center"
                       />
 
                       <select
                         value={row.topicId}
                         onChange={(e) => updateEmptyRow(activeTab, row.id, 'topicId', e.target.value)}
-                        className="w-full p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        className="w-full p-1.5 text-sm rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
                       >
                         <option value="">Konu secin...</option>
                         {currentTopics.map((t) => (
@@ -684,13 +684,13 @@ export default function WrongQuestionForm({
                         placeholder="Not..."
                         value={row.notes}
                         onChange={(e) => updateEmptyRow(activeTab, row.id, 'notes', e.target.value)}
-                        className="w-full p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        className="w-full p-1.5 text-sm rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
                       />
 
                       <button
                         type="button"
                         onClick={() => removeEmptyRow(activeTab, row.id)}
-                        className="mx-auto w-7 h-7 flex items-center justify-center rounded text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        className="mx-auto w-7 h-7 flex items-center justify-center rounded text-rose-400/60 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                         title="Satiri sil"
                       >
                         <Trash2 size={14} />
@@ -703,13 +703,13 @@ export default function WrongQuestionForm({
 
             {/* No rows at all */}
             {currentData.wrongRows.length === 0 && currentData.emptyRows.length === 0 && (
-              <div className="text-center py-8 text-slate-400 text-sm">
+              <div className="text-center py-8 text-white/40 text-sm">
                 <p>Bu ders icin soru girisi bulunmuyor.</p>
                 <div className="flex items-center justify-center gap-4 mt-3">
                   <button
                     type="button"
                     onClick={() => addWrongRow(activeTab)}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-medium inline-flex items-center gap-1"
+                    className="text-xs text-pink-400 hover:text-pink-300 font-medium inline-flex items-center gap-1"
                   >
                     <Plus size={14} />
                     Yanlis Ekle
@@ -717,7 +717,7 @@ export default function WrongQuestionForm({
                   <button
                     type="button"
                     onClick={() => addEmptyRow(activeTab)}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-medium inline-flex items-center gap-1"
+                    className="text-xs text-pink-400 hover:text-pink-300 font-medium inline-flex items-center gap-1"
                   >
                     <Plus size={14} />
                     Bos Ekle
@@ -727,9 +727,9 @@ export default function WrongQuestionForm({
             )}
 
             {/* Save Button for this subject */}
-            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-white/10">
               {currentData.saved && (
-                <span className="text-green-600 text-sm font-medium inline-flex items-center gap-1">
+                <span className="text-emerald-400 text-sm font-medium inline-flex items-center gap-1">
                   <CheckCircle size={14} />
                   Kaydedildi
                 </span>
@@ -741,8 +741,8 @@ export default function WrongQuestionForm({
                 className={`
                   inline-flex items-center gap-2 px-5 py-2 rounded shadow font-bold text-sm transition-colors
                   ${currentData.saved
-                    ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                    ? 'bg-white/10 text-white/40 cursor-not-allowed'
+                    : 'bg-pink-500 text-white hover:bg-pink-400'
                   }
                 `}
               >
@@ -764,12 +764,12 @@ export default function WrongQuestionForm({
       </AnimatePresence>
 
       {/* Complete Button */}
-      <div className="flex items-center justify-center pt-4 border-t border-slate-200">
+      <div className="flex items-center justify-center pt-4 border-t border-pink-500/15">
         <button
           type="button"
           onClick={handleComplete}
           disabled={completing}
-          className="inline-flex items-center gap-2 bg-blue-600 text-white px-8 py-2.5 rounded shadow hover:bg-blue-700 transition-colors font-bold text-sm"
+          className="inline-flex items-center gap-2 bg-pink-500 text-white px-8 py-2.5 rounded shadow hover:bg-pink-400 transition-colors font-bold text-sm"
         >
           {completing ? (
             <>

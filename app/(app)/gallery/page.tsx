@@ -120,10 +120,10 @@ export default function GalleryPage() {
   });
 
   const getIcon = (mimeType: string) => {
-    if (mimeType.startsWith('image/')) return <ImageIcon className="text-blue-500" size={32} />;
-    if (mimeType.startsWith('video/')) return <Film className="text-purple-500" size={32} />;
-    if (mimeType === 'application/pdf') return <FileText className="text-red-500" size={32} />;
-    return <FileText className="text-slate-400" size={32} />;
+    if (mimeType.startsWith('image/')) return <ImageIcon className="text-pink-400" size={32} />;
+    if (mimeType.startsWith('video/')) return <Film className="text-purple-400" size={32} />;
+    if (mimeType === 'application/pdf') return <FileText className="text-rose-400" size={32} />;
+    return <FileText className="text-white/40" size={32} />;
   };
 
   const formatSize = (bytes: number) => {
@@ -144,7 +144,7 @@ export default function GalleryPage() {
     <div className="h-full flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <Handwriting as="h1" className="text-3xl">Dosyalar ve Kaynaklar</Handwriting>
-        <span className="text-sm text-slate-400">{files.length} dosya</span>
+        <span className="text-sm text-white/40">{files.length} dosya</span>
       </div>
 
       {/* Upload Area */}
@@ -152,23 +152,23 @@ export default function GalleryPage() {
         {...getRootProps()}
         className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
           isDragActive
-            ? 'border-blue-400 bg-blue-50'
-            : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50'
+            ? 'border-pink-400 bg-pink-500/10'
+            : 'border-pink-500/20 active:border-pink-400 active:bg-white/[0.03]'
         } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         <input {...getInputProps()} />
         {uploading ? (
-          <div className="flex items-center justify-center gap-3 text-slate-500">
+          <div className="flex items-center justify-center gap-3 text-white/50">
             <Loader2 size={24} className="animate-spin" />
             <span className="text-sm font-medium">Yükleniyor...</span>
           </div>
         ) : isDragActive ? (
-          <div className="flex flex-col items-center gap-2 text-blue-500">
+          <div className="flex flex-col items-center gap-2 text-pink-400">
             <Upload size={32} />
             <span className="text-sm font-medium">Dosyaları buraya bırak</span>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2 text-slate-400">
+          <div className="flex flex-col items-center gap-2 text-white/40">
             <Upload size={32} />
             <span className="text-sm font-medium">Dosya yüklemek için tıkla veya sürükle</span>
             <span className="text-xs">PDF, resim, video ve diğer dosyalar</span>
@@ -180,12 +180,12 @@ export default function GalleryPage() {
       <Paper className="flex-1 overflow-hidden flex flex-col">
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="animate-spin text-slate-400" size={32} />
+            <Loader2 className="animate-spin text-pink-400/50" size={32} />
           </div>
         ) : files.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+          <div className="flex flex-col items-center justify-center py-16 text-white/40">
             <FileText size={48} className="mb-4 opacity-50" />
-            <Handwriting className="text-xl text-slate-400">Henüz dosya yüklenmemiş</Handwriting>
+            <Handwriting className="text-xl text-white/40">Henüz dosya yüklenmemiş</Handwriting>
             <p className="text-sm mt-2">Yukarıdaki alana dosya sürükleyerek başlayabilirsin</p>
           </div>
         ) : (
@@ -198,11 +198,11 @@ export default function GalleryPage() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ delay: idx * 0.03 }}
-                  className="group relative flex flex-col items-center p-4 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all"
+                  className="group relative flex flex-col items-center p-4 rounded-lg active:bg-white/[0.06] border border-transparent active:border-pink-500/15 transition-all"
                 >
                   {/* Preview / Icon */}
                   <div
-                    className="w-20 h-24 mb-3 bg-slate-100 rounded shadow-sm flex items-center justify-center relative overflow-hidden cursor-pointer"
+                    className="w-20 h-24 mb-3 bg-white/[0.06] rounded flex items-center justify-center relative overflow-hidden cursor-pointer"
                     onClick={() => {
                       if (file.mimeType.startsWith('image/')) {
                         setPreviewFile(file);
@@ -219,19 +219,19 @@ export default function GalleryPage() {
                       />
                     ) : (
                       <>
-                        <div className="absolute top-0 right-0 w-6 h-6 bg-white shadow-md transform translate-x-1/2 -translate-y-1/2 rotate-45 z-10"></div>
+                        <div className="absolute top-0 right-0 w-6 h-6 bg-white/[0.04] shadow-md transform translate-x-1/2 -translate-y-1/2 rotate-45 z-10"></div>
                         {getIcon(file.mimeType)}
                       </>
                     )}
                   </div>
 
                   {/* File name */}
-                  <span className="text-xs font-medium text-slate-700 text-center line-clamp-2 leading-tight">
+                  <span className="text-xs font-medium text-white/70 text-center line-clamp-2 leading-tight">
                     {file.name}
                   </span>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] text-slate-400">{formatDate(file.createdAt)}</span>
-                    <span className="text-[10px] text-slate-400">{formatSize(file.sizeBytes)}</span>
+                    <span className="text-[10px] text-white/40">{formatDate(file.createdAt)}</span>
+                    <span className="text-[10px] text-white/40">{formatSize(file.sizeBytes)}</span>
                   </div>
 
                   {/* Hover actions */}
@@ -239,14 +239,14 @@ export default function GalleryPage() {
                     {file.mimeType.startsWith('image/') && (
                       <button
                         onClick={() => setPreviewFile(file)}
-                        className="p-1 bg-white rounded shadow-sm hover:bg-blue-50 text-slate-400 hover:text-blue-500 transition-colors"
+                        className="p-1 bg-white/[0.04] rounded active:bg-pink-500/10 text-white/40 active:text-pink-400 transition-colors"
                       >
                         <Eye size={14} />
                       </button>
                     )}
                     <button
                       onClick={() => handleDelete(file.id, file.name)}
-                      className="p-1 bg-white rounded shadow-sm hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
+                      className="p-1 bg-white/[0.04] rounded active:bg-rose-500/10 text-white/40 active:text-rose-400 transition-colors"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -265,19 +265,19 @@ export default function GalleryPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-8"
+            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-8"
             onClick={() => setPreviewFile(null)}
           >
             <motion.div
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.9 }}
-              className="relative max-w-4xl max-h-[85vh] bg-white rounded-xl overflow-hidden shadow-2xl"
+              className="relative max-w-4xl max-h-[85vh] bg-[#0a0a1a] border border-pink-500/15 rounded-xl overflow-hidden shadow-2xl shadow-pink-500/10"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setPreviewFile(null)}
-                className="absolute top-3 right-3 z-10 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+                className="absolute top-3 right-3 z-10 p-2 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors"
               >
                 <X size={18} />
               </button>

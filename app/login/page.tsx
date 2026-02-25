@@ -3,8 +3,7 @@
 import React, { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Paper, Handwriting, Tape, TEXTURES } from "@/components/skeuomorphic";
-import { User, Lock, LogIn } from "lucide-react";
+import { User, Lock, LogIn, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 export default function LoginPage() {
@@ -42,61 +41,64 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      className="min-h-screen w-full flex items-center justify-center p-4"
-      style={{
-        backgroundImage: `url(${TEXTURES.wood})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      <div className="w-full max-w-md">
-        <Paper className="rotate-[-0.5deg]">
-          <Tape className="-top-3 left-1/2 -translate-x-1/2" />
+    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[#0a0a1a] relative overflow-hidden">
+      {/* Background glow effects */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-pink-500/[0.07] rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/4 right-1/4 w-[300px] h-[300px] bg-amber-500/[0.04] rounded-full blur-[100px] pointer-events-none" />
 
-          <div className="text-center mb-8 pt-4">
-            <Handwriting as="h1" className="text-3xl mb-2 text-slate-900">
-              Yaşam Takibi
-            </Handwriting>
-            <p className="text-sm text-slate-500">Giriş yaparak devam et</p>
+      <div className="w-full max-w-md relative z-10">
+        {/* Glass Card */}
+        <div className="rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-pink-500/[0.12] shadow-lg shadow-pink-500/[0.03] p-8 sm:p-10">
+          {/* Gold accent line */}
+          <div className="h-px bg-gradient-to-r from-transparent via-amber-400/40 to-transparent mb-8" />
+
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <Sparkles className="w-5 h-5 text-amber-400" />
+              <h1 className="font-display text-2xl text-gradient-gold tracking-wide">
+                Hoş Geldin
+              </h1>
+              <Sparkles className="w-5 h-5 text-amber-400" />
+            </div>
+            <p className="text-sm text-white/40">Giriş yaparak devam et</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide mb-2">
                 Kullanıcı Adı
               </label>
               <div className="relative">
                 <User
-                  size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-400/50"
                 />
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="furkan veya seyda"
-                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-slate-700"
+                  placeholder="kullanıcı adı"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.06] border border-pink-500/[0.12] focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent text-white/90 placeholder:text-white/20 transition-all"
                   autoComplete="username"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide mb-2">
                 Şifre
               </label>
               <div className="relative">
                 <Lock
-                  size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-400/50"
                 />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-slate-700"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.06] border border-pink-500/[0.12] focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent text-white/90 placeholder:text-white/20 transition-all"
                   autoComplete="current-password"
                 />
               </div>
@@ -105,7 +107,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-slate-800 text-white py-3 rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center gap-2"
+              className="w-full bg-pink-500 text-white py-3 rounded-xl hover:bg-pink-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium flex items-center justify-center gap-2 glow-pink"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -118,12 +120,12 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-xs text-slate-400 italic">
-              Life Tracker v1.0
-            </p>
-          </div>
-        </Paper>
+          {/* Bottom accent */}
+          <div className="mt-8 h-px bg-gradient-to-r from-transparent via-pink-500/20 to-transparent" />
+          <p className="mt-4 text-center text-xs text-white/20">
+            Queen Sheyda
+          </p>
+        </div>
       </div>
     </div>
   );

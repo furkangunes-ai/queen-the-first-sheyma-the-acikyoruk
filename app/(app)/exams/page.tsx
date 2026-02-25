@@ -142,7 +142,7 @@ export default function ExamsPage() {
               <Handwriting className="text-3xl">Deneme Takibi</Handwriting>
               <button
                 onClick={() => setView('new-exam')}
-                className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition-colors font-medium text-sm flex items-center gap-2"
+                className="bg-pink-500 text-white px-4 py-2 rounded-xl shadow-lg shadow-pink-500/[0.03] hover:bg-pink-400 transition-colors font-medium text-sm flex items-center gap-2"
               >
                 <Plus size={16} />
                 Yeni Deneme Ekle

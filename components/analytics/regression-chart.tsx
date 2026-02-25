@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from 'react';
-import { Paper, Handwriting, TEXTURES } from '@/components/skeuomorphic';
+import { Paper, Handwriting } from '@/components/skeuomorphic';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   ComposedChart, Area, Line, Scatter, ReferenceLine,
@@ -59,29 +59,29 @@ function CustomTooltip({ active, payload, label }: any) {
   if (!item) return null;
 
   return (
-    <div className="bg-white rounded-lg shadow-lg border border-slate-200 p-3 text-sm">
-      <p className="font-medium text-slate-700 mb-1">
+    <div className="bg-[#1e1e2e] rounded-lg shadow-lg shadow-pink-500/10 border border-pink-500/15 p-3 text-sm">
+      <p className="font-medium text-white/70 mb-1">
         {item.date ? format(new Date(item.date), 'd MMMM yyyy', { locale: tr }) : label}
       </p>
       {item.actual !== undefined && item.actual !== null && (
-        <p className="text-blue-600">
-          <span className="inline-block w-2 h-2 bg-blue-600 rounded-full mr-1.5" />
+        <p className="text-pink-400">
+          <span className="inline-block w-2 h-2 bg-pink-400 rounded-full mr-1.5" />
           Gerçek: <span className="font-bold">{item.actual.toFixed(1)}</span> net
         </p>
       )}
       {item.predicted !== undefined && item.predicted !== null && (
-        <p className="text-indigo-600">
-          <span className="inline-block w-2 h-2 bg-indigo-500 rounded-full mr-1.5" />
+        <p className="text-indigo-400">
+          <span className="inline-block w-2 h-2 bg-indigo-400 rounded-full mr-1.5" />
           Tahmin: <span className="font-bold">{item.predicted.toFixed(1)}</span> net
         </p>
       )}
       {item.lower !== undefined && item.upper !== undefined && (
-        <p className="text-slate-400 text-xs">
+        <p className="text-white/40 text-xs">
           Aralık: {item.lower.toFixed(1)} – {item.upper.toFixed(1)}
         </p>
       )}
       {item.examTitle && (
-        <p className="text-slate-500 text-xs mt-1">{item.examTitle}</p>
+        <p className="text-white/50 text-xs mt-1">{item.examTitle}</p>
       )}
     </div>
   );
@@ -143,39 +143,36 @@ export function RegressionChart({ data }: RegressionChartProps) {
     <div className="flex flex-col gap-6">
       {/* Summary Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col items-center justify-center py-5">
-          <TrendingUp className="text-green-500 mb-1" size={20} />
-          <span className="text-2xl font-bold text-slate-800">
+        <div className="bg-white/[0.04] p-4 rounded-lg border border-pink-500/15 flex flex-col items-center justify-center py-5">
+          <TrendingUp className="text-emerald-400 mb-1" size={20} />
+          <span className="text-2xl font-bold text-white">
             {data.weeklyGrowth > 0 ? '+' : ''}{data.weeklyGrowth}
           </span>
-          <span className="text-[10px] text-slate-500 uppercase tracking-widest">Haftalık Gelişim</span>
+          <span className="text-[10px] text-white/50 uppercase tracking-widest">Haftalık Gelişim</span>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col items-center justify-center py-5">
-          <Activity className="text-blue-500 mb-1" size={20} />
-          <span className="text-2xl font-bold text-slate-800">
+        <div className="bg-white/[0.04] p-4 rounded-lg border border-pink-500/15 flex flex-col items-center justify-center py-5">
+          <Activity className="text-pink-400 mb-1" size={20} />
+          <span className="text-2xl font-bold text-white">
             {data.dailyGrowth > 0 ? '+' : ''}{data.dailyGrowth}
           </span>
-          <span className="text-[10px] text-slate-500 uppercase tracking-widest">Günlük Gelişim</span>
+          <span className="text-[10px] text-white/50 uppercase tracking-widest">Günlük Gelişim</span>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col items-center justify-center py-5">
-          <Target className="text-indigo-500 mb-1" size={20} />
-          <span className="text-2xl font-bold text-slate-800">{data.currentEstimate}</span>
-          <span className="text-[10px] text-slate-500 uppercase tracking-widest">Tahmini Net</span>
+        <div className="bg-white/[0.04] p-4 rounded-lg border border-pink-500/15 flex flex-col items-center justify-center py-5">
+          <Target className="text-indigo-400 mb-1" size={20} />
+          <span className="text-2xl font-bold text-white">{data.currentEstimate}</span>
+          <span className="text-[10px] text-white/50 uppercase tracking-widest">Tahmini Net</span>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col items-center justify-center py-5">
-          <Award className={`mb-1 ${rSquaredPercent >= 70 ? 'text-green-500' : rSquaredPercent >= 40 ? 'text-yellow-500' : 'text-red-400'}`} size={20} />
-          <span className="text-2xl font-bold text-slate-800">%{rSquaredPercent}</span>
-          <span className="text-[10px] text-slate-500 uppercase tracking-widest">Model Güvenilirliği</span>
+        <div className="bg-white/[0.04] p-4 rounded-lg border border-pink-500/15 flex flex-col items-center justify-center py-5">
+          <Award className={`mb-1 ${rSquaredPercent >= 70 ? 'text-emerald-400' : rSquaredPercent >= 40 ? 'text-amber-400' : 'text-rose-400'}`} size={20} />
+          <span className="text-2xl font-bold text-white">%{rSquaredPercent}</span>
+          <span className="text-[10px] text-white/50 uppercase tracking-widest">Model Güvenilirliği</span>
         </div>
       </div>
 
       {/* Main Regression Chart */}
-      <Paper className="p-2 sm:p-4" style={{
-        backgroundImage: `url(${TEXTURES.graph})`,
-        backgroundSize: '300px',
-      }}>
-        <div className="bg-white/80 backdrop-blur-[2px] rounded-lg p-4 border border-slate-300">
-          <h3 className="text-slate-500 font-bold uppercase tracking-wider text-xs mb-4">
+      <Paper className="p-2 sm:p-4">
+        <div className="rounded-lg p-4">
+          <h3 className="text-white/50 font-bold uppercase tracking-wider text-xs mb-4">
             Net Projeksiyon Grafiği
           </h3>
           <ResponsiveContainer width="100%" height={380}>
@@ -186,15 +183,15 @@ export function RegressionChart({ data }: RegressionChartProps) {
                   <stop offset="95%" stopColor="#6366f1" stopOpacity={0.03} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
               <XAxis
                 dataKey="dateLabel"
-                tick={{ fontSize: 10, fill: '#64748b' }}
+                tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }}
                 tickLine={false}
                 interval="preserveStartEnd"
               />
               <YAxis
-                tick={{ fontSize: 10, fill: '#64748b' }}
+                tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }}
                 tickLine={false}
                 domain={['auto', 'auto']}
               />
@@ -216,13 +213,13 @@ export function RegressionChart({ data }: RegressionChartProps) {
                 <ReferenceLine
                   key={target}
                   y={target}
-                  stroke="#94a3b8"
+                  stroke="rgba(255,255,255,0.2)"
                   strokeDasharray="6 4"
                   strokeWidth={1}
                   label={{
                     value: `${target} net`,
                     position: 'right',
-                    fill: '#94a3b8',
+                    fill: 'rgba(255,255,255,0.3)',
                     fontSize: 10,
                   }}
                 />
@@ -242,7 +239,7 @@ export function RegressionChart({ data }: RegressionChartProps) {
               {/* Actual data points */}
               <Scatter
                 dataKey="actual"
-                fill="#3b82f6"
+                fill="#f472b6"
                 stroke="#fff"
                 strokeWidth={2}
                 name="Gerçek Sonuçlar"
@@ -250,9 +247,9 @@ export function RegressionChart({ data }: RegressionChartProps) {
               />
             </ComposedChart>
           </ResponsiveContainer>
-          <div className="flex items-center justify-center gap-6 mt-3 text-xs text-slate-500">
+          <div className="flex items-center justify-center gap-6 mt-3 text-xs text-white/50">
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-blue-500" />
+              <div className="w-3 h-3 rounded-full bg-pink-400" />
               <span>Gerçek Sonuçlar</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -260,7 +257,7 @@ export function RegressionChart({ data }: RegressionChartProps) {
               <span>Regresyon Doğrusu</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-indigo-100 border border-indigo-200" />
+              <div className="w-3 h-3 rounded bg-indigo-500/15 border border-indigo-500/20" />
               <span>Güven Aralığı (%95)</span>
             </div>
           </div>
@@ -270,7 +267,7 @@ export function RegressionChart({ data }: RegressionChartProps) {
       {/* Predictions */}
       {data.predictions.length > 0 && (
         <Paper className="p-4 sm:p-6">
-          <h3 className="text-slate-500 font-bold uppercase tracking-wider text-xs mb-4">
+          <h3 className="text-white/50 font-bold uppercase tracking-wider text-xs mb-4">
             Hedef Tahminleri
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -283,43 +280,43 @@ export function RegressionChart({ data }: RegressionChartProps) {
                   key={pred.targetNet}
                   className={`rounded-lg border p-4 transition-all ${
                     isAchieved
-                      ? 'bg-green-50 border-green-200'
+                      ? 'bg-emerald-500/10 border-emerald-500/20'
                       : isReachable
-                      ? 'bg-white border-slate-200'
-                      : 'bg-slate-50 border-slate-200 opacity-60'
+                      ? 'bg-white/[0.04] border-pink-500/15'
+                      : 'bg-white/[0.03] border-white/10 opacity-60'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <Target
                         size={18}
-                        className={isAchieved ? 'text-green-500' : 'text-indigo-500'}
+                        className={isAchieved ? 'text-emerald-400' : 'text-indigo-400'}
                       />
-                      <span className="font-bold text-lg text-slate-800">{pred.targetNet} Net</span>
+                      <span className="font-bold text-lg text-white">{pred.targetNet} Net</span>
                     </div>
                     {isAchieved && (
-                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                      <span className="text-xs bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                         Ulaşıldı
                       </span>
                     )}
                   </div>
 
                   {isAchieved ? (
-                    <p className="text-sm text-green-600 font-medium">
+                    <p className="text-sm text-emerald-400 font-medium">
                       Bu hedefe zaten ulaştın!
                     </p>
                   ) : isReachable ? (
                     <>
-                      <div className="flex items-center gap-2 text-sm text-slate-600 mb-2">
+                      <div className="flex items-center gap-2 text-sm text-white/60 mb-2">
                         <Calendar size={14} />
                         <span>
                           Tahmini tarih:{' '}
-                          <span className="font-bold text-slate-800">
+                          <span className="font-bold text-white">
                             {format(new Date(pred.estimatedDate!), 'd MMMM yyyy', { locale: tr })}
                           </span>
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-slate-600 mb-3">
+                      <div className="flex items-center gap-2 text-sm text-white/60 mb-3">
                         <Clock size={14} />
                         <span>
                           {pred.daysFromNow! > 0
@@ -330,13 +327,13 @@ export function RegressionChart({ data }: RegressionChartProps) {
                       {/* Progress bar */}
                       {data.currentEstimate > 0 && (
                         <div className="mt-2">
-                          <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+                          <div className="flex justify-between text-[10px] text-white/40 mb-1">
                             <span>İlerleme</span>
                             <span>%{Math.min(100, Math.round((data.currentEstimate / pred.targetNet) * 100))}</span>
                           </div>
-                          <div className="w-full bg-slate-100 rounded-full h-2">
+                          <div className="w-full bg-white/10 rounded-full h-2">
                             <div
-                              className="bg-indigo-500 h-2 rounded-full transition-all duration-500"
+                              className="bg-pink-500 h-2 rounded-full transition-all duration-500"
                               style={{
                                 width: `${Math.min(100, Math.max(0, (data.currentEstimate / pred.targetNet) * 100))}%`
                               }}
@@ -345,7 +342,7 @@ export function RegressionChart({ data }: RegressionChartProps) {
                         </div>
                       )}
                       {pred.lowerDate && pred.upperDate && (
-                        <p className="text-[10px] text-slate-400 mt-2">
+                        <p className="text-[10px] text-white/40 mt-2">
                           Güven aralığı: {format(new Date(pred.lowerDate), 'd MMM yy', { locale: tr })}
                           {' – '}
                           {format(new Date(pred.upperDate), 'd MMM yy', { locale: tr })}
@@ -353,7 +350,7 @@ export function RegressionChart({ data }: RegressionChartProps) {
                       )}
                     </>
                   ) : (
-                    <p className="text-sm text-slate-400 italic">
+                    <p className="text-sm text-white/40 italic">
                       Mevcut gidişatla bu hedefe ulaşım tahmin edilemiyor
                     </p>
                   )}
@@ -365,7 +362,7 @@ export function RegressionChart({ data }: RegressionChartProps) {
       )}
 
       {/* Model Info */}
-      <div className="text-center text-[10px] text-slate-400 py-2">
+      <div className="text-center text-[10px] text-white/30 py-2">
         Lineer regresyon modeli: y = {data.slope.toFixed(4)}x + {data.intercept.toFixed(2)} | R² = {data.rSquared.toFixed(4)} | n = {data.n} deneme
       </div>
     </div>

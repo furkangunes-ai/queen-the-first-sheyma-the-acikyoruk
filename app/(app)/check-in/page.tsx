@@ -122,17 +122,17 @@ export default function CheckInPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <Handwriting as="h1" className="text-3xl">Günlük Check-in</Handwriting>
-        <span className="text-sm text-slate-400">
+        <span className="text-sm text-white/40">
           {format(new Date(), 'd MMMM EEEE', { locale: tr })}
         </span>
       </div>
 
       {/* Form */}
-      <Paper className="rotate-[-0.5deg]">
+      <Paper>
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Ruh Hali */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">
+            <label className="flex items-center gap-2 text-sm font-bold text-white/50 uppercase tracking-wider mb-3">
               <Heart size={16} className="text-pink-400" />
               Ruh Hali
             </label>
@@ -141,13 +141,12 @@ export default function CheckInPage() {
                 <motion.button
                   key={m.value}
                   type="button"
-                  whileHover={{ scale: 1.15 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setMood(m.value)}
                   className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl border-2 transition-all duration-200 ${
                     mood === m.value
-                      ? 'border-blue-500 bg-blue-50 shadow-md scale-110'
-                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                      ? 'border-pink-400 bg-pink-500/15 shadow-md shadow-pink-500/10 scale-110'
+                      : 'border-white/10 bg-white/[0.04] active:border-white/20'
                   }`}
                   title={m.label}
                 >
@@ -159,7 +158,7 @@ export default function CheckInPage() {
               <motion.p
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-center text-xs text-slate-400 mt-2"
+                className="text-center text-xs text-white/40 mt-2"
               >
                 {MOODS.find(m => m.value === mood)?.label}
               </motion.p>
@@ -168,8 +167,8 @@ export default function CheckInPage() {
 
           {/* Enerji Seviyesi */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">
-              <Sun size={16} className="text-yellow-500" />
+            <label className="flex items-center gap-2 text-sm font-bold text-white/50 uppercase tracking-wider mb-3">
+              <Sun size={16} className="text-amber-400" />
               Enerji Seviyesi
             </label>
             <div className="flex gap-2 justify-center">
@@ -177,13 +176,12 @@ export default function CheckInPage() {
                 <motion.button
                   key={e.value}
                   type="button"
-                  whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setEnergy(e.value)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all duration-200 ${
+                  className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all duration-200 ${
                     energy === e.value
-                      ? 'border-yellow-400 bg-yellow-50 text-yellow-700 shadow-sm'
-                      : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                      ? 'border-amber-400/50 bg-amber-500/15 text-amber-300 shadow-sm shadow-amber-500/10'
+                      : 'border-white/10 bg-white/[0.04] text-white/40 active:border-white/20'
                   }`}
                 >
                   <span className="block text-lg font-bold">{e.value}</span>
@@ -195,8 +193,8 @@ export default function CheckInPage() {
 
           {/* Uyku Suresi */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">
-              <Clock size={16} className="text-indigo-400" />
+            <label className="flex items-center gap-2 text-sm font-bold text-white/50 uppercase tracking-wider mb-3">
+              <Clock size={16} className="text-purple-400" />
               Uyku Süresi (saat)
             </label>
             <input
@@ -207,13 +205,13 @@ export default function CheckInPage() {
               value={sleep}
               onChange={(e) => setSleep(e.target.value)}
               placeholder="Örn: 7.5"
-              className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-shadow"
+              className="w-full bg-white/[0.06] border border-pink-500/[0.12] rounded-xl px-4 py-2.5 text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent transition-shadow"
             />
           </div>
 
           {/* Minnettarlik */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">
+            <label className="flex items-center gap-2 text-sm font-bold text-white/50 uppercase tracking-wider mb-3">
               <Heart size={16} className="text-rose-400" />
               Minnettarlık
             </label>
@@ -222,14 +220,14 @@ export default function CheckInPage() {
               onChange={(e) => setGratitude(e.target.value)}
               placeholder="Bugün neler için minnettarsın?"
               rows={3}
-              className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-shadow resize-none"
+              className="w-full bg-white/[0.06] border border-pink-500/[0.12] rounded-xl px-4 py-2.5 text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent transition-shadow resize-none"
             />
           </div>
 
           {/* Notlar */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">
-              <StickyNote size={16} className="text-amber-500" />
+            <label className="flex items-center gap-2 text-sm font-bold text-white/50 uppercase tracking-wider mb-3">
+              <StickyNote size={16} className="text-amber-400" />
               Notlar
             </label>
             <textarea
@@ -237,21 +235,21 @@ export default function CheckInPage() {
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Günle ilgili notların..."
               rows={3}
-              className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-shadow resize-none"
+              className="w-full bg-white/[0.06] border border-pink-500/[0.12] rounded-xl px-4 py-2.5 text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent transition-shadow resize-none"
             />
           </div>
 
           {/* Tarih */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">
-              <Calendar size={16} className="text-blue-400" />
+            <label className="flex items-center gap-2 text-sm font-bold text-white/50 uppercase tracking-wider mb-3">
+              <Calendar size={16} className="text-pink-400" />
               Tarih
             </label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-shadow"
+              className="w-full bg-white/[0.06] border border-pink-500/[0.12] rounded-xl px-4 py-2.5 text-white/90 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent transition-shadow [color-scheme:dark]"
             />
           </div>
 
@@ -259,9 +257,8 @@ export default function CheckInPage() {
           <motion.button
             type="submit"
             disabled={submitting}
-            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold text-sm uppercase tracking-wider hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md flex items-center justify-center gap-2"
+            className="w-full bg-pink-500 text-white py-3 rounded-xl font-bold text-sm uppercase tracking-wider hover:bg-pink-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md shadow-pink-500/20 flex items-center justify-center gap-2"
           >
             {submitting ? (
               <>
@@ -279,25 +276,25 @@ export default function CheckInPage() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <Handwriting as="h2" className="text-2xl">Son Check-inler</Handwriting>
-          <ChevronDown size={18} className="text-slate-400" />
+          <ChevronDown size={18} className="text-white/30" />
         </div>
 
         {loadingHistory ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="animate-spin text-slate-400" size={28} />
+            <Loader2 className="animate-spin text-pink-400/50" size={28} />
           </div>
         ) : recentCheckIns.length === 0 ? (
           <Paper className="text-center py-12">
-            <Calendar className="mx-auto text-slate-300 mb-4" size={40} />
-            <Handwriting className="text-lg text-slate-400">Henüz check-in yok</Handwriting>
-            <p className="text-sm text-slate-400 mt-2">
+            <Calendar className="mx-auto text-white/20 mb-4" size={40} />
+            <Handwriting className="text-lg text-white/40">Henüz check-in yok</Handwriting>
+            <p className="text-sm text-white/30 mt-2">
               İlk check-inini yukarıdaki formu doldurarak yapabilirsin
             </p>
           </Paper>
         ) : (
           <div className="relative">
             {/* Timeline line */}
-            <div className="absolute left-5 top-4 bottom-4 w-0.5 bg-slate-200" />
+            <div className="absolute left-5 top-4 bottom-4 w-0.5 bg-pink-500/10" />
 
             <div className="space-y-4">
               <AnimatePresence>
@@ -310,44 +307,44 @@ export default function CheckInPage() {
                     className="relative"
                   >
                     {/* Timeline dot */}
-                    <div className="absolute left-3.5 top-6 w-3 h-3 rounded-full bg-blue-400 border-2 border-white shadow-sm z-10" />
+                    <div className="absolute left-3.5 top-6 w-3 h-3 rounded-full bg-pink-400 border-2 border-[#0a0a1a] shadow-sm z-10" />
 
                     <Paper className="ml-12" style={{ padding: '16px 20px' }}>
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-3">
                           <span className="text-2xl">{getMoodEmoji(checkIn.mood)}</span>
                           <div>
-                            <p className="font-bold text-slate-700 text-sm">
+                            <p className="font-bold text-white/70 text-sm">
                               {format(new Date(checkIn.date), 'd MMMM EEEE', { locale: tr })}
                             </p>
                             <div className="flex items-center gap-3 mt-0.5">
-                              <span className="text-[10px] bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded border border-yellow-200 uppercase tracking-wide font-bold">
+                              <span className="text-[10px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/20 uppercase tracking-wide font-bold">
                                 Enerji: {checkIn.energy}/5
                               </span>
                               {checkIn.sleep != null && (
-                                <span className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-200 uppercase tracking-wide font-bold">
+                                <span className="text-[10px] bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/20 uppercase tracking-wide font-bold">
                                   Uyku: {checkIn.sleep} saat
                                 </span>
                               )}
                             </div>
                           </div>
                         </div>
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-white/30">
                           {getEnergyLabel(checkIn.energy)}
                         </span>
                       </div>
 
                       {checkIn.gratitude && (
-                        <div className="mt-2 bg-rose-50 rounded p-2 border border-rose-100">
+                        <div className="mt-2 bg-rose-500/10 rounded-lg p-2 border border-rose-500/15">
                           <span className="text-[10px] text-rose-400 font-bold uppercase tracking-wider block mb-0.5">Minnettarlık</span>
-                          <p className="text-sm text-slate-600 leading-relaxed">{checkIn.gratitude}</p>
+                          <p className="text-sm text-white/60 leading-relaxed">{checkIn.gratitude}</p>
                         </div>
                       )}
 
                       {checkIn.notes && (
-                        <div className="mt-2 bg-slate-50 rounded p-2 border border-slate-100">
-                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Notlar</span>
-                          <p className="text-sm text-slate-600 leading-relaxed">{checkIn.notes}</p>
+                        <div className="mt-2 bg-white/[0.04] rounded-lg p-2 border border-white/10">
+                          <span className="text-[10px] text-white/30 font-bold uppercase tracking-wider block mb-0.5">Notlar</span>
+                          <p className="text-sm text-white/60 leading-relaxed">{checkIn.notes}</p>
                         </div>
                       )}
                     </Paper>

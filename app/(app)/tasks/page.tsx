@@ -185,10 +185,10 @@ export default function TasksPage() {
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
-      case 'high': return 'bg-red-50 text-red-600 border-red-200';
-      case 'medium': return 'bg-yellow-50 text-yellow-600 border-yellow-200';
-      case 'low': return 'bg-green-50 text-green-600 border-green-200';
-      default: return 'bg-slate-50 text-slate-500 border-slate-200';
+      case 'high': return 'bg-rose-500/10 text-rose-400 border-rose-500/15';
+      case 'medium': return 'bg-amber-500/10 text-amber-400 border-amber-500/15';
+      case 'low': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/15';
+      default: return 'bg-white/[0.03] text-white/50 border-pink-500/15';
     }
   };
 
@@ -209,9 +209,9 @@ export default function TasksPage() {
           <Handwriting className="text-xl">Dosyalar</Handwriting>
           <button
             onClick={() => setShowNewFolderInput(!showNewFolderInput)}
-            className="p-1 hover:bg-slate-200 rounded-full transition-colors"
+            className="p-1 hover:bg-white/10 rounded-full transition-colors"
           >
-            <Plus size={20} className="text-slate-600" />
+            <Plus size={20} className="text-white/60" />
           </button>
         </div>
 
@@ -229,7 +229,7 @@ export default function TasksPage() {
                 autoFocus
                 type="text"
                 placeholder="Klasör Adı..."
-                className="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                className="w-full px-3 py-2 bg-white/[0.06] rounded border border-pink-500/[0.12] text-sm text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50"
                 value={newFolderInput}
                 onChange={e => setNewFolderInput(e.target.value)}
                 disabled={submittingFolder}
@@ -240,7 +240,7 @@ export default function TasksPage() {
 
         {loadingFolders ? (
           <div className="flex items-center justify-center py-6">
-            <Loader2 className="animate-spin text-slate-400" size={24} />
+            <Loader2 className="animate-spin text-white/40" size={24} />
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-1 gap-3 overflow-y-auto max-h-[30vh] md:max-h-full">
@@ -249,23 +249,23 @@ export default function TasksPage() {
                 key={folder.id}
                 onClick={() => setActiveFolderId(folder.id)}
                 className={clsx(
-                  "relative p-3 rounded-lg text-left transition-all duration-200 border border-transparent flex items-center gap-3",
+                  "relative p-3 rounded-xl text-left transition-all duration-200 border border-transparent flex items-center gap-3",
                   activeFolderId === folder.id
-                    ? "bg-white shadow-md border-slate-100 scale-[1.02]"
-                    : "bg-white/40 hover:bg-white/70"
+                    ? "bg-white/[0.04] shadow-lg shadow-pink-500/[0.03] border-pink-500/15 scale-[1.02]"
+                    : "bg-white/[0.03] hover:bg-white/10"
                 )}
               >
                 <div className={clsx("w-3 h-full absolute left-0 top-0 bottom-0 rounded-l-lg", folder.color)}></div>
-                <Folder size={18} className="text-slate-500 ml-2" />
-                <span className="font-medium text-slate-700 truncate">{folder.name}</span>
+                <Folder size={18} className="text-white/50 ml-2" />
+                <span className="font-medium text-white/70 truncate">{folder.name}</span>
                 {activeFolderId === folder.id && (
-                  <motion.div layoutId="active-indicator" className="absolute right-3 w-2 h-2 rounded-full bg-yellow-500" />
+                  <motion.div layoutId="active-indicator" className="absolute right-3 w-2 h-2 rounded-full bg-pink-400" />
                 )}
               </button>
             ))}
 
             {folders.length === 0 && (
-              <div className="text-center py-6 text-slate-400 text-sm italic">
+              <div className="text-center py-6 text-white/40 text-sm italic">
                 Henüz klasör yok
               </div>
             )}
@@ -277,10 +277,10 @@ export default function TasksPage() {
       <div className="flex-1 h-full">
         <Paper className="h-full flex flex-col relative" style={{ minHeight: '500px' }}>
           {/* Header */}
-          <div className="flex items-center justify-between pb-6 border-b border-slate-200">
+          <div className="flex items-center justify-between pb-6 border-b border-pink-500/15">
             <div>
               <Handwriting className="text-3xl">{activeFolder?.name || 'Görevler'}</Handwriting>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-white/40 mt-1">
                 {completedCount} / {activeTasks.length} tamamlandı
               </p>
             </div>
@@ -293,12 +293,12 @@ export default function TasksPage() {
           <div className="flex-1 overflow-y-auto mt-4 pr-2 space-y-1">
             {loadingTasks ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="animate-spin text-slate-400" size={28} />
+                <Loader2 className="animate-spin text-white/40" size={28} />
               </div>
             ) : activeTasks.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-300">
+              <div className="h-full flex flex-col items-center justify-center text-white/20">
                 <CheckCircle2 size={48} className="mb-4 opacity-50" />
-                <p className="font-serif italic text-lg">Bu klasörde görev yok.</p>
+                <p className="font-display italic text-lg">Bu klasörde görev yok.</p>
               </div>
             ) : (
               activeTasks.map((task) => (
@@ -307,31 +307,31 @@ export default function TasksPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   key={task.id}
-                  className="group flex items-center gap-3 p-3 hover:bg-slate-50 rounded-lg transition-colors border-b border-slate-100 last:border-0"
+                  className="group flex items-center gap-3 p-3 hover:bg-white/[0.03] rounded-xl transition-colors border-b border-white/10 last:border-0"
                 >
                   <button
                     onClick={() => handleToggleTask(task.id)}
-                    className="text-slate-400 hover:text-green-600 transition-colors"
+                    className="text-white/40 hover:text-emerald-400 transition-colors"
                   >
-                    {task.completed ? <CheckCircle2 size={22} className="text-green-600" /> : <Circle size={22} />}
+                    {task.completed ? <CheckCircle2 size={22} className="text-emerald-400" /> : <Circle size={22} />}
                   </button>
 
                   <div className="flex-1">
                     <p className={clsx(
-                      "text-slate-800 text-lg font-serif",
-                      task.completed && "line-through text-slate-400 decoration-slate-300"
+                      "text-white/90 text-lg font-display",
+                      task.completed && "line-through text-white/40 decoration-white/20"
                     )}>
                       {task.title}
                     </p>
                     <div className="flex gap-2 mt-1 flex-wrap">
-                      <span className="text-[10px] text-slate-400">
+                      <span className="text-[10px] text-white/40">
                         {format(new Date(task.createdAt), 'd MMM', { locale: tr })}
                       </span>
                       <span className={`text-[10px] px-1.5 rounded border uppercase tracking-wide font-bold ${getPriorityBadge(task.priority)}`}>
                         {getPriorityLabel(task.priority)}
                       </span>
                       {task.isRecurring && (
-                        <span className="text-[10px] bg-blue-50 px-1.5 rounded text-blue-500 border border-blue-200 uppercase tracking-wide">
+                        <span className="text-[10px] bg-blue-500/10 px-1.5 rounded text-pink-400 border border-pink-500/15 uppercase tracking-wide">
                           Tekrar
                         </span>
                       )}
@@ -342,13 +342,13 @@ export default function TasksPage() {
                       )}
                     </div>
                     {task.description && (
-                      <p className="text-xs text-slate-400 mt-1 line-clamp-1">{task.description}</p>
+                      <p className="text-xs text-white/40 mt-1 line-clamp-1">{task.description}</p>
                     )}
                   </div>
 
                   <button
                     onClick={() => handleDeleteTask(task.id)}
-                    className="opacity-0 group-hover:opacity-100 p-2 text-slate-300 hover:text-red-500 transition-all"
+                    className="opacity-0 group-hover:opacity-100 p-2 text-white/20 hover:text-rose-400 transition-all"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -358,12 +358,12 @@ export default function TasksPage() {
           </div>
 
           {/* Add Task Bar */}
-          <div className="mt-4 pt-4 border-t-2 border-slate-100 border-dashed">
+          <div className="mt-4 pt-4 border-t-2 border-dashed border-pink-500/10">
             <form onSubmit={handleAddTask} className="flex gap-2">
               <input
                 type="text"
                 placeholder="Yeni bir görev ekle..."
-                className="flex-1 bg-transparent font-serif text-lg placeholder:text-slate-300 focus:outline-none"
+                className="flex-1 bg-transparent font-display text-lg text-white/90 placeholder:text-white/20 focus:outline-none"
                 value={newTaskInput}
                 onChange={(e) => setNewTaskInput(e.target.value)}
                 disabled={submittingTask || !activeFolderId}
@@ -371,7 +371,7 @@ export default function TasksPage() {
               <button
                 type="submit"
                 disabled={!newTaskInput.trim() || submittingTask || !activeFolderId}
-                className="bg-slate-800 text-white p-2 rounded-full hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="bg-pink-500 text-white p-2 rounded-full hover:bg-pink-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {submittingTask ? <Loader2 size={20} className="animate-spin" /> : <Plus size={20} />}
               </button>

@@ -67,24 +67,24 @@ const typeBorderColor = (type: string): string => {
     case 'reminder':
       return 'border-l-purple-400';
     default:
-      return 'border-l-slate-300';
+      return 'border-l-white/20';
   }
 };
 
 const typeIconBg = (type: string): string => {
   switch (type) {
     case 'encouragement':
-      return 'bg-rose-100 text-rose-600';
+      return 'bg-rose-500/15 text-rose-400';
     case 'milestone':
-      return 'bg-amber-100 text-amber-600';
+      return 'bg-amber-500/15 text-amber-400';
     case 'streak':
-      return 'bg-orange-100 text-orange-600';
+      return 'bg-orange-500/15 text-orange-400';
     case 'task_assigned':
-      return 'bg-blue-100 text-blue-600';
+      return 'bg-blue-500/15 text-blue-400';
     case 'reminder':
-      return 'bg-purple-100 text-purple-600';
+      return 'bg-purple-500/15 text-purple-400';
     default:
-      return 'bg-slate-100 text-slate-600';
+      return 'bg-white/[0.06] text-white/50';
   }
 };
 
@@ -159,7 +159,7 @@ export default function NotificationBell() {
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <button
-          className="relative p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-600"
+          className="relative p-2 rounded-full active:bg-white/10 transition-colors text-white/50"
           aria-label="Bildirimler"
         >
           <Bell size={22} />
@@ -167,7 +167,7 @@ export default function NotificationBell() {
             <motion.span
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold px-1 leading-none"
+              className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-pink-500 text-white text-[10px] font-bold px-1 leading-none"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </motion.span>
@@ -176,12 +176,12 @@ export default function NotificationBell() {
       </SheetTrigger>
 
       <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
-        <SheetHeader className="px-5 pt-5 pb-3 border-b border-slate-100">
+        <SheetHeader className="px-5 pt-5 pb-3 border-b border-pink-500/10">
           <SheetTitle className="flex items-center gap-2 text-lg">
-            <Bell size={20} className="text-slate-700" />
+            <Bell size={20} className="text-white/70" />
             Bildirimler
             {unreadCount > 0 && (
-              <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
+              <span className="text-xs bg-pink-500/15 text-pink-300 px-2 py-0.5 rounded-full font-medium">
                 {unreadCount} okunmamış
               </span>
             )}
@@ -191,15 +191,15 @@ export default function NotificationBell() {
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center py-20">
-              <Loader2 className="animate-spin text-slate-400" size={24} />
+              <Loader2 className="animate-spin text-pink-400/50" size={24} />
             </div>
           ) : notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+            <div className="flex flex-col items-center justify-center py-20 text-white/40">
               <Inbox size={40} className="mb-3 opacity-50" />
               <p className="text-sm italic">Henüz bildirim yok.</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-pink-500/5">
               <AnimatePresence>
                 {notifications.map((n, idx) => (
                   <motion.div
@@ -212,8 +212,8 @@ export default function NotificationBell() {
                     }}
                     className={`flex items-start gap-3 px-5 py-4 cursor-pointer transition-colors border-l-4 ${typeBorderColor(n.type)} ${
                       n.isRead
-                        ? 'bg-white hover:bg-slate-50'
-                        : 'bg-amber-50/40 hover:bg-amber-50/70'
+                        ? 'bg-white/[0.04] active:bg-white/[0.06]'
+                        : 'bg-amber-500/5 active:bg-amber-500/10'
                     }`}
                   >
                     {/* Icon */}
@@ -224,22 +224,22 @@ export default function NotificationBell() {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className={`text-sm truncate ${n.isRead ? 'font-medium text-slate-600' : 'font-semibold text-slate-800'}`}>
+                        <span className={`text-sm truncate ${n.isRead ? 'font-medium text-white/60' : 'font-semibold text-white/90'}`}>
                           {n.title}
                         </span>
                         {!n.isRead && (
-                          <span className="inline-block w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
+                          <span className="inline-block w-2 h-2 rounded-full bg-pink-500 flex-shrink-0" />
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-white/50 mt-0.5 line-clamp-2 leading-relaxed">
                         {n.message}
                       </p>
                       <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-[10px] text-slate-400">
+                        <span className="text-[10px] text-white/40">
                           {timeAgo(n.createdAt)}
                         </span>
                         {n.sender?.displayName && (
-                          <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] bg-white/[0.06] text-white/40 px-1.5 py-0.5 rounded">
                             {n.sender.displayName}
                           </span>
                         )}
@@ -248,7 +248,7 @@ export default function NotificationBell() {
 
                     {/* Read indicator */}
                     {n.isRead && (
-                      <CheckCircle size={14} className="text-green-400 flex-shrink-0 mt-1" />
+                      <CheckCircle size={14} className="text-emerald-400 flex-shrink-0 mt-1" />
                     )}
                   </motion.div>
                 ))}

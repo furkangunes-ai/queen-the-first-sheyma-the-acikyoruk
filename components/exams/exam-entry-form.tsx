@@ -192,8 +192,8 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
     }
   }
 
-  const inputClassName = "w-full p-2 rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300";
-  const buttonClassName = "bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700 transition-colors font-bold";
+  const inputClassName = "w-full p-2 rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400";
+  const buttonClassName = "bg-pink-500 text-white px-6 py-2 rounded shadow hover:bg-pink-400 transition-colors font-bold";
 
   return (
     <Paper className="max-w-3xl mx-auto rounded-lg">
@@ -201,15 +201,15 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
       <div className="flex items-center gap-3 mb-8">
         <div
           className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-colors ${
-            step >= 1 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'
+            step >= 1 ? 'bg-pink-500 text-white' : 'bg-white/10 text-white/50'
           }`}
         >
           1
         </div>
-        <div className={`flex-1 h-1 rounded ${step >= 2 ? 'bg-blue-600' : 'bg-slate-200'} transition-colors`} />
+        <div className={`flex-1 h-1 rounded ${step >= 2 ? 'bg-pink-500' : 'bg-white/10'} transition-colors`} />
         <div
           className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-colors ${
-            step >= 2 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'
+            step >= 2 ? 'bg-pink-500 text-white' : 'bg-white/10 text-white/50'
           }`}
         >
           2
@@ -232,7 +232,7 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
             <div className="space-y-5">
               {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-medium text-white/70 mb-1">
                   Sınav Başlığı
                 </label>
                 <input
@@ -246,11 +246,11 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
 
               {/* Exam Type */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-medium text-white/70 mb-1">
                   Sınav Türü
                 </label>
                 {loadingExamTypes ? (
-                  <div className="flex items-center gap-2 text-slate-400 py-2">
+                  <div className="flex items-center gap-2 text-white/40 py-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span className="text-sm">Yükleniyor...</span>
                   </div>
@@ -272,7 +272,7 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
 
               {/* Date */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-medium text-white/70 mb-1">
                   Sınav Tarihi
                 </label>
                 <input
@@ -285,8 +285,8 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
 
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Notlar <span className="text-slate-400 font-normal">(isteğe bağlı)</span>
+                <label className="block text-sm font-medium text-white/70 mb-1">
+                  Notlar <span className="text-white/40 font-normal">(isteğe bağlı)</span>
                 </label>
                 <textarea
                   placeholder="Sınavla ilgili notlarınız..."
@@ -302,7 +302,7 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
             <div className="flex justify-between items-center mt-8">
               <button
                 onClick={onClose}
-                className="text-slate-500 hover:text-slate-700 transition-colors text-sm font-medium"
+                className="text-white/50 hover:text-white/70 transition-colors text-sm font-medium"
               >
                 Vazgeç
               </button>
@@ -331,7 +331,7 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
             </Handwriting>
 
             {loadingSubjects ? (
-              <div className="flex items-center justify-center gap-3 py-12 text-slate-400">
+              <div className="flex items-center justify-center gap-3 py-12 text-white/40">
                 <Loader2 className="w-5 h-5 animate-spin" />
                 <span>Dersler yükleniyor...</span>
               </div>
@@ -340,20 +340,20 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse">
                     <thead>
-                      <tr className="border-b-2 border-slate-300">
-                        <th className="text-left py-2 px-3 text-sm font-semibold text-slate-700">
+                      <tr className="border-b-2 border-pink-500/15">
+                        <th className="text-left py-2 px-3 text-sm font-semibold text-white/70">
                           Ders
                         </th>
-                        <th className="text-center py-2 px-3 text-sm font-semibold text-green-700 w-20">
+                        <th className="text-center py-2 px-3 text-sm font-semibold text-emerald-400 w-20">
                           Doğru
                         </th>
-                        <th className="text-center py-2 px-3 text-sm font-semibold text-red-700 w-20">
+                        <th className="text-center py-2 px-3 text-sm font-semibold text-rose-400 w-20">
                           Yanlış
                         </th>
-                        <th className="text-center py-2 px-3 text-sm font-semibold text-slate-500 w-20">
+                        <th className="text-center py-2 px-3 text-sm font-semibold text-white/50 w-20">
                           Boş
                         </th>
-                        <th className="text-center py-2 px-3 text-sm font-semibold text-blue-700 w-24">
+                        <th className="text-center py-2 px-3 text-sm font-semibold text-pink-400 w-24">
                           Net
                         </th>
                       </tr>
@@ -362,9 +362,9 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                       {results.map((r, i) => (
                         <tr
                           key={r.subjectId}
-                          className="border-b border-slate-200 hover:bg-white/60 transition-colors"
+                          className="border-b border-white/10 hover:bg-white/[0.04] transition-colors"
                         >
-                          <td className="py-2 px-3 text-sm font-medium text-slate-800">
+                          <td className="py-2 px-3 text-sm font-medium text-white/90">
                             {r.subjectName}
                           </td>
                           <td className="py-2 px-3">
@@ -375,7 +375,7 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                               onChange={(e) =>
                                 updateResult(i, 'correctCount', parseInt(e.target.value) || 0)
                               }
-                              className="w-full p-1.5 rounded bg-white border border-slate-200 text-center text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+                              className="w-full p-1.5 rounded bg-white/[0.06] border border-pink-500/[0.12] text-center text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
                             />
                           </td>
                           <td className="py-2 px-3">
@@ -386,7 +386,7 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                               onChange={(e) =>
                                 updateResult(i, 'wrongCount', parseInt(e.target.value) || 0)
                               }
-                              className="w-full p-1.5 rounded bg-white border border-slate-200 text-center text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+                              className="w-full p-1.5 rounded bg-white/[0.06] border border-pink-500/[0.12] text-center text-sm text-white focus:outline-none focus:ring-2 focus:ring-rose-400"
                             />
                           </td>
                           <td className="py-2 px-3">
@@ -397,24 +397,24 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                               onChange={(e) =>
                                 updateResult(i, 'emptyCount', parseInt(e.target.value) || 0)
                               }
-                              className="w-full p-1.5 rounded bg-white border border-slate-200 text-center text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
+                              className="w-full p-1.5 rounded bg-white/[0.06] border border-pink-500/[0.12] text-center text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/30"
                             />
                           </td>
-                          <td className="py-2 px-3 text-center text-sm font-bold text-blue-700">
+                          <td className="py-2 px-3 text-center text-sm font-bold text-pink-400">
                             {nets[i].toFixed(2)}
                           </td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr className="border-t-2 border-slate-300">
+                      <tr className="border-t-2 border-pink-500/15">
                         <td
                           colSpan={4}
-                          className="py-3 px-3 text-right text-sm font-bold text-slate-700"
+                          className="py-3 px-3 text-right text-sm font-bold text-white/70"
                         >
                           Toplam Net:
                         </td>
-                        <td className="py-3 px-3 text-center text-lg font-bold text-blue-700">
+                        <td className="py-3 px-3 text-center text-lg font-bold text-pink-400">
                           {totalNet.toFixed(2)}
                         </td>
                       </tr>
@@ -426,7 +426,7 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                 <div className="flex justify-between items-center mt-8">
                   <button
                     onClick={() => setStep(1)}
-                    className="text-slate-500 hover:text-slate-700 transition-colors text-sm font-medium"
+                    className="text-white/50 hover:text-white/70 transition-colors text-sm font-medium"
                   >
                     Geri Dön
                   </button>
