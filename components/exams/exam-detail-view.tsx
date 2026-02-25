@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Paper, Handwriting, Tape } from '@/components/skeuomorphic';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Camera, BookOpen, PieChart as PieChartIcon, BarChart3, Image, Trash2, Pencil, Check, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Camera, BookOpen, PieChart as PieChartIcon, BarChart3, Image, Trash2, Pencil, Check, X, Loader2, ListOrdered, Target, CheckCircle, AlertTriangle, RefreshCw, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -11,6 +11,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend
 } from 'recharts';
+import QuestionDetailModal, { type WrongQuestionDetail } from './question-detail-modal';
 
 // ---------- Types ----------
 
@@ -31,6 +32,8 @@ interface WrongQuestion {
   errorReason: { label: string } | null;
   notes: string | null;
   photoUrl: string | null;
+  difficulty: string | null;
+  understandingStatus: string | null;
 }
 
 interface EmptyQuestion {
@@ -62,13 +65,26 @@ interface ExamDetailViewProps {
 const CHART_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
 const TABS = [
-  { key: 'summary', label: 'Özet', icon: BookOpen },
-  { key: 'wrong', label: 'Yanlış Analizi', icon: PieChartIcon },
-  { key: 'topics', label: 'Konu Dağılımı', icon: BarChart3 },
-  { key: 'photos', label: 'Fotoğraflar', icon: Image },
+  { key: 'summary', label: 'Ozet', icon: BookOpen },
+  { key: 'questions', label: 'Sorular', icon: ListOrdered },
+  { key: 'wrong', label: 'Yanlis Analizi', icon: PieChartIcon },
+  { key: 'topics', label: 'Konu Dagilimi', icon: BarChart3 },
+  { key: 'photos', label: 'Fotograflar', icon: Image },
 ] as const;
 
 type TabKey = (typeof TABS)[number]['key'];
+
+const DIFFICULTY_MAP: Record<string, { label: string; color: string; bg: string }> = {
+  kolay: { label: 'Kolay', color: 'text-green-700', bg: 'bg-green-100 border-green-200' },
+  orta: { label: 'Orta', color: 'text-amber-700', bg: 'bg-amber-100 border-amber-200' },
+  zor: { label: 'Zor', color: 'text-red-700', bg: 'bg-red-100 border-red-200' },
+};
+
+const STATUS_MAP: Record<string, { label: string; icon: React.ElementType; color: string; bg: string }> = {
+  anladim: { label: 'Anladim', icon: CheckCircle, color: 'text-emerald-700', bg: 'bg-emerald-100 border-emerald-200' },
+  tekrar: { label: 'Tekrar Lazim', icon: RefreshCw, color: 'text-amber-700', bg: 'bg-amber-100 border-amber-200' },
+  anlamadim: { label: 'Anlamadim', icon: AlertTriangle, color: 'text-red-700', bg: 'bg-red-100 border-red-200' },
+};
 
 // ---------- Helpers ----------
 
@@ -144,9 +160,9 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
       {/* Total Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Doğru', value: totals.correct, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-          { label: 'Yanlış', value: totals.wrong, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
-          { label: 'Boş', value: totals.empty, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
+          { label: 'Dogru', value: totals.correct, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+          { label: 'Yanlis', value: totals.wrong, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
+          { label: 'Bos', value: totals.empty, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
           { label: 'Net', value: totals.net.toFixed(2), color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
         ].map((stat) => (
           <div
@@ -166,9 +182,9 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
             <thead>
               <tr className="border-b-2 border-slate-300">
                 <th className="text-left py-3 px-4 font-semibold text-slate-700">Ders</th>
-                <th className="text-center py-3 px-4 font-semibold text-emerald-700">Doğru</th>
-                <th className="text-center py-3 px-4 font-semibold text-red-700">Yanlış</th>
-                <th className="text-center py-3 px-4 font-semibold text-amber-700">Boş</th>
+                <th className="text-center py-3 px-4 font-semibold text-emerald-700">Dogru</th>
+                <th className="text-center py-3 px-4 font-semibold text-red-700">Yanlis</th>
+                <th className="text-center py-3 px-4 font-semibold text-amber-700">Bos</th>
                 <th className="text-center py-3 px-4 font-semibold text-indigo-700">Net</th>
               </tr>
             </thead>
@@ -193,7 +209,7 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
       {/* Radar Chart */}
       {radarData.length >= 3 && (
         <div className="bg-white/60 border border-slate-200 rounded-xl p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-600 mb-4 text-center">Ders Bazında Net Dağılımı</h3>
+          <h3 className="text-sm font-semibold text-slate-600 mb-4 text-center">Ders Bazinda Net Dagilimi</h3>
           <ResponsiveContainer width="100%" height={320}>
             <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
               <PolarGrid stroke="#e2e8f0" />
@@ -225,13 +241,226 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
   );
 }
 
+// ---------- Tab: Questions (Tum Sorular) ----------
+
+function QuestionsTab({
+  exam,
+  onQuestionClick,
+}: {
+  exam: ExamDetail;
+  onQuestionClick: (questionIndex: number) => void;
+}) {
+  const [subjectFilter, setSubjectFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  const allSubjects = useMemo(() => {
+    const names = new Set<string>();
+    exam.wrongQuestions.forEach(q => names.add(q.subject.name));
+    exam.emptyQuestions.forEach(q => names.add(q.subject.name));
+    return Array.from(names).sort();
+  }, [exam.wrongQuestions, exam.emptyQuestions]);
+
+  const filteredWrong = useMemo(() => {
+    return exam.wrongQuestions.filter(q => {
+      if (subjectFilter !== 'all' && q.subject.name !== subjectFilter) return false;
+      if (statusFilter !== 'all' && (q.understandingStatus ?? 'none') !== statusFilter) return false;
+      return true;
+    });
+  }, [exam.wrongQuestions, subjectFilter, statusFilter]);
+
+  const filteredEmpty = useMemo(() => {
+    return exam.emptyQuestions.filter(q => {
+      if (subjectFilter !== 'all' && q.subject.name !== subjectFilter) return false;
+      return true;
+    });
+  }, [exam.emptyQuestions, subjectFilter]);
+
+  // Stats summary
+  const statusCounts = useMemo(() => {
+    const counts = { anladim: 0, tekrar: 0, anlamadim: 0, none: 0 };
+    exam.wrongQuestions.forEach(q => {
+      const s = q.understandingStatus ?? 'none';
+      if (s in counts) counts[s as keyof typeof counts]++;
+      else counts.none++;
+    });
+    return counts;
+  }, [exam.wrongQuestions]);
+
+  if (exam.wrongQuestions.length === 0 && exam.emptyQuestions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+        <ListOrdered className="w-12 h-12 mb-4 opacity-50" />
+        <p className="text-lg font-medium">Soru bulunamadi</p>
+        <p className="text-sm mt-1">Bu denemede kayitli soru yok.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Status Summary Bar */}
+      {exam.wrongQuestions.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
+            <CheckCircle className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
+            <p className="text-lg font-bold text-emerald-700">{statusCounts.anladim}</p>
+            <p className="text-[10px] text-emerald-600 uppercase font-medium">Anladim</p>
+          </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+            <RefreshCw className="w-5 h-5 text-amber-500 mx-auto mb-1" />
+            <p className="text-lg font-bold text-amber-700">{statusCounts.tekrar}</p>
+            <p className="text-[10px] text-amber-600 uppercase font-medium">Tekrar Lazim</p>
+          </div>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+            <AlertTriangle className="w-5 h-5 text-red-500 mx-auto mb-1" />
+            <p className="text-lg font-bold text-red-700">{statusCounts.anlamadim}</p>
+            <p className="text-[10px] text-red-600 uppercase font-medium">Anlamadim</p>
+          </div>
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+            <Target className="w-5 h-5 text-slate-400 mx-auto mb-1" />
+            <p className="text-lg font-bold text-slate-600">{statusCounts.none}</p>
+            <p className="text-[10px] text-slate-500 uppercase font-medium">Belirtilmemis</p>
+          </div>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="flex gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Filter size={14} className="text-slate-400" />
+          <select
+            value={subjectFilter}
+            onChange={(e) => setSubjectFilter(e.target.value)}
+            className="text-sm p-1.5 rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+          >
+            <option value="all">Tum Dersler</option>
+            {allSubjects.map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="text-sm p-1.5 rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+        >
+          <option value="all">Tum Durumlar</option>
+          <option value="anladim">Anladim</option>
+          <option value="tekrar">Tekrar Lazim</option>
+          <option value="anlamadim">Anlamadim</option>
+          <option value="none">Belirtilmemis</option>
+        </select>
+      </div>
+
+      {/* Wrong Questions */}
+      {filteredWrong.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-red-600 mb-3 flex items-center gap-2">
+            <span className="w-2 h-2 bg-red-500 rounded-full" />
+            Yanlis Sorular ({filteredWrong.length})
+          </h3>
+          <div className="space-y-2">
+            {filteredWrong.map((wq) => {
+              const globalIdx = exam.wrongQuestions.findIndex(q => q.id === wq.id);
+              const statusInfo = wq.understandingStatus ? STATUS_MAP[wq.understandingStatus] : null;
+              const StatusIcon = statusInfo?.icon;
+              const difficultyInfo = wq.difficulty ? DIFFICULTY_MAP[wq.difficulty] : null;
+
+              return (
+                <motion.button
+                  key={wq.id}
+                  onClick={() => onQuestionClick(globalIdx)}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  className="w-full text-left bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-blue-300 transition-all"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-slate-800 text-sm">
+                          S.{wq.questionNumber}
+                        </span>
+                        <span className="text-xs text-slate-400">{wq.subject.name}</span>
+                        {wq.topic && (
+                          <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                            {wq.topic.name}
+                          </span>
+                        )}
+                        {wq.errorReason && (
+                          <span className="inline-flex items-center rounded-full bg-red-50 text-red-600 px-2 py-0.5 text-[11px] font-medium border border-red-200">
+                            {wq.errorReason.label}
+                          </span>
+                        )}
+                      </div>
+                      {wq.notes && (
+                        <p className="text-xs text-slate-500 mt-1 italic truncate">{wq.notes}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {difficultyInfo && (
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${difficultyInfo.bg} ${difficultyInfo.color}`}>
+                          {difficultyInfo.label}
+                        </span>
+                      )}
+                      {StatusIcon && statusInfo && (
+                        <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusInfo.bg} ${statusInfo.color}`}>
+                          <StatusIcon size={10} />
+                          {statusInfo.label}
+                        </span>
+                      )}
+                      {wq.photoUrl && (
+                        <Camera className="w-4 h-4 text-blue-400" />
+                      )}
+                    </div>
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Empty Questions */}
+      {filteredEmpty.length > 0 && statusFilter === 'all' && (
+        <div>
+          <h3 className="text-sm font-semibold text-amber-600 mb-3 flex items-center gap-2">
+            <span className="w-2 h-2 bg-amber-500 rounded-full" />
+            Bos Sorular ({filteredEmpty.length})
+          </h3>
+          <div className="space-y-2">
+            {filteredEmpty.map((eq) => (
+              <div
+                key={eq.id}
+                className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm"
+              >
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-slate-800 text-sm">S.{eq.questionNumber}</span>
+                  <span className="text-xs text-slate-400">{eq.subject.name}</span>
+                  {eq.topic && (
+                    <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                      {eq.topic.name}
+                    </span>
+                  )}
+                </div>
+                {eq.notes && (
+                  <p className="text-xs text-slate-500 mt-1 italic">{eq.notes}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------- Tab: Wrong Analysis ----------
 
 function WrongAnalysisTab({ exam }: { exam: ExamDetail }) {
   const errorReasonData = useMemo(() => {
     const counts: Record<string, number> = {};
     exam.wrongQuestions.forEach((wq) => {
-      const label = wq.errorReason?.label ?? 'Belirtilmemiş';
+      const label = wq.errorReason?.label ?? 'Belirtilmemis';
       counts[label] = (counts[label] || 0) + 1;
     });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
@@ -241,8 +470,8 @@ function WrongAnalysisTab({ exam }: { exam: ExamDetail }) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-slate-400">
         <BookOpen className="w-12 h-12 mb-4 opacity-50" />
-        <p className="text-lg font-medium">Yanlış soru bulunamadı</p>
-        <p className="text-sm mt-1">Bu denemede yanlış yapılan soru yok.</p>
+        <p className="text-lg font-medium">Yanlis soru bulunamadi</p>
+        <p className="text-sm mt-1">Bu denemede yanlis yapilan soru yok.</p>
       </div>
     );
   }
@@ -252,7 +481,7 @@ function WrongAnalysisTab({ exam }: { exam: ExamDetail }) {
       {/* Error Reason Pie Chart */}
       {errorReasonData.length > 0 && (
         <div className="bg-white/60 border border-slate-200 rounded-xl p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-600 mb-4 text-center">Hata Nedeni Dağılımı</h3>
+          <h3 className="text-sm font-semibold text-slate-600 mb-4 text-center">Hata Nedeni Dagilimi</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -285,7 +514,7 @@ function WrongAnalysisTab({ exam }: { exam: ExamDetail }) {
       {/* Wrong Questions List */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-slate-600">
-          Yanlış Sorular ({exam.wrongQuestions.length})
+          Yanlis Sorular ({exam.wrongQuestions.length})
         </h3>
         {exam.wrongQuestions.map((wq) => (
           <motion.div
@@ -339,7 +568,7 @@ function TopicDistributionTab({ exam }: { exam: ExamDetail }) {
   const topicData = useMemo(() => {
     const topicMap: Record<string, { topic: string; subject: string; count: number }> = {};
     exam.wrongQuestions.forEach((wq) => {
-      const topicName = wq.topic?.name ?? 'Belirtilmemiş';
+      const topicName = wq.topic?.name ?? 'Belirtilmemis';
       const key = `${wq.subject.name}::${topicName}`;
       if (!topicMap[key]) {
         topicMap[key] = { topic: topicName, subject: wq.subject.name, count: 0 };
@@ -365,8 +594,8 @@ function TopicDistributionTab({ exam }: { exam: ExamDetail }) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-slate-400">
         <BarChart3 className="w-12 h-12 mb-4 opacity-50" />
-        <p className="text-lg font-medium">Konu verisi bulunamadı</p>
-        <p className="text-sm mt-1">Bu denemede konu bazlı analiz için yeterli veri yok.</p>
+        <p className="text-lg font-medium">Konu verisi bulunamadi</p>
+        <p className="text-sm mt-1">Bu denemede konu bazli analiz icin yeterli veri yok.</p>
       </div>
     );
   }
@@ -374,7 +603,7 @@ function TopicDistributionTab({ exam }: { exam: ExamDetail }) {
   return (
     <div className="space-y-8">
       <div className="bg-white/60 border border-slate-200 rounded-xl p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-600 mb-4 text-center">Konulara Göre Yanlış Sayısı</h3>
+        <h3 className="text-sm font-semibold text-slate-600 mb-4 text-center">Konulara Gore Yanlis Sayisi</h3>
         <ResponsiveContainer width="100%" height={Math.max(300, topicData.length * 40)}>
           <BarChart
             data={topicData}
@@ -396,7 +625,7 @@ function TopicDistributionTab({ exam }: { exam: ExamDetail }) {
                 props?.payload?.subject ?? '',
               ]}
             />
-            <Bar dataKey="count" name="Yanlış" radius={[0, 6, 6, 0]}>
+            <Bar dataKey="count" name="Yanlis" radius={[0, 6, 6, 0]}>
               {topicData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={subjectColorMap[entry.subject] ?? CHART_COLORS[0]} />
               ))}
@@ -428,61 +657,92 @@ function PhotosTab({ exam }: { exam: ExamDetail }) {
     return exam.wrongQuestions.filter((wq) => wq.photoUrl);
   }, [exam.wrongQuestions]);
 
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+
   if (photosQuestions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-slate-400">
         <Image className="w-12 h-12 mb-4 opacity-50" />
-        <p className="text-lg font-medium">Fotoğraf bulunamadı</p>
-        <p className="text-sm mt-1">Bu denemede fotoğrafa sahip soru yok.</p>
+        <p className="text-lg font-medium">Fotograf bulunamadi</p>
+        <p className="text-sm mt-1">Bu denemede fotografa sahip soru yok.</p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {photosQuestions.map((wq) => (
-        <motion.div
-          key={wq.id}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
-        >
-          {/* Photo area */}
-          <div className="relative bg-slate-100 aspect-[4/3] flex items-center justify-center overflow-hidden">
-            {wq.photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={wq.photoUrl}
-                alt={`Soru ${wq.questionNumber}`}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <Image className="w-10 h-10 text-slate-300" />
-            )}
-            {/* Polaroid-style top tape */}
-            <Tape className="top-[-4px] left-1/2 -translate-x-1/2" />
-          </div>
-
-          {/* Info */}
-          <div className="p-3 space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-slate-800 text-sm">
-                Soru {wq.questionNumber}
-              </span>
-              <span className="text-xs text-slate-400">{wq.subject.name}</span>
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {photosQuestions.map((wq) => (
+          <motion.div
+            key={wq.id}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => setSelectedPhoto(wq.photoUrl)}
+          >
+            {/* Photo area */}
+            <div className="relative bg-slate-100 aspect-[4/3] flex items-center justify-center overflow-hidden">
+              {wq.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={wq.photoUrl}
+                  alt={`Soru ${wq.questionNumber}`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Image className="w-10 h-10 text-slate-300" />
+              )}
+              <Tape className="top-[-4px] left-1/2 -translate-x-1/2" />
             </div>
-            {wq.topic && (
-              <p className="text-xs text-slate-500">{wq.topic.name}</p>
-            )}
-            {wq.errorReason && (
-              <span className="inline-flex items-center rounded-full bg-red-50 text-red-700 px-2 py-0.5 text-xs font-medium border border-red-200">
-                {wq.errorReason.label}
-              </span>
-            )}
-          </div>
-        </motion.div>
-      ))}
-    </div>
+
+            {/* Info */}
+            <div className="p-3 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-slate-800 text-sm">
+                  Soru {wq.questionNumber}
+                </span>
+                <span className="text-xs text-slate-400">{wq.subject.name}</span>
+              </div>
+              {wq.topic && (
+                <p className="text-xs text-slate-500">{wq.topic.name}</p>
+              )}
+              {wq.errorReason && (
+                <span className="inline-flex items-center rounded-full bg-red-50 text-red-700 px-2 py-0.5 text-xs font-medium border border-red-200">
+                  {wq.errorReason.label}
+                </span>
+              )}
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Full Photo Overlay */}
+      <AnimatePresence>
+        {selectedPhoto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedPhoto(null)}
+          >
+            <button
+              onClick={() => setSelectedPhoto(null)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            >
+              <X size={24} />
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={selectedPhoto}
+              alt="Buyuk fotograf"
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
@@ -505,15 +765,18 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
   const [editNotes, setEditNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Question detail modal
+  const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null);
+
   const handleDelete = async () => {
     setDeleting(true);
     try {
       const res = await fetch(`/api/exams/${examId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Silme başarısız');
+      if (!res.ok) throw new Error('Silme basarisiz');
       toast.success('Deneme silindi');
       onDeleted ? onDeleted() : onBack();
     } catch {
-      toast.error('Deneme silinirken hata oluştu');
+      toast.error('Deneme silinirken hata olustu');
     } finally {
       setDeleting(false);
       setShowDeleteConfirm(false);
@@ -540,16 +803,28 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
           ...(editNotes && { notes: editNotes }),
         }),
       });
-      if (!res.ok) throw new Error('Güncelleme başarısız');
+      if (!res.ok) throw new Error('Guncelleme basarisiz');
       const updated = await res.json();
       setExam(prev => prev ? { ...prev, title: updated.title, date: updated.date } : prev);
-      toast.success('Deneme güncellendi');
+      toast.success('Deneme guncellendi');
       setEditing(false);
     } catch {
-      toast.error('Deneme güncellenirken hata oluştu');
+      toast.error('Deneme guncellenirken hata olustu');
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleQuestionUpdate = (questionId: string, updates: Partial<WrongQuestionDetail>) => {
+    setExam(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        wrongQuestions: prev.wrongQuestions.map(q =>
+          q.id === questionId ? { ...q, ...updates } : q
+        ),
+      };
+    });
   };
 
   useEffect(() => {
@@ -562,7 +837,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
       try {
         const res = await fetch(`/api/exams/${examId}`);
         if (!res.ok) {
-          throw new Error(`Sınav yüklenemedi (${res.status})`);
+          throw new Error(`Sinav yuklenemedi (${res.status})`);
         }
         const data: ExamDetail = await res.json();
         if (!cancelled) {
@@ -570,7 +845,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Bilinmeyen bir hata oluştu');
+          setError(err instanceof Error ? err.message : 'Bilinmeyen bir hata olustu');
         }
       } finally {
         if (!cancelled) {
@@ -588,196 +863,219 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
   // ---------- Render ----------
 
   return (
-    <Paper className="rounded-2xl min-h-[60vh]">
-      {/* Top Bar */}
-      <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors group"
-        >
-          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-          <span>Geri Dön</span>
-        </button>
-
-        {exam && !loading && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={startEditing}
-              className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              title="Düzenle"
-            >
-              <Pencil className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              title="Sil"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Delete Confirmation */}
-      <AnimatePresence>
-        {showDeleteConfirm && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden mb-6"
-          >
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-red-800 font-medium mb-3">
-                Bu denemeyi silmek istediğine emin misin? Bu işlem geri alınamaz.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
-                >
-                  {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                  Evet, Sil
-                </button>
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  disabled={deleting}
-                  className="px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50"
-                >
-                  İptal
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Edit Form */}
-      <AnimatePresence>
-        {editing && exam && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden mb-6"
-          >
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
-              <h3 className="text-sm font-semibold text-blue-800">Denemeyi Düzenle</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-slate-600 block mb-1">Başlık</label>
-                  <input
-                    type="text"
-                    value={editTitle}
-                    onChange={e => setEditTitle(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-slate-600 block mb-1">Tarih</label>
-                  <input
-                    type="date"
-                    value={editDate}
-                    onChange={e => setEditDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={handleSaveEdit}
-                  disabled={saving || !editTitle.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-                >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                  Kaydet
-                </button>
-                <button
-                  onClick={() => setEditing(false)}
-                  disabled={saving}
-                  className="px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 flex items-center gap-2"
-                >
-                  <X className="w-4 h-4" />
-                  İptal
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Loading */}
-      {loading && <DetailSkeleton />}
-
-      {/* Error */}
-      {error && !loading && (
-        <div className="flex flex-col items-center justify-center py-20 text-red-500">
-          <p className="text-lg font-medium">Hata</p>
-          <p className="text-sm mt-1">{error}</p>
+    <>
+      <Paper className="rounded-2xl min-h-[60vh]">
+        {/* Top Bar */}
+        <div className="flex items-center justify-between mb-6">
           <button
             onClick={onBack}
-            className="mt-4 text-sm text-indigo-600 hover:text-indigo-800 underline"
+            className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors group"
           >
-            Geri dön
+            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            <span>Geri Don</span>
           </button>
+
+          {exam && !loading && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={startEditing}
+                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                title="Duzenle"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                title="Sil"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Content */}
-      {exam && !loading && (
-        <>
-          {/* Tab Navigation */}
-          <div className="border-b border-slate-200 mb-6">
-            <nav className="flex gap-1 -mb-px overflow-x-auto" aria-label="Sekmeler">
-              {TABS.map((tab) => {
-                const isActive = activeTab === tab.key;
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`
-                      relative flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors
-                      ${isActive
-                        ? 'text-indigo-600'
-                        : 'text-slate-500 hover:text-slate-700'
-                      }
-                    `}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="hidden sm:inline">{tab.label}</span>
-                    {isActive && (
-                      <motion.div
-                        layoutId="exam-detail-tab-indicator"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full"
-                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                      />
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-
-          {/* Tab Content */}
-          <AnimatePresence mode="wait">
+        {/* Delete Confirmation */}
+        <AnimatePresence>
+          {showDeleteConfirm && (
             <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden mb-6"
             >
-              {activeTab === 'summary' && <SummaryTab exam={exam} />}
-              {activeTab === 'wrong' && <WrongAnalysisTab exam={exam} />}
-              {activeTab === 'topics' && <TopicDistributionTab exam={exam} />}
-              {activeTab === 'photos' && <PhotosTab exam={exam} />}
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm text-red-800 font-medium mb-3">
+                  Bu denemeyi silmek istedigine emin misin? Bu islem geri alinamaz.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    Evet, Sil
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={deleting}
+                    className="px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50"
+                  >
+                    Iptal
+                  </button>
+                </div>
+              </div>
             </motion.div>
-          </AnimatePresence>
-        </>
-      )}
-    </Paper>
+          )}
+        </AnimatePresence>
+
+        {/* Edit Form */}
+        <AnimatePresence>
+          {editing && exam && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden mb-6"
+            >
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-blue-800">Denemeyi Duzenle</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-slate-600 block mb-1">Baslik</label>
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={e => setEditTitle(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-600 block mb-1">Tarih</label>
+                    <input
+                      type="date"
+                      value={editDate}
+                      onChange={e => setEditDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={handleSaveEdit}
+                    disabled={saving || !editTitle.trim()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    Kaydet
+                  </button>
+                  <button
+                    onClick={() => setEditing(false)}
+                    disabled={saving}
+                    className="px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 flex items-center gap-2"
+                  >
+                    <X className="w-4 h-4" />
+                    Iptal
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Loading */}
+        {loading && <DetailSkeleton />}
+
+        {/* Error */}
+        {error && !loading && (
+          <div className="flex flex-col items-center justify-center py-20 text-red-500">
+            <p className="text-lg font-medium">Hata</p>
+            <p className="text-sm mt-1">{error}</p>
+            <button
+              onClick={onBack}
+              className="mt-4 text-sm text-indigo-600 hover:text-indigo-800 underline"
+            >
+              Geri don
+            </button>
+          </div>
+        )}
+
+        {/* Content */}
+        {exam && !loading && (
+          <>
+            {/* Tab Navigation */}
+            <div className="border-b border-slate-200 mb-6">
+              <nav className="flex gap-1 -mb-px overflow-x-auto" aria-label="Sekmeler">
+                {TABS.map((tab) => {
+                  const isActive = activeTab === tab.key;
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={`
+                        relative flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors
+                        ${isActive
+                          ? 'text-indigo-600'
+                          : 'text-slate-500 hover:text-slate-700'
+                        }
+                      `}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span className="hidden sm:inline">{tab.label}</span>
+                      {isActive && (
+                        <motion.div
+                          layoutId="exam-detail-tab-indicator"
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full"
+                          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* Tab Content */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+              >
+                {activeTab === 'summary' && <SummaryTab exam={exam} />}
+                {activeTab === 'questions' && (
+                  <QuestionsTab
+                    exam={exam}
+                    onQuestionClick={(idx) => setSelectedQuestionIndex(idx)}
+                  />
+                )}
+                {activeTab === 'wrong' && <WrongAnalysisTab exam={exam} />}
+                {activeTab === 'topics' && <TopicDistributionTab exam={exam} />}
+                {activeTab === 'photos' && <PhotosTab exam={exam} />}
+              </motion.div>
+            </AnimatePresence>
+          </>
+        )}
+      </Paper>
+
+      {/* Question Detail Modal */}
+      <AnimatePresence>
+        {selectedQuestionIndex !== null && exam && exam.wrongQuestions[selectedQuestionIndex] && (
+          <QuestionDetailModal
+            examId={examId}
+            question={exam.wrongQuestions[selectedQuestionIndex]}
+            questions={exam.wrongQuestions}
+            currentIndex={selectedQuestionIndex}
+            onClose={() => setSelectedQuestionIndex(null)}
+            onNavigate={(idx) => setSelectedQuestionIndex(idx)}
+            onUpdate={handleQuestionUpdate}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Paper, Handwriting } from '@/components/skeuomorphic';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
-import { Plus, Trash2, Camera, Save, CheckCircle, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Camera, Save, CheckCircle, Loader2, X, ImageIcon } from 'lucide-react';
 
 // --------------- Types ---------------
 
@@ -43,6 +43,10 @@ interface WrongQuestionRow {
   topicId: string;
   errorReasonId: string;
   notes: string;
+  difficulty: string;
+  photoFile: File | null;
+  photoPreview: string | null;
+  uploading: boolean;
 }
 
 interface EmptyQuestionRow {
@@ -65,6 +69,13 @@ function generateRowId() {
   return `row-${++rowIdCounter}-${Date.now()}`;
 }
 
+const DIFFICULTY_OPTIONS = [
+  { value: '', label: 'Zorluk...' },
+  { value: 'kolay', label: 'Kolay' },
+  { value: 'orta', label: 'Orta' },
+  { value: 'zor', label: 'Zor' },
+];
+
 function createWrongRow(): WrongQuestionRow {
   return {
     id: generateRowId(),
@@ -72,6 +83,10 @@ function createWrongRow(): WrongQuestionRow {
     topicId: '',
     errorReasonId: '',
     notes: '',
+    difficulty: '',
+    photoFile: null,
+    photoPreview: null,
+    uploading: false,
   };
 }
 
@@ -82,6 +97,39 @@ function createEmptyRow(): EmptyQuestionRow {
     topicId: '',
     notes: '',
   };
+}
+
+// --------------- Photo Upload Helper ---------------
+
+async function uploadPhoto(file: File): Promise<{ photoUrl: string; photoR2Key: string }> {
+  // Step 1: Get signed upload URL
+  const presignRes = await fetch('/api/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      filename: file.name,
+      contentType: file.type,
+    }),
+  });
+
+  if (!presignRes.ok) {
+    throw new Error('Yukle URL alinamadi');
+  }
+
+  const { uploadUrl, publicUrl, r2Key } = await presignRes.json();
+
+  // Step 2: Upload file to R2 via signed URL
+  const uploadRes = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type },
+    body: file,
+  });
+
+  if (!uploadRes.ok) {
+    throw new Error('Dosya yuklenemedi');
+  }
+
+  return { photoUrl: publicUrl, photoR2Key: r2Key };
 }
 
 // --------------- Component ---------------
@@ -107,6 +155,9 @@ export default function WrongQuestionForm({
   // Per-subject form data keyed by subjectId
   const [subjectData, setSubjectData] = useState<Record<string, SubjectData>>({});
 
+  // File input refs
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
   // --------------- Data Fetching ---------------
 
   useEffect(() => {
@@ -118,8 +169,8 @@ export default function WrongQuestionForm({
           fetch('/api/error-reasons'),
         ]);
 
-        if (!subjectsRes.ok) throw new Error('Dersler yüklenemedi');
-        if (!errorsRes.ok) throw new Error('Hata nedenleri yüklenemedi');
+        if (!subjectsRes.ok) throw new Error('Dersler yuklenemedi');
+        if (!errorsRes.ok) throw new Error('Hata nedenleri yuklenemedi');
 
         const subjectsJson: SubjectWithTopics[] = await subjectsRes.json();
         const errorsJson: ErrorReason[] = await errorsRes.json();
@@ -138,7 +189,7 @@ export default function WrongQuestionForm({
         }
         setSubjectData(initial);
       } catch (err: any) {
-        toast.error(err.message || 'Veriler yüklenirken hata olustu');
+        toast.error(err.message || 'Veriler yuklenirken hata olustu');
       } finally {
         setLoading(false);
       }
@@ -150,7 +201,7 @@ export default function WrongQuestionForm({
 
   // --------------- Row Manipulation ---------------
 
-  function updateWrongRow(subjectId: string, rowId: string, field: keyof WrongQuestionRow, value: string) {
+  function updateWrongRow(subjectId: string, rowId: string, field: string, value: any) {
     setSubjectData((prev) => {
       const data = prev[subjectId];
       if (!data) return prev;
@@ -214,6 +265,9 @@ export default function WrongQuestionForm({
     setSubjectData((prev) => {
       const data = prev[subjectId];
       if (!data) return prev;
+      // Revoke object URL if exists
+      const row = data.wrongRows.find(r => r.id === rowId);
+      if (row?.photoPreview) URL.revokeObjectURL(row.photoPreview);
       return {
         ...prev,
         [subjectId]: {
@@ -238,6 +292,32 @@ export default function WrongQuestionForm({
     });
   }
 
+  // --------------- Photo Handling ---------------
+
+  function handlePhotoSelect(subjectId: string, rowId: string, file: File) {
+    const preview = URL.createObjectURL(file);
+    updateWrongRow(subjectId, rowId, 'photoFile', file);
+    updateWrongRow(subjectId, rowId, 'photoPreview', preview);
+  }
+
+  function removePhoto(subjectId: string, rowId: string) {
+    setSubjectData((prev) => {
+      const data = prev[subjectId];
+      if (!data) return prev;
+      const row = data.wrongRows.find(r => r.id === rowId);
+      if (row?.photoPreview) URL.revokeObjectURL(row.photoPreview);
+      return {
+        ...prev,
+        [subjectId]: {
+          ...data,
+          wrongRows: data.wrongRows.map((r) =>
+            r.id === rowId ? { ...r, photoFile: null, photoPreview: null } : r
+          ),
+        },
+      };
+    });
+  }
+
   // --------------- Get topics for a subject ---------------
 
   function getTopicsForSubject(subjectId: string): Topic[] {
@@ -254,8 +334,23 @@ export default function WrongQuestionForm({
     setSavingSubject(subjectId);
 
     try {
-      // Save wrong questions
+      // Save wrong questions (with photo upload)
       for (const row of data.wrongRows) {
+        let photoUrl: string | null = null;
+        let photoR2Key: string | null = null;
+
+        // Upload photo if exists
+        if (row.photoFile) {
+          try {
+            const result = await uploadPhoto(row.photoFile);
+            photoUrl = result.photoUrl;
+            photoR2Key = result.photoR2Key;
+          } catch (err) {
+            console.error('Photo upload failed:', err);
+            // Continue without photo
+          }
+        }
+
         const res = await fetch(`/api/exams/${examId}/wrong-questions`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -265,6 +360,9 @@ export default function WrongQuestionForm({
             topicId: row.topicId || null,
             errorReasonId: row.errorReasonId || null,
             notes: row.notes || null,
+            difficulty: row.difficulty || null,
+            photoUrl,
+            photoR2Key,
           }),
         });
         if (!res.ok) {
@@ -417,87 +515,115 @@ export default function WrongQuestionForm({
                   </button>
                 </div>
 
-                {/* Header */}
-                <div className="hidden sm:grid sm:grid-cols-[60px_1fr_1fr_40px_1fr_32px] gap-2 mb-1 px-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Soru No</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Konu</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Hata Nedeni</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide text-center">Foto</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Not</span>
-                  <span />
-                </div>
-
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {currentData.wrongRows.map((row, idx) => (
                     <div
                       key={row.id}
-                      className="grid grid-cols-1 sm:grid-cols-[60px_1fr_1fr_40px_1fr_32px] gap-2 items-center bg-white/60 rounded px-2 py-2 border border-slate-100"
+                      className="bg-white/60 rounded-lg px-3 py-3 border border-slate-100 space-y-2"
                     >
-                      {/* Soru No */}
-                      <input
-                        type="number"
-                        min={1}
-                        placeholder={`${idx + 1}`}
-                        value={row.questionNumber}
-                        onChange={(e) => updateWrongRow(activeTab, row.id, 'questionNumber', e.target.value)}
-                        className="w-full p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-center"
-                      />
+                      {/* Row 1: Soru No + Konu + Hata Nedeni + Zorluk + Sil */}
+                      <div className="grid grid-cols-[50px_1fr_1fr_80px_32px] gap-2 items-center">
+                        <input
+                          type="number"
+                          min={1}
+                          placeholder={`${idx + 1}`}
+                          value={row.questionNumber}
+                          onChange={(e) => updateWrongRow(activeTab, row.id, 'questionNumber', e.target.value)}
+                          className="w-full p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-center"
+                        />
 
-                      {/* Konu */}
-                      <select
-                        value={row.topicId}
-                        onChange={(e) => updateWrongRow(activeTab, row.id, 'topicId', e.target.value)}
-                        className="w-full p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                      >
-                        <option value="">Konu secin...</option>
-                        {currentTopics.map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.name}
-                          </option>
-                        ))}
-                      </select>
+                        <select
+                          value={row.topicId}
+                          onChange={(e) => updateWrongRow(activeTab, row.id, 'topicId', e.target.value)}
+                          className="w-full p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        >
+                          <option value="">Konu secin...</option>
+                          {currentTopics.map((t) => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                          ))}
+                        </select>
 
-                      {/* Hata Nedeni */}
-                      <select
-                        value={row.errorReasonId}
-                        onChange={(e) => updateWrongRow(activeTab, row.id, 'errorReasonId', e.target.value)}
-                        className="w-full p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                      >
-                        <option value="">Neden secin...</option>
-                        {errorReasons.map((er) => (
-                          <option key={er.id} value={er.id}>
-                            {er.label}
-                          </option>
-                        ))}
-                      </select>
+                        <select
+                          value={row.errorReasonId}
+                          onChange={(e) => updateWrongRow(activeTab, row.id, 'errorReasonId', e.target.value)}
+                          className="w-full p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        >
+                          <option value="">Neden secin...</option>
+                          {errorReasons.map((er) => (
+                            <option key={er.id} value={er.id}>{er.label}</option>
+                          ))}
+                        </select>
 
-                      {/* Fotograf (placeholder) */}
-                      <button
-                        type="button"
-                        title="Fotograf yukle"
-                        className="mx-auto w-8 h-8 flex items-center justify-center rounded bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
-                      >
-                        <Camera size={16} />
-                      </button>
+                        <select
+                          value={row.difficulty}
+                          onChange={(e) => updateWrongRow(activeTab, row.id, 'difficulty', e.target.value)}
+                          className={`w-full p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 ${
+                            row.difficulty === 'kolay' ? 'text-green-600' :
+                            row.difficulty === 'orta' ? 'text-amber-600' :
+                            row.difficulty === 'zor' ? 'text-red-600' : ''
+                          }`}
+                        >
+                          {DIFFICULTY_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
 
-                      {/* Not */}
-                      <input
-                        type="text"
-                        placeholder="Not..."
-                        value={row.notes}
-                        onChange={(e) => updateWrongRow(activeTab, row.id, 'notes', e.target.value)}
-                        className="w-full p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                      />
+                        <button
+                          type="button"
+                          onClick={() => removeWrongRow(activeTab, row.id)}
+                          className="mx-auto w-7 h-7 flex items-center justify-center rounded text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          title="Satiri sil"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
 
-                      {/* Sil */}
-                      <button
-                        type="button"
-                        onClick={() => removeWrongRow(activeTab, row.id)}
-                        className="mx-auto w-7 h-7 flex items-center justify-center rounded text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                        title="Satiri sil"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      {/* Row 2: Not + Foto */}
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          placeholder="Not..."
+                          value={row.notes}
+                          onChange={(e) => updateWrongRow(activeTab, row.id, 'notes', e.target.value)}
+                          className="flex-1 p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        />
+
+                        {/* Photo upload */}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          className="hidden"
+                          ref={(el) => { fileInputRefs.current[row.id] = el; }}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handlePhotoSelect(activeTab, row.id, file);
+                          }}
+                        />
+
+                        {row.photoPreview ? (
+                          <div className="relative w-10 h-10 rounded overflow-hidden border border-blue-300 flex-shrink-0">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={row.photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => removePhoto(activeTab, row.id)}
+                              className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => fileInputRefs.current[row.id]?.click()}
+                            title="Fotograf yukle"
+                            className="w-10 h-10 flex items-center justify-center rounded bg-blue-50 hover:bg-blue-100 text-blue-400 hover:text-blue-600 transition-colors border border-blue-200 flex-shrink-0"
+                          >
+                            <Camera size={18} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -533,7 +659,6 @@ export default function WrongQuestionForm({
                       key={row.id}
                       className="grid grid-cols-1 sm:grid-cols-[60px_1fr_1fr_32px] gap-2 items-center bg-white/60 rounded px-2 py-2 border border-slate-100"
                     >
-                      {/* Soru No */}
                       <input
                         type="number"
                         min={1}
@@ -543,7 +668,6 @@ export default function WrongQuestionForm({
                         className="w-full p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-center"
                       />
 
-                      {/* Konu */}
                       <select
                         value={row.topicId}
                         onChange={(e) => updateEmptyRow(activeTab, row.id, 'topicId', e.target.value)}
@@ -551,13 +675,10 @@ export default function WrongQuestionForm({
                       >
                         <option value="">Konu secin...</option>
                         {currentTopics.map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.name}
-                          </option>
+                          <option key={t.id} value={t.id}>{t.name}</option>
                         ))}
                       </select>
 
-                      {/* Not */}
                       <input
                         type="text"
                         placeholder="Not..."
@@ -566,7 +687,6 @@ export default function WrongQuestionForm({
                         className="w-full p-1.5 text-sm rounded bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
                       />
 
-                      {/* Sil */}
                       <button
                         type="button"
                         onClick={() => removeEmptyRow(activeTab, row.id)}
@@ -581,7 +701,7 @@ export default function WrongQuestionForm({
               </div>
             )}
 
-            {/* No rows at all (user removed them all) */}
+            {/* No rows at all */}
             {currentData.wrongRows.length === 0 && currentData.emptyRows.length === 0 && (
               <div className="text-center py-8 text-slate-400 text-sm">
                 <p>Bu ders icin soru girisi bulunmuyor.</p>

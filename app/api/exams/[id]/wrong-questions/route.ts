@@ -69,7 +69,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { questionNumber, subjectId, topicId, errorReasonId, notes, photoUrl, photoR2Key } = body;
+    const { questionNumber, subjectId, topicId, errorReasonId, notes, photoUrl, photoR2Key, difficulty } = body;
 
     if (!subjectId) {
       return NextResponse.json(
@@ -88,6 +88,7 @@ export async function POST(
         notes,
         photoUrl,
         photoR2Key,
+        difficulty,
       },
       include: {
         subject: true,

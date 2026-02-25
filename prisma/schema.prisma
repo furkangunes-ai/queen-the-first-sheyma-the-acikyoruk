@@ -196,7 +196,10 @@ model ExamWrongQuestion {
   notes         String?
   photoUrl      String?
   photoR2Key    String?
+  difficulty    String?      // "kolay" | "orta" | "zor"
+  understandingStatus String? // "anladim" | "tekrar" | "anlamadim"
   createdAt     DateTime     @default(now())
+  updatedAt     DateTime?    @updatedAt
 
   @@index([examId])
   @@index([subjectId])
