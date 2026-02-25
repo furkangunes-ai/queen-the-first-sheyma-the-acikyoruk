@@ -12,6 +12,11 @@ export async function GET(request: NextRequest) {
     const examTypes = await prisma.examType.findMany({
       include: {
         subjects: {
+          include: {
+            topics: {
+              orderBy: { name: "asc" },
+            },
+          },
           orderBy: { name: "asc" },
         },
       },

@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date");
     const subjectId = searchParams.get("subjectId");
+    const limit = searchParams.get("limit");
 
     const where: any = { userId };
     if (date) {
@@ -29,7 +30,8 @@ export async function GET(request: NextRequest) {
         subject: { include: { examType: true } },
         topic: true,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { date: "desc" },
+      ...(limit ? { take: parseInt(limit) } : {}),
     });
 
     return NextResponse.json(studies);
