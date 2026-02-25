@@ -17,6 +17,7 @@ import {
   Shield,
   LogOut,
   Bell,
+  BookOpenCheck,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import NotificationBell from '@/components/notifications/notification-bell';
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { path: '/', label: 'Genel Bakış', icon: LayoutDashboard },
   { path: '/tasks', label: 'Planlama', icon: CheckSquare },
   { path: '/exams', label: 'Denemeler', icon: GraduationCap },
+  { path: '/study', label: 'Günlük Çalışma', icon: BookOpenCheck },
   { path: '/analytics', label: 'Analiz', icon: BarChart2 },
   { path: '/check-in', label: 'Check-in', icon: Heart },
   { path: '/metrics', label: 'Metrikler', icon: Activity },

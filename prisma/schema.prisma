@@ -29,6 +29,8 @@ model User {
   files          UserFile[]
   notificationsReceived Notification[] @relation("NotificationRecipient")
   notificationsSent     Notification[] @relation("NotificationSender")
+  dailyStudies   DailyStudy[]
+  topicReviews   TopicReview[]
 }
 
 // ==================== KLASÖRLER & GÖREVLER ====================
@@ -120,6 +122,8 @@ model Subject {
   examResults   ExamSubjectResult[]
   wrongQuestions ExamWrongQuestion[]
   emptyQuestions ExamEmptyQuestion[]
+  dailyStudies  DailyStudy[]
+  topicReviews  TopicReview[]
   sortOrder     Int      @default(0)
 
   @@index([examTypeId])
@@ -132,6 +136,8 @@ model Topic {
   subject       Subject  @relation(fields: [subjectId], references: [id])
   wrongQuestions ExamWrongQuestion[]
   emptyQuestions ExamEmptyQuestion[]
+  dailyStudies  DailyStudy[]
+  topicReviews  TopicReview[]
   sortOrder     Int      @default(0)
 
   @@index([subjectId])
@@ -291,6 +297,59 @@ model Notification {
 
   @@index([recipientId])
   @@index([isRead])
+}
+
+// ==================== GÜNLÜK ÇALIŞMA ====================
+
+model DailyStudy {
+  id            String          @id @default(cuid())
+  date          DateTime
+  userId        String
+  user          User            @relation(fields: [userId], references: [id])
+  subjectId     String
+  subject       Subject         @relation(fields: [subjectId], references: [id])
+  topicId       String?
+  topic         Topic?          @relation(fields: [topicId], references: [id])
+  questionCount Int             // Çözülen soru sayısı
+  correctCount  Int             @default(0)
+  wrongCount    Int             @default(0)
+  emptyCount    Int             @default(0)
+  difficulty    String?         // "kolay" | "orta" | "zor"
+  source        String?         // Kaynak kitap/test adı
+  duration      Int?            // Dakika cinsinden süre
+  photoUrl      String?
+  photoR2Key    String?
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([date])
+  @@index([subjectId])
+}
+
+model TopicReview {
+  id            String   @id @default(cuid())
+  date          DateTime
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  subjectId     String
+  subject       Subject  @relation(fields: [subjectId], references: [id])
+  topicId       String
+  topic         Topic    @relation(fields: [topicId], references: [id])
+  duration      Int?     // Dakika cinsinden süre
+  confidence    String?  // "dusuk" | "orta" | "yuksek"
+  method        String?  // "video" | "kitap" | "ders_notu" | "soru_cozumu" | "diger"
+  photoUrl      String?
+  photoR2Key    String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([date])
+  @@index([subjectId])
+  @@index([topicId])
 }
 
 // ==================== DOSYALAR ====================
