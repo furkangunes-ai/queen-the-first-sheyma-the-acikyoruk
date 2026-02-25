@@ -6,7 +6,7 @@ import {
   AreaChart, Area, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   Legend,
 } from 'recharts';
-import { TrendingUp, Target, Award, BookOpen, AlertTriangle, Loader2, Crosshair, Sparkles } from 'lucide-react';
+import { TrendingUp, Target, Award, BookOpen, AlertTriangle, Loader2, Crosshair, Sparkles, PieChart as PieChartIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { RegressionChart, type RegressionData } from '@/components/analytics/regression-chart';
@@ -433,7 +433,7 @@ export default function AnalyticsPage() {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                     <div className="glass-panel p-6 sm:p-8 flex flex-col items-center justify-center min-h-[400px]">
                       <h3 className="text-white font-bold tracking-tight text-lg mb-2 flex items-center gap-2 w-full">
-                        <PieChart className="text-pink-400" size={20} />
+                        <PieChartIcon className="text-pink-400" size={20} />
                         Hata Nedeni Dağılımı
                       </h3>
                       <div className="w-full flex-1 min-h-[300px]">

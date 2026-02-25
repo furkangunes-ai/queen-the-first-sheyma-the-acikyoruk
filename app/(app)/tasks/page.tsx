@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Folder, Plus, Trash2, CheckCircle2, Circle, Loader2, ListTodo, FolderHeart } from 'lucide-react';
+import { Folder, Plus, Trash2, CheckCircle2, Circle, Loader2, ListTodo, FolderHeart, ChevronRight } from 'lucide-react';
 import { clsx } from 'clsx';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { clsx } from 'clsx';
-import { CheckCircle2, Circle, TrendingUp, Calendar, AlertCircle, Loader2, GraduationCap, Heart, CheckCircle } from 'lucide-react';
+import { CheckCircle2, Circle, TrendingUp, Calendar, AlertCircle, Loader2, GraduationCap, Heart, CheckCircle, CheckSquare, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'motion/react';
