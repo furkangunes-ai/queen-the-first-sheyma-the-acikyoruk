@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @import 'tailwindcss';
 @source '../components/**/*.{js,ts,jsx,tsx}';
@@ -11,43 +11,70 @@
 
 :root {
   --font-size: 16px;
-  --background: #0a0a1a;
-  --foreground: rgba(255,255,255,0.9);
-  --card: rgba(255,255,255,0.05);
-  --card-foreground: rgba(255,255,255,0.9);
-  --popover: #151528;
-  --popover-foreground: rgba(255,255,255,0.9);
-  --primary: #f472b6;
-  --primary-foreground: #0a0a1a;
-  --secondary: rgba(255,255,255,0.08);
-  --secondary-foreground: rgba(255,255,255,0.9);
-  --muted: rgba(255,255,255,0.06);
-  --muted-foreground: rgba(255,255,255,0.5);
-  --accent: #fbbf24;
-  --accent-foreground: #0a0a1a;
-  --destructive: #fb7185;
+  /* Barbie Dark Mode: Deep Violet/Plum to make the pinks pop */
+  --background: #110915;
+  --foreground: rgba(255, 255, 255, 0.95);
+  
+  /* Cards: Glassy white over the dark background */
+  --card: rgba(255, 255, 255, 0.03);
+  --card-foreground: rgba(255, 255, 255, 0.95);
+  
+  /* Popovers */
+  --popover: #1a0e20;
+  --popover-foreground: rgba(255, 255, 255, 0.95);
+  
+  /* Primary: Hot Barbie Pink */
+  --primary: #ff2a85;
+  --primary-foreground: #ffffff;
+  
+  /* Secondary: Soft Pastel Pink */
+  --secondary: rgba(255, 126, 179, 0.15);
+  --secondary-foreground: #ff7eb3;
+  
+  /* Muted */
+  --muted: rgba(255, 255, 255, 0.05);
+  --muted-foreground: rgba(255, 255, 255, 0.5);
+  
+  /* Accent: Bright Cyan/Turquoise for contrast */
+  --accent: #00f0ff;
+  --accent-foreground: #000000;
+  
+  /* Destructive */
+  --destructive: #ff3366;
   --destructive-foreground: #ffffff;
-  --border: rgba(244,114,182,0.15);
-  --input: rgba(255,255,255,0.08);
-  --input-background: rgba(255,255,255,0.08);
-  --switch-background: rgba(255,255,255,0.15);
+  
+  /* Borders and Inputs */
+  --border: rgba(255, 42, 133, 0.2);
+  --input: rgba(255, 255, 255, 0.05);
+  --input-background: rgba(255, 255, 255, 0.03);
+  --switch-background: rgba(255, 42, 133, 0.3);
+  
+  /* Typography weights */
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #f472b6;
-  --chart-1: #f472b6;
-  --chart-2: #fbbf24;
-  --chart-3: #34d399;
-  --chart-4: #a78bfa;
-  --chart-5: #fb7185;
-  --radius: 0.75rem;
-  --sidebar: #0a0a1a;
-  --sidebar-foreground: rgba(255,255,255,0.7);
-  --sidebar-primary: #f472b6;
-  --sidebar-primary-foreground: #0a0a1a;
-  --sidebar-accent: rgba(244,114,182,0.15);
-  --sidebar-accent-foreground: rgba(255,255,255,0.9);
-  --sidebar-border: rgba(244,114,182,0.1);
-  --sidebar-ring: #f472b6;
+  
+  /* Rings */
+  --ring: rgba(255, 42, 133, 0.5);
+  
+  /* Charts: Pinks and complementing vibrant colors */
+  --chart-1: #ff2a85; /* Hot Pink */
+  --chart-2: #ff7eb3; /* Pastel Pink */
+  --chart-3: #00f0ff; /* Cyan */
+  --chart-4: #bb66ff; /* Purple */
+  --chart-5: #ffb84d; /* Warm Orange/Gold */
+  
+  /* Border Radius: Extremely rounded for a modern, soft feel */
+  --radius: 1.5rem;
+  
+  /* Sidebar */
+  --sidebar: rgba(17, 9, 21, 0.6);
+  --sidebar-foreground: rgba(255, 255, 255, 0.75);
+  --sidebar-primary: #ff2a85;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(255, 42, 133, 0.15);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(255, 42, 133, 0.1);
+  --sidebar-ring: rgba(255, 42, 133, 0.5);
 }
 
 @theme inline {
@@ -77,10 +104,11 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 4px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 8px);
+  --radius-full: 9999px;
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -89,8 +117,7 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --font-display: 'Playfair Display', serif;
-  --font-sans: 'Inter', sans-serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
 }
 
 @layer base {
@@ -101,93 +128,85 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, sans-serif;
+    /* Soft ambient background dots/grid could go here, but let's keep it clean */
+    background-image: radial-gradient(circle at 50% 0%, rgba(255, 42, 133, 0.08) 0%, transparent 50%),
+                      radial-gradient(circle at 100% 100%, rgba(0, 240, 255, 0.05) 0%, transparent 40%);
+    background-attachment: fixed;
   }
 
   html {
     font-size: var(--font-size);
+    scroll-behavior: smooth;
   }
 
-  h1 {
-    font-size: var(--text-2xl);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
   }
 
-  h2 {
-    font-size: var(--text-xl);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  h3 {
-    font-size: var(--text-lg);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  h4 {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
+  h1 { font-size: var(--text-3xl); line-height: 1.2; }
+  h2 { font-size: var(--text-2xl); line-height: 1.3; }
+  h3 { font-size: var(--text-xl); line-height: 1.4; }
+  h4 { font-size: var(--text-lg); line-height: 1.5; }
 
   label {
-    font-size: var(--text-base);
+    font-size: var(--text-sm);
     font-weight: var(--font-weight-medium);
-    line-height: 1.5;
   }
 
-  button {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  input {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-normal);
-    line-height: 1.5;
+  button, input {
+    font-family: inherit;
   }
 }
 
 @layer utilities {
-  .font-display {
-    font-family: 'Playfair Display', serif;
-  }
-
+  /* Ultra-Premium Glassmorphism */
   .glass {
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(244,114,182,0.15);
+    @apply bg-white/[0.02] border border-white/[0.05] shadow-[0_8px_32px_-12px_rgba(255,42,133,0.15)] backdrop-blur-xl rounded-[calc(var(--radius)*1.5)];
   }
 
-  .glass-strong {
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(244,114,182,0.2);
+  .glass-panel {
+    @apply bg-[#110915]/60 border border-pink-500/10 shadow-2xl backdrop-blur-2xl rounded-[calc(var(--radius)*2)];
   }
 
+  /* Barbie Glows */
   .glow-pink {
-    box-shadow: 0 0 20px rgba(244,114,182,0.15), 0 0 60px rgba(244,114,182,0.05);
+    box-shadow: 0 0 20px rgba(255, 42, 133, 0.4), 0 0 60px rgba(255, 42, 133, 0.2);
+  }
+  
+  .glow-pink-soft {
+    box-shadow: 0 0 15px rgba(255, 42, 133, 0.15);
   }
 
-  .glow-gold {
-    box-shadow: 0 0 20px rgba(251,191,36,0.15), 0 0 60px rgba(251,191,36,0.05);
+  .glow-cyan {
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.2), 0 0 50px rgba(0, 240, 255, 0.1);
   }
 
+  /* Vibrant Text Gradients */
   .text-gradient-pink {
-    background: linear-gradient(135deg, #f472b6, #f9a8d4);
+    background: linear-gradient(135deg, #ff2a85 0%, #ff7eb3 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  .text-gradient-gold {
-    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  .text-gradient-candy {
+    background: linear-gradient(135deg, #00f0ff 0%, #ff2a85 50%, #ff7eb3 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+  
+  /* Smooth Hover Transitions */
+  .hover-lift {
+    @apply transition-transform duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-pink-500/20;
+  }
+
+  /* Hide scrollbar for clean aesthetic */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

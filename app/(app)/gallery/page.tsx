@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Paper, Handwriting } from '@/components/skeuomorphic';
-import { FileText, Image as ImageIcon, Film, Loader2, Trash2, Upload, X, Eye } from 'lucide-react';
+import { FileText, Image as ImageIcon, Film, Loader2, Trash2, Upload, X, Eye, FolderHeart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { useDropzone } from 'react-dropzone';
@@ -49,7 +48,6 @@ export default function GalleryPage() {
 
     for (const file of acceptedFiles) {
       try {
-        // Step 1: Get presigned URL
         const presignRes = await fetch('/api/upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -62,7 +60,6 @@ export default function GalleryPage() {
         if (!presignRes.ok) throw new Error('Presign failed');
         const { uploadUrl, publicUrl, r2Key } = await presignRes.json();
 
-        // Step 2: Upload to R2
         const uploadRes = await fetch(uploadUrl, {
           method: 'PUT',
           body: file,
@@ -73,7 +70,6 @@ export default function GalleryPage() {
 
         if (!uploadRes.ok) throw new Error('Upload failed');
 
-        // Step 3: Save file record
         const saveRes = await fetch('/api/files', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -120,9 +116,9 @@ export default function GalleryPage() {
   });
 
   const getIcon = (mimeType: string) => {
-    if (mimeType.startsWith('image/')) return <ImageIcon className="text-pink-400" size={32} />;
-    if (mimeType.startsWith('video/')) return <Film className="text-purple-400" size={32} />;
-    if (mimeType === 'application/pdf') return <FileText className="text-rose-400" size={32} />;
+    if (mimeType.startsWith('image/')) return <ImageIcon className="text-pink-400 drop-shadow-[0_0_8px_rgba(255,42,133,0.5)]" size={32} />;
+    if (mimeType.startsWith('video/')) return <Film className="text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]" size={32} />;
+    if (mimeType === 'application/pdf') return <FileText className="text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.5)]" size={32} />;
     return <FileText className="text-white/40" size={32} />;
   };
 
@@ -143,110 +139,133 @@ export default function GalleryPage() {
   return (
     <div className="h-full flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <Handwriting as="h1" className="text-3xl">Dosyalar ve Kaynaklar</Handwriting>
-        <span className="text-sm text-white/40">{files.length} dosya</span>
+        <div className="flex items-center gap-3">
+          <FolderHeart size={32} className="text-pink-400 drop-shadow-[0_0_15px_rgba(255,42,133,0.4)]" />
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white drop-shadow-md">
+            Dosyalar ve Kaynaklar
+          </h1>
+        </div>
+        <span className="text-sm font-bold bg-white/[0.05] border border-white/10 px-3 py-1.5 rounded-lg text-pink-300 shadow-[0_0_10px_rgba(255,42,133,0.1)]">
+          {files.length} dosya
+        </span>
       </div>
 
       {/* Upload Area */}
       <div
         {...getRootProps()}
-        className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
-          isDragActive
-            ? 'border-pink-400 bg-pink-500/10'
-            : 'border-pink-500/20 active:border-pink-400 active:bg-white/[0.03]'
-        } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all ${isDragActive
+            ? 'border-pink-400 bg-pink-500/10 shadow-[0_0_30px_rgba(255,42,133,0.2)]'
+            : 'border-pink-500/20 bg-white/[0.02] hover:bg-white/[0.04] hover:border-pink-500/40 hover:shadow-[0_0_20px_rgba(255,42,133,0.1)]'
+          } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         <input {...getInputProps()} />
         {uploading ? (
-          <div className="flex items-center justify-center gap-3 text-white/50">
-            <Loader2 size={24} className="animate-spin" />
-            <span className="text-sm font-medium">Yükleniyor...</span>
+          <div className="flex flex-col items-center justify-center gap-3 text-pink-400">
+            <Loader2 size={36} className="animate-spin drop-shadow-[0_0_10px_rgba(255,42,133,0.5)]" />
+            <span className="text-sm font-bold tracking-wide">Dosyalar Yükleniyor...</span>
           </div>
         ) : isDragActive ? (
-          <div className="flex flex-col items-center gap-2 text-pink-400">
-            <Upload size={32} />
-            <span className="text-sm font-medium">Dosyaları buraya bırak</span>
+          <div className="flex flex-col items-center gap-3 text-pink-400">
+            <Upload size={48} className="drop-shadow-[0_0_15px_rgba(255,42,133,0.5)] animate-bounce" />
+            <span className="text-lg font-bold tracking-wide">Dosyaları buraya bırak</span>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2 text-white/40">
-            <Upload size={32} />
-            <span className="text-sm font-medium">Dosya yüklemek için tıkla veya sürükle</span>
-            <span className="text-xs">PDF, resim, video ve diğer dosyalar</span>
+          <div className="flex flex-col items-center gap-3 text-white/60">
+            <Upload size={40} className="text-pink-400/50 group-hover:text-pink-400 transition-colors" />
+            <span className="text-lg font-bold text-white/80">Dosya yüklemek için tıkla veya sürükle</span>
+            <span className="text-sm text-white/40 tracking-wide">PDF, resim, video ve diğer dosyalar</span>
           </div>
         )}
       </div>
 
       {/* Files Grid */}
-      <Paper className="flex-1 overflow-hidden flex flex-col">
+      <div className="glass-panel flex-1 overflow-hidden flex flex-col relative z-10 border border-white/10 rounded-3xl p-4 sm:p-6 shadow-[0_8px_32px_rgba(255,42,133,0.05)]">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/10 rounded-full blur-[60px] pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-[60px] pointer-events-none" />
+
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="animate-spin text-pink-400/50" size={32} />
+          <div className="flex flex-1 items-center justify-center py-16">
+            <Loader2 className="animate-spin text-pink-400" size={40} />
           </div>
         ) : files.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-white/40">
-            <FileText size={48} className="mb-4 opacity-50" />
-            <Handwriting className="text-xl text-white/40">Henüz dosya yüklenmemiş</Handwriting>
-            <p className="text-sm mt-2">Yukarıdaki alana dosya sürükleyerek başlayabilirsin</p>
+          <div className="flex flex-1 flex-col items-center justify-center py-16 text-white/40 relative z-10">
+            <FolderHeart size={64} className="mb-6 opacity-20 text-pink-300 drop-shadow-[0_0_20px_rgba(255,42,133,0.3)] saturate-200" />
+            <span className="text-2xl font-bold text-white/60 drop-shadow-sm mb-2">Henüz dosya yüklenmemiş</span>
+            <p className="text-sm font-medium tracking-wide">Yukarıdaki alana dosya sürükleyerek başlayabilirsin</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 overflow-y-auto p-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 overflow-y-auto p-2 relative z-10 custom-scrollbar">
             <AnimatePresence>
               {files.map((file, idx) => (
                 <motion.div
                   key={file.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ delay: idx * 0.03 }}
-                  className="group relative flex flex-col items-center p-4 rounded-lg active:bg-white/[0.06] border border-transparent active:border-pink-500/15 transition-all"
+                  className="group relative flex flex-col items-center p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-pink-500/30 hover:shadow-[0_8px_20px_rgba(255,42,133,0.1)] transition-all cursor-pointer overflow-hidden"
+                  onClick={() => {
+                    if (file.mimeType.startsWith('image/')) {
+                      setPreviewFile(file);
+                    } else {
+                      window.open(file.url, '_blank');
+                    }
+                  }}
                 >
+                  {/* Background Glow on Hover */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+
                   {/* Preview / Icon */}
-                  <div
-                    className="w-20 h-24 mb-3 bg-white/[0.06] rounded flex items-center justify-center relative overflow-hidden cursor-pointer"
-                    onClick={() => {
-                      if (file.mimeType.startsWith('image/')) {
-                        setPreviewFile(file);
-                      } else {
-                        window.open(file.url, '_blank');
-                      }
-                    }}
-                  >
+                  <div className="w-full aspect-square mb-4 bg-black/20 rounded-xl flex items-center justify-center relative overflow-hidden border border-white/5 group-hover:border-pink-500/20 transition-colors shadow-inner">
                     {file.mimeType.startsWith('image/') ? (
                       <img
                         src={file.url}
                         alt={file.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
                       />
                     ) : (
                       <>
-                        <div className="absolute top-0 right-0 w-6 h-6 bg-white/[0.04] shadow-md transform translate-x-1/2 -translate-y-1/2 rotate-45 z-10"></div>
-                        {getIcon(file.mimeType)}
+                        <div className="absolute top-0 right-0 w-8 h-8 bg-white/[0.03] transform translate-x-1/2 -translate-y-1/2 rotate-45 z-10"></div>
+                        <motion.div
+                          whileHover={{ rotate: [-5, 5, -5, 0], transition: { duration: 0.5 } }}
+                        >
+                          {getIcon(file.mimeType)}
+                        </motion.div>
                       </>
                     )}
                   </div>
 
                   {/* File name */}
-                  <span className="text-xs font-medium text-white/70 text-center line-clamp-2 leading-tight">
+                  <span className="text-xs font-bold text-white/80 text-center line-clamp-2 leading-tight w-full mb-1.5 group-hover:text-pink-300 transition-colors" title={file.name}>
                     {file.name}
                   </span>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] text-white/40">{formatDate(file.createdAt)}</span>
-                    <span className="text-[10px] text-white/40">{formatSize(file.sizeBytes)}</span>
+
+                  <div className="flex items-center justify-between w-full mt-auto">
+                    <span className="text-[10px] font-bold text-white/40 tracking-wider mix-blend-plus-lighter">{formatDate(file.createdAt)}</span>
+                    <span className="text-[10px] font-bold text-white/40 tracking-wider mix-blend-plus-lighter bg-white/5 px-1.5 py-0.5 rounded">{formatSize(file.sizeBytes)}</span>
                   </div>
 
                   {/* Hover actions */}
-                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity translate-y-[-10px] group-hover:translate-y-0 transform duration-300">
                     {file.mimeType.startsWith('image/') && (
                       <button
-                        onClick={() => setPreviewFile(file)}
-                        className="p-1 bg-white/[0.04] rounded active:bg-pink-500/10 text-white/40 active:text-pink-400 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewFile(file);
+                        }}
+                        className="p-1.5 bg-black/60 backdrop-blur-md rounded-lg hover:bg-pink-500/80 text-white hover:text-white transition-all shadow-lg"
+                        title="Önizle"
                       >
                         <Eye size={14} />
                       </button>
                     )}
                     <button
-                      onClick={() => handleDelete(file.id, file.name)}
-                      className="p-1 bg-white/[0.04] rounded active:bg-rose-500/10 text-white/40 active:text-rose-400 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(file.id, file.name);
+                      }}
+                      className="p-1.5 bg-black/60 backdrop-blur-md rounded-lg hover:bg-rose-500/80 text-white hover:text-white transition-all shadow-lg"
+                      title="Sil"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -256,7 +275,7 @@ export default function GalleryPage() {
             </AnimatePresence>
           </div>
         )}
-      </Paper>
+      </div>
 
       {/* Image Preview Modal */}
       <AnimatePresence>
@@ -265,30 +284,35 @@ export default function GalleryPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-8"
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8"
             onClick={() => setPreviewFile(null)}
           >
             <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="relative max-w-4xl max-h-[85vh] bg-[#0a0a1a] border border-pink-500/15 rounded-xl overflow-hidden shadow-2xl shadow-pink-500/10"
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative max-w-5xl w-full max-h-[90vh] glass-panel border border-white/10 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(255,42,133,0.2)]"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setPreviewFile(null)}
-                className="absolute top-3 right-3 z-10 p-2 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors"
+                className="absolute top-4 right-4 z-20 p-2.5 bg-black/50 backdrop-blur-md rounded-full text-white/70 hover:text-white hover:bg-white/10 hover:shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-all border border-white/10"
               >
-                <X size={18} />
+                <X size={20} />
               </button>
-              <img
-                src={previewFile.url}
-                alt={previewFile.name}
-                className="max-w-full max-h-[85vh] object-contain"
-              />
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
-                <p className="text-white font-medium text-sm">{previewFile.name}</p>
-                <p className="text-white/70 text-xs">{formatSize(previewFile.sizeBytes)}</p>
+
+              <div className="w-full h-full max-h-[90vh] flex items-center justify-center p-2">
+                <img
+                  src={previewFile.url}
+                  alt={previewFile.name}
+                  className="max-w-full max-h-[85vh] object-contain rounded-2xl"
+                />
+              </div>
+
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/80 to-transparent p-6 pt-12">
+                <p className="text-white font-bold text-lg mb-1 drop-shadow-md">{previewFile.name}</p>
+                <p className="text-pink-300 font-medium text-sm drop-shadow-sm">{formatSize(previewFile.sizeBytes)}</p>
               </div>
             </motion.div>
           </motion.div>

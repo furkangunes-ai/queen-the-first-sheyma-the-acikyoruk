@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Paper, Handwriting, Tape } from '@/components/skeuomorphic';
 import ExamEntryForm from '@/components/exams/exam-entry-form';
 import WrongQuestionForm from '@/components/exams/wrong-question-form';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
-import { Plus, X, FileText, Filter, Loader2, ChevronRight } from 'lucide-react';
+import { Plus, X, FileText, Filter, Loader2, ChevronRight, FileArchive, Target } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface ExamListItem {
@@ -127,7 +126,7 @@ export default function ExamsPage() {
   };
 
   return (
-    <div className="h-full flex flex-col gap-6">
+    <div className="h-full flex flex-col gap-8">
       <AnimatePresence mode="wait">
         {view === 'list' && (
           <motion.div
@@ -135,29 +134,32 @@ export default function ExamsPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex flex-col gap-6"
+            className="flex flex-col gap-8"
           >
             {/* Header */}
             <div className="flex justify-between items-end">
-              <Handwriting className="text-3xl">Deneme Takibi</Handwriting>
-              <button
+              <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white drop-shadow-md">
+                Deneme Takibi
+              </h1>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setView('new-exam')}
-                className="bg-pink-500 text-white px-4 py-2 rounded-xl shadow-lg shadow-pink-500/[0.03] hover:bg-pink-400 transition-colors font-medium text-sm flex items-center gap-2"
+                className="bg-gradient-to-r from-pink-500 to-pink-600 text-white px-5 py-2.5 rounded-xl shadow-[0_0_15px_rgba(255,42,133,0.3)] hover:shadow-[0_0_25px_rgba(255,42,133,0.5)] border border-pink-400/20 transition-all font-bold text-sm flex items-center gap-2"
               >
-                <Plus size={16} />
-                Yeni Deneme Ekle
-              </button>
+                <Plus size={18} />
+                Yeni Ekle
+              </motion.button>
             </div>
 
             {/* Filters */}
-            <div className="flex gap-2">
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
               <button
                 onClick={() => setFilterType('all')}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                  filterType === 'all'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                }`}
+                className={`px-5 py-2 rounded-xl text-sm font-bold tracking-wide transition-all border ${filterType === 'all'
+                    ? 'bg-white/10 text-white border-white/20 shadow-[0_4px_20px_-4px_rgba(255,255,255,0.1)]'
+                    : 'bg-white/[0.02] text-white/50 border-white/5 hover:bg-white/[0.04] hover:text-white/80'
+                  }`}
               >
                 Tümü
               </button>
@@ -165,11 +167,10 @@ export default function ExamsPage() {
                 <button
                   key={et.id}
                   onClick={() => setFilterType(et.id)}
-                  className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                    filterType === et.id
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                  }`}
+                  className={`px-5 py-2 rounded-xl text-sm font-bold tracking-wide transition-all border ${filterType === et.id
+                      ? 'bg-blue-500/20 text-blue-300 border-blue-500/30 shadow-[0_4px_20px_-4px_rgba(59,130,246,0.3)]'
+                      : 'bg-white/[0.02] text-white/50 border-white/5 hover:bg-white/[0.04] hover:text-white/80'
+                    }`}
                 >
                   {et.name}
                 </button>
@@ -178,72 +179,81 @@ export default function ExamsPage() {
 
             {/* Exam Grid */}
             {loading ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="animate-spin text-slate-400" size={32} />
+              <div className="flex items-center justify-center py-24">
+                <Loader2 className="animate-spin text-pink-400" size={40} />
               </div>
             ) : exams.length === 0 ? (
-              <Paper className="text-center py-16">
-                <FileText className="mx-auto text-slate-300 mb-4" size={48} />
-                <Handwriting className="text-xl text-slate-400">Henüz deneme eklenmemiş</Handwriting>
-                <p className="text-sm text-slate-400 mt-2">Yeni bir deneme ekleyerek başlayabilirsin</p>
-              </Paper>
+              <div className="glass-panel text-center py-20 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-pink-500/5 to-transparent pointer-events-none" />
+                <FileArchive className="mx-auto text-pink-500/50 mb-6 drop-shadow-[0_0_15px_rgba(255,42,133,0.3)]" size={64} />
+                <h3 className="text-2xl font-bold text-white mb-3">Henüz deneme eklenmemiş</h3>
+                <p className="text-base text-white/50 mb-0">Yeni bir deneme ekleyerek başlayabilirsin</p>
+              </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
                 {exams.map((exam, idx) => (
                   <motion.div
                     key={exam.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.05 }}
-                    className="relative group cursor-pointer"
+                    className="group cursor-pointer h-full"
                     onClick={() => router.push(`/exams/${exam.id}`)}
                   >
                     {/* Card */}
-                    <div className="bg-white p-4 pb-5 shadow-md rounded-lg border border-slate-100 transform group-hover:-translate-y-1 group-hover:shadow-lg transition-all duration-300">
+                    <div className="glass-panel p-6 h-full flex flex-col transform group-hover:-translate-y-1.5 transition-all duration-300 group-hover:shadow-[0_8px_30px_-4px_rgba(255,42,133,0.15)] group-hover:border-pink-500/30 relative overflow-hidden">
+                      {/* Decorative elements */}
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/5 rounded-full blur-[40px] group-hover:bg-pink-500/10 transition-colors" />
+
                       {/* Header */}
-                      <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-start justify-between mb-5 relative z-10">
                         <div>
-                          <Handwriting className="text-lg leading-tight">{exam.title}</Handwriting>
-                          <span className="text-xs text-slate-400">{formatDate(exam.date)}</span>
+                          <h4 className="text-lg font-bold text-white leading-tight mb-1 group-hover:text-pink-300 transition-colors">{exam.title}</h4>
+                          <span className="text-[11px] font-semibold text-white/40 tracking-wider uppercase">{formatDate(exam.date)}</span>
                         </div>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                          exam.examType.name === 'TYT' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
-                        }`}>
+                        <span className={`text-[10px] font-black px-2.5 py-1 rounded-md tracking-widest ${exam.examType.name === 'TYT' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                          }`}>
                           {exam.examType.name}
                         </span>
                       </div>
 
                       {/* Net Score */}
-                      <div className="text-center py-3 mb-3 bg-gradient-to-r from-slate-50 to-blue-50 rounded-lg">
-                        <span className="text-3xl font-bold text-slate-800">
+                      <div className="text-center py-4 mb-5 rounded-xl border border-white/5 bg-gradient-to-br from-white/[0.03] to-white/[0.01] relative z-10 overflow-hidden group/score">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent -translate-x-[200%] group-hover/score:animate-shimmer" />
+                        <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400 drop-shadow-[0_2px_10px_rgba(255,42,133,0.2)] font-mono">
                           {getTotalNet(exam).toFixed(1)}
                         </span>
-                        <span className="text-xs text-slate-500 block mt-0.5">Toplam Net</span>
+                        <div className="flex items-center justify-center gap-1.5 mt-1.5">
+                          <Target size={12} className="text-white/30" />
+                          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Toplam Net</span>
+                        </div>
                       </div>
 
                       {/* Subject breakdown */}
-                      <div className="space-y-1">
+                      <div className="space-y-2 mt-auto relative z-10">
                         {exam.subjectResults.slice(0, 4).map((sr) => (
-                          <div key={sr.subjectId} className="flex items-center justify-between text-xs">
-                            <span className="text-slate-500 truncate flex-1">{sr.subject.name}</span>
-                            <div className="flex gap-2 items-center ml-2">
-                              <span className="text-green-600 font-medium">{sr.correctCount}D</span>
-                              <span className="text-red-500 font-medium">{sr.wrongCount}Y</span>
-                              <span className="text-slate-400">{sr.emptyCount}B</span>
-                              <span className="font-bold text-slate-700 w-10 text-right">{sr.netScore.toFixed(1)}</span>
+                          <div key={sr.subjectId} className="flex items-center justify-between text-[13px] bg-white/[0.02] px-3 py-2 rounded-lg border border-white/5">
+                            <span className="text-white/70 font-medium truncate flex-1">{sr.subject.name}</span>
+                            <div className="flex gap-2.5 items-center ml-3 font-mono">
+                              <span className="text-emerald-400 font-bold">{sr.correctCount}</span>
+                              <span className="text-rose-400 font-bold">{sr.wrongCount}</span>
+                              <span className="text-white/30 font-bold">{sr.emptyCount}</span>
+                              <span className="font-black text-pink-300 w-10 text-right bg-pink-500/10 px-1 py-0.5 rounded">{sr.netScore.toFixed(1)}</span>
                             </div>
                           </div>
                         ))}
                         {exam.subjectResults.length > 4 && (
-                          <div className="text-xs text-slate-400 text-center pt-1">
+                          <div className="text-[11px] font-bold text-white/30 text-center pt-2 tracking-wide uppercase">
                             +{exam.subjectResults.length - 4} ders daha
                           </div>
                         )}
                       </div>
 
                       {/* Arrow indicator */}
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <ChevronRight className="text-slate-300" size={20} />
+                      <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-4 group-hover:translate-x-0 z-10">
+                        <div className="w-8 h-8 rounded-full bg-pink-500/20 flex items-center justify-center border border-pink-500/30 shadow-[0_0_10px_rgba(255,42,133,0.3)] group-hover:shadow-[0_0_15px_rgba(255,42,133,0.5)]">
+                          <ChevronRight className="text-pink-100" size={16} />
+                        </div>
                       </div>
                     </div>
                   </motion.div>
@@ -259,6 +269,7 @@ export default function ExamsPage() {
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
+            className="pb-12"
           >
             <ExamEntryForm
               onClose={() => setView('list')}
@@ -273,6 +284,7 @@ export default function ExamsPage() {
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
+            className="pb-12"
           >
             <WrongQuestionForm
               examId={newExamId}

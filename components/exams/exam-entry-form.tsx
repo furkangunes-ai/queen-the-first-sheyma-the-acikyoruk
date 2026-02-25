@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Paper, Handwriting } from '@/components/skeuomorphic';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
-import { ChevronRight, Save, Loader2 } from 'lucide-react';
+import { ChevronRight, Save, Loader2, FileText, CheckCircle2 } from 'lucide-react';
 
 interface ExamType {
   id: string;
@@ -192,25 +191,32 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
     }
   }
 
-  const inputClassName = "w-full p-2 rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400";
-  const buttonClassName = "bg-pink-500 text-white px-6 py-2 rounded shadow hover:bg-pink-400 transition-colors font-bold";
+  const inputClassName = "w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-[15px] font-medium text-white placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-pink-400/50 focus:border-pink-400/30 transition-all hover:border-white/20";
+  const buttonClassName = "bg-gradient-to-r from-pink-500 to-pink-600 text-white px-6 py-3 rounded-xl shadow-[0_0_15px_rgba(255,42,133,0.3)] hover:shadow-[0_0_25px_rgba(255,42,133,0.5)] border border-pink-400/20 transition-all font-bold tracking-wide text-sm flex items-center justify-center gap-2";
 
   return (
-    <Paper className="max-w-3xl mx-auto rounded-lg">
+    <div className="glass-panel p-6 sm:p-8 max-w-3xl mx-auto relative overflow-hidden">
+      {/* Decorative Glows */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/10 rounded-full blur-[60px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-[60px] pointer-events-none" />
+
       {/* Progress indicator */}
-      <div className="flex items-center gap-3 mb-8">
+      <div className="flex items-center gap-3 mb-8 relative z-10">
         <div
-          className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-colors ${
-            step >= 1 ? 'bg-pink-500 text-white' : 'bg-white/10 text-white/50'
-          }`}
+          className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all duration-300 shadow-lg ${step >= 1 ? 'bg-gradient-to-br from-pink-400 to-pink-600 text-white shadow-pink-500/30' : 'bg-white/10 text-white/50 border border-white/5'
+            }`}
         >
-          1
+          {step > 1 ? <CheckCircle2 size={16} /> : '1'}
         </div>
-        <div className={`flex-1 h-1 rounded ${step >= 2 ? 'bg-pink-500' : 'bg-white/10'} transition-colors`} />
+        <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-pink-500 to-pink-400 transition-all duration-500 ease-out"
+            style={{ width: step >= 2 ? '100%' : '0%' }}
+          />
+        </div>
         <div
-          className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-colors ${
-            step >= 2 ? 'bg-pink-500 text-white' : 'bg-white/10 text-white/50'
-          }`}
+          className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all duration-300 shadow-lg ${step >= 2 ? 'bg-gradient-to-br from-pink-400 to-pink-600 text-white shadow-pink-500/30' : 'bg-white/10 text-white/50 border border-white/5'
+            }`}
         >
           2
         </div>
@@ -224,15 +230,17 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.25 }}
+            className="relative z-10"
           >
-            <Handwriting as="h2" className="text-2xl mb-6">
-              Yeni Deneme Sınavı
-            </Handwriting>
+            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-white/5">
+              <FileText size={24} className="text-pink-400" />
+              <h2 className="text-2xl font-bold tracking-tight text-white">Yeni Deneme Sınavı</h2>
+            </div>
 
-            <div className="space-y-5">
+            <div className="space-y-6">
               {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">
+                <label className="block text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-2">
                   Sınav Başlığı
                 </label>
                 <input
@@ -244,49 +252,51 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                 />
               </div>
 
-              {/* Exam Type */}
-              <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">
-                  Sınav Türü
-                </label>
-                {loadingExamTypes ? (
-                  <div className="flex items-center gap-2 text-white/40 py-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm">Yükleniyor...</span>
-                  </div>
-                ) : (
-                  <select
-                    value={examTypeId}
-                    onChange={(e) => setExamTypeId(e.target.value)}
-                    className={inputClassName}
-                  >
-                    <option value="">Sınav türü seçin</option>
-                    {examTypes.map((et) => (
-                      <option key={et.id} value={et.id}>
-                        {et.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {/* Exam Type */}
+                <div>
+                  <label className="block text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-2">
+                    Sınav Türü
+                  </label>
+                  {loadingExamTypes ? (
+                    <div className="flex items-center gap-2 text-white/40 h-[46px] px-4">
+                      <Loader2 className="w-4 h-4 animate-spin text-pink-400" />
+                      <span className="text-sm font-medium">Yükleniyor...</span>
+                    </div>
+                  ) : (
+                    <select
+                      value={examTypeId}
+                      onChange={(e) => setExamTypeId(e.target.value)}
+                      className={`${inputClassName} [color-scheme:dark]`}
+                    >
+                      <option value="">Sınav türü seçin</option>
+                      {examTypes.map((et) => (
+                        <option key={et.id} value={et.id}>
+                          {et.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
 
-              {/* Date */}
-              <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">
-                  Sınav Tarihi
-                </label>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className={inputClassName}
-                />
+                {/* Date */}
+                <div>
+                  <label className="block text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-2">
+                    Sınav Tarihi
+                  </label>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className={`${inputClassName} [color-scheme:dark]`}
+                  />
+                </div>
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">
-                  Notlar <span className="text-white/40 font-normal">(isteğe bağlı)</span>
+                <label className="block text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-2">
+                  Notlar <span className="text-white/30 font-semibold">(isteğe bağlı)</span>
                 </label>
                 <textarea
                   placeholder="Sınavla ilgili notlarınız..."
@@ -299,21 +309,23 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
             </div>
 
             {/* Actions */}
-            <div className="flex justify-between items-center mt-8">
+            <div className="flex justify-between items-center mt-10">
               <button
                 onClick={onClose}
-                className="text-white/50 hover:text-white/70 transition-colors text-sm font-medium"
+                className="text-white/40 hover:text-white/80 transition-colors text-sm font-bold tracking-wider uppercase"
               >
                 Vazgeç
               </button>
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={goToStep2}
                 disabled={!canProceedToStep2()}
-                className={`${buttonClassName} flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+                className={`${buttonClassName} opacity-100 disabled:opacity-50`}
               >
-                Devam Et
-                <ChevronRight className="w-4 h-4" />
-              </button>
+                DEVAM ET
+                <ChevronRight className="w-4 h-4 ml-1 relative top-[1px]" />
+              </motion.button>
             </div>
           </motion.div>
         )}
@@ -325,35 +337,37 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.25 }}
+            className="relative z-10 flex flex-col h-full"
           >
-            <Handwriting as="h2" className="text-2xl mb-6">
-              Ders Sonuçları
-            </Handwriting>
+            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-white/5">
+              <FileText size={24} className="text-cyan-400" />
+              <h2 className="text-2xl font-bold tracking-tight text-white">Ders Sonuçları</h2>
+            </div>
 
             {loadingSubjects ? (
-              <div className="flex items-center justify-center gap-3 py-12 text-white/40">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Dersler yükleniyor...</span>
+              <div className="flex flex-col items-center justify-center gap-4 py-16 text-white/40">
+                <Loader2 className="w-8 h-8 animate-spin text-pink-400" />
+                <span className="font-medium tracking-wide">Dersler yükleniyor...</span>
               </div>
             ) : (
               <>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto rounded-xl border border-white/5 bg-white/[0.02]">
                   <table className="w-full border-collapse">
                     <thead>
-                      <tr className="border-b-2 border-pink-500/15">
-                        <th className="text-left py-2 px-3 text-sm font-semibold text-white/70">
+                      <tr className="bg-white/[0.03] border-b border-white/10">
+                        <th className="text-left py-4 px-5 text-[11px] uppercase tracking-widest font-bold text-white/50">
                           Ders
                         </th>
-                        <th className="text-center py-2 px-3 text-sm font-semibold text-emerald-400 w-20">
+                        <th className="text-center py-4 px-3 text-[11px] uppercase tracking-widest font-bold text-emerald-400 w-24">
                           Doğru
                         </th>
-                        <th className="text-center py-2 px-3 text-sm font-semibold text-rose-400 w-20">
+                        <th className="text-center py-4 px-3 text-[11px] uppercase tracking-widest font-bold text-rose-400 w-24">
                           Yanlış
                         </th>
-                        <th className="text-center py-2 px-3 text-sm font-semibold text-white/50 w-20">
+                        <th className="text-center py-4 px-3 text-[11px] uppercase tracking-widest font-bold text-white/50 w-24">
                           Boş
                         </th>
-                        <th className="text-center py-2 px-3 text-sm font-semibold text-pink-400 w-24">
+                        <th className="text-center py-4 px-5 text-[11px] uppercase tracking-widest font-bold text-pink-400 w-24">
                           Net
                         </th>
                       </tr>
@@ -362,12 +376,12 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                       {results.map((r, i) => (
                         <tr
                           key={r.subjectId}
-                          className="border-b border-white/10 hover:bg-white/[0.04] transition-colors"
+                          className="border-b border-white/5 hover:bg-white/[0.02] transition-colors"
                         >
-                          <td className="py-2 px-3 text-sm font-medium text-white/90">
+                          <td className="py-3 px-5 text-sm font-bold text-white/90">
                             {r.subjectName}
                           </td>
-                          <td className="py-2 px-3">
+                          <td className="py-3 px-3">
                             <input
                               type="number"
                               min={0}
@@ -375,10 +389,10 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                               onChange={(e) =>
                                 updateResult(i, 'correctCount', parseInt(e.target.value) || 0)
                               }
-                              className="w-full p-1.5 rounded bg-white/[0.06] border border-pink-500/[0.12] text-center text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                              className="w-full py-2 px-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center text-[15px] font-bold text-white focus:outline-none focus:ring-1 focus:ring-emerald-400 transition-colors hover:border-emerald-500/40"
                             />
                           </td>
-                          <td className="py-2 px-3">
+                          <td className="py-3 px-3">
                             <input
                               type="number"
                               min={0}
@@ -386,10 +400,10 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                               onChange={(e) =>
                                 updateResult(i, 'wrongCount', parseInt(e.target.value) || 0)
                               }
-                              className="w-full p-1.5 rounded bg-white/[0.06] border border-pink-500/[0.12] text-center text-sm text-white focus:outline-none focus:ring-2 focus:ring-rose-400"
+                              className="w-full py-2 px-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-center text-[15px] font-bold text-white focus:outline-none focus:ring-1 focus:ring-rose-400 transition-colors hover:border-rose-500/40"
                             />
                           </td>
-                          <td className="py-2 px-3">
+                          <td className="py-3 px-3">
                             <input
                               type="number"
                               min={0}
@@ -397,24 +411,24 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                               onChange={(e) =>
                                 updateResult(i, 'emptyCount', parseInt(e.target.value) || 0)
                               }
-                              className="w-full p-1.5 rounded bg-white/[0.06] border border-pink-500/[0.12] text-center text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/30"
+                              className="w-full py-2 px-1 rounded-lg bg-white/[0.04] border border-white/10 text-center text-[15px] font-bold text-white focus:outline-none focus:ring-1 focus:ring-white/30 transition-colors hover:border-white/20"
                             />
                           </td>
-                          <td className="py-2 px-3 text-center text-sm font-bold text-pink-400">
+                          <td className="py-3 px-5 text-center text-[15px] font-black text-pink-400 bg-pink-500/[0.03]">
                             {nets[i].toFixed(2)}
                           </td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr className="border-t-2 border-pink-500/15">
+                      <tr className="bg-gradient-to-r from-pink-500/[0.02] to-pink-500/[0.05] border-t border-white/10">
                         <td
                           colSpan={4}
-                          className="py-3 px-3 text-right text-sm font-bold text-white/70"
+                          className="py-4 px-5 text-right text-sm font-bold text-white/60 tracking-wide uppercase"
                         >
                           Toplam Net:
                         </td>
-                        <td className="py-3 px-3 text-center text-lg font-bold text-pink-400">
+                        <td className="py-4 px-5 text-center text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400 drop-shadow-[0_2px_10px_rgba(255,42,133,0.3)]">
                           {totalNet.toFixed(2)}
                         </td>
                       </tr>
@@ -426,33 +440,39 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                 <div className="flex justify-between items-center mt-8">
                   <button
                     onClick={() => setStep(1)}
-                    className="text-white/50 hover:text-white/70 transition-colors text-sm font-medium"
+                    className="text-white/40 hover:text-white/80 transition-colors text-sm font-bold tracking-wider uppercase"
                   >
-                    Geri Dön
+                    Geri DÖN
                   </button>
-                  <button
+                  <motion.button
+                    whileHover="hover"
+                    whileTap="tap"
+                    variants={{
+                      hover: { scale: 1.02 },
+                      tap: { scale: 0.98 }
+                    }}
                     onClick={handleSubmit}
                     disabled={submitting}
-                    className={`${buttonClassName} flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+                    className={`${buttonClassName} opacity-100 disabled:opacity-50`}
                   >
                     {submitting ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Kaydediliyor...
+                        KAYDEDİLİYOR...
                       </>
                     ) : (
                       <>
-                        <Save className="w-4 h-4" />
-                        Kaydet ve Devam Et
+                        <Save className="w-4 h-4 ml-[-4px]" />
+                        KAYDET VE GÖNDER
                       </>
                     )}
-                  </button>
+                  </motion.button>
                 </div>
               </>
             )}
           </motion.div>
         )}
       </AnimatePresence>
-    </Paper>
+    </div>
   );
 }

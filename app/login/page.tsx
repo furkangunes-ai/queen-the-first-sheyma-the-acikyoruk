@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { User, Lock, LogIn, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { motion } from "motion/react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,64 +42,72 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[#0a0a1a] relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-background relative overflow-hidden">
       {/* Background glow effects */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-pink-500/[0.07] rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute top-1/4 right-1/4 w-[300px] h-[300px] bg-amber-500/[0.04] rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-pink-600/10 rounded-full blur-[100px] pointer-events-none mix-blend-screen" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none mix-blend-screen" />
 
-      <div className="w-full max-w-md relative z-10">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="w-full max-w-md relative z-10"
+      >
         {/* Glass Card */}
-        <div className="rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-pink-500/[0.12] shadow-lg shadow-pink-500/[0.03] p-8 sm:p-10">
-          {/* Gold accent line */}
-          <div className="h-px bg-gradient-to-r from-transparent via-amber-400/40 to-transparent mb-8" />
+        <div className="rounded-[calc(var(--radius)*2)] glass-panel p-8 sm:p-10 relative overflow-hidden group">
 
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <Sparkles className="w-5 h-5 text-amber-400" />
-              <h1 className="font-display text-2xl text-gradient-gold tracking-wide">
-                Hoş Geldin
+          <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/5 rounded-full blur-[60px] pointer-events-none group-hover:bg-pink-500/10 transition-colors duration-500" />
+
+          {/* Decorative Pink Glow Line */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] w-1/3 bg-gradient-to-r from-transparent via-pink-400 to-transparent blur-[1px]" />
+
+          <div className="text-center mb-10 mt-2 relative z-10">
+            <div className="flex items-center justify-center gap-2 mb-3 cursor-default">
+              <Sparkles className="w-6 h-6 text-pink-400 group-hover:text-pink-300 transition-colors animate-pulse" />
+              <h1 className="font-bold text-3xl tracking-tight text-white group-hover:text-gradient-candy transition-all duration-500">
+                Hoş Geldiniz
               </h1>
-              <Sparkles className="w-5 h-5 text-amber-400" />
             </div>
-            <p className="text-sm text-white/40">Giriş yaparak devam et</p>
+            <p className="text-[15px] font-medium text-white/50 tracking-wide">
+              Devam etmek için giriş yapın
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide mb-2">
+          <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-white/50 uppercase tracking-widest px-1">
                 Kullanıcı Adı
               </label>
-              <div className="relative">
+              <div className="relative group/input">
                 <User
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-400/50"
+                  size={18}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within/input:text-pink-400 transition-colors"
                 />
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="kullanıcı adı"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.06] border border-pink-500/[0.12] focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent text-white/90 placeholder:text-white/20 transition-all"
+                  placeholder="Kullanıcı adınızı girin"
+                  className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/[0.03] border border-white/5 focus:outline-none focus:ring-1 focus:ring-pink-400/50 focus:border-pink-500/30 focus:bg-white/[0.05] text-white placeholder:text-white/20 transition-all font-medium text-[15px] hover:border-white/10"
                   autoComplete="username"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide mb-2">
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-white/50 uppercase tracking-widest px-1">
                 Şifre
               </label>
-              <div className="relative">
+              <div className="relative group/input">
                 <Lock
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-400/50"
+                  size={18}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within/input:text-pink-400 transition-colors"
                 />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.06] border border-pink-500/[0.12] focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent text-white/90 placeholder:text-white/20 transition-all"
+                  className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/[0.03] border border-white/5 focus:outline-none focus:ring-1 focus:ring-pink-400/50 focus:border-pink-500/30 focus:bg-white/[0.05] text-white placeholder:text-white/20 transition-all font-medium text-[15px] tracking-widest hover:border-white/10"
                   autoComplete="current-password"
                 />
               </div>
@@ -107,26 +116,21 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-pink-500 text-white py-3 rounded-xl hover:bg-pink-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium flex items-center justify-center gap-2 glow-pink"
+              className="w-full mt-2 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-bold tracking-wide py-4 rounded-2xl hover:from-pink-400 hover:to-pink-500 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,42,133,0.3)] hover:shadow-[0_0_30px_rgba(255,42,133,0.5)] border border-pink-400/20 group/btn"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <LogIn size={18} />
-                  Giriş Yap
+                  <LogIn size={18} className="transition-transform group-hover/btn:-translate-x-1" />
+                  GİRİŞ YAP
                 </>
               )}
             </button>
           </form>
 
-          {/* Bottom accent */}
-          <div className="mt-8 h-px bg-gradient-to-r from-transparent via-pink-500/20 to-transparent" />
-          <p className="mt-4 text-center text-xs text-white/20">
-            Queen Sheyda
-          </p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

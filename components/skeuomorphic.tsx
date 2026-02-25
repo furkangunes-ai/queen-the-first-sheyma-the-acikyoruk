@@ -13,10 +13,11 @@ export const TEXTURES = {
 export const GlassCard = ({ children, className, style = {}, onClick }: { children: React.ReactNode, className?: string, style?: React.CSSProperties, onClick?: () => void }) => (
   <div
     className={cn(
-      "relative rounded-2xl p-6 sm:p-8 md:p-10",
-      "bg-white/[0.04] backdrop-blur-xl",
-      "border border-pink-500/[0.12]",
-      "shadow-lg shadow-pink-500/[0.03]",
+      "relative rounded-[calc(var(--radius)*1.5)] p-6 sm:p-8 md:p-10",
+      "glass bg-white/[0.02]",
+      "border border-white/5",
+      "shadow-[0_8px_32px_-12px_rgba(255,42,133,0.15)]",
+      "before:absolute before:inset-0 before:bg-gradient-to-br before:from-pink-500/[0.05] before:to-transparent before:rounded-inherit before:pointer-events-none",
       className
     )}
     style={style}
@@ -28,14 +29,14 @@ export const GlassCard = ({ children, className, style = {}, onClick }: { childr
 
 // Heading — replaces Handwriting
 export const Heading = ({ children, className, as: Component = 'p' }: { children: React.ReactNode, className?: string, as?: any }) => (
-  <Component className={cn("font-display text-white tracking-wide", className)}>
+  <Component className={cn("font-semibold tracking-tight text-white", className)}>
     {children}
   </Component>
 );
 
-// Accent — replaces Tape (decorative gold line)
+// Accent — replaces Tape (decorative glowing line)
 export const Accent = ({ className }: { className?: string }) => (
-  <div className={cn("h-px w-full bg-gradient-to-r from-transparent via-amber-400/40 to-transparent", className)} />
+  <div className={cn("absolute top-0 left-1/2 -translate-x-1/2 h-[2px] w-1/3 bg-gradient-to-r from-transparent via-pink-400 to-transparent blur-[1px]", className)} />
 );
 
 // Backward-compatible aliases

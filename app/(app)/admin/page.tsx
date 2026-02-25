@@ -3,12 +3,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Paper, Handwriting } from '@/components/skeuomorphic';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import {
   Shield, Send, ClipboardList, Heart, TrendingUp, Loader2,
   CheckCircle2, Zap, Smile, FolderOpen, Bell, RefreshCw,
+  Sparkles, Star
 } from 'lucide-react';
 
 // ---------- types ----------
@@ -162,7 +162,7 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -235,8 +235,9 @@ export default function AdminPage() {
 
   if (sessionStatus === 'loading' || loading) {
     return (
-      <div className="flex items-center justify-center py-32">
-        <Loader2 className="animate-spin text-white/40" size={36} />
+      <div className="flex flex-col items-center justify-center py-32">
+        <Loader2 className="animate-spin text-pink-400 mb-4 drop-shadow-[0_0_15px_rgba(255,42,133,0.5)]" size={48} />
+        <p className="text-white/60 font-bold tracking-wide">Yönetici Paneli Yükleniyor...</p>
       </div>
     );
   }
@@ -246,125 +247,155 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 pb-12">
+    <div className="flex flex-col gap-8 pb-12 relative z-10">
+      {/* Background Glows */}
+      <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-pink-500/10 rounded-full blur-[120px] pointer-events-none z-0" />
+      <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none z-0" />
+
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Shield className="text-amber-400" size={28} />
-          <Handwriting as="h1" className="text-3xl text-white">
-            Yönetici Paneli
-          </Handwriting>
+      <div className="flex items-center justify-between glass-panel p-6 sm:p-8 relative z-10 overflow-hidden shadow-[0_8px_32px_rgba(255,42,133,0.05)] border-white/10 rounded-3xl">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-[40px] pointer-events-none transform translate-x-1/2 -translate-y-1/2" />
+
+        <div className="flex items-center gap-4 relative z-10">
+          <div className="bg-amber-500/10 p-3 rounded-2xl border border-amber-500/20 shadow-inner">
+            <Shield className="text-amber-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]" size={32} />
+          </div>
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white drop-shadow-md mb-1">
+              Yönetici Paneli
+            </h1>
+            <p className="text-sm font-bold tracking-widest uppercase text-white/50">
+              Genel Durum ve Yönetim
+            </p>
+          </div>
         </div>
-        <button
+        <motion.button
+          whileHover={{ scale: 1.05, rotate: 15 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => fetchAll()}
-          className="p-2 rounded-full active:bg-white/10 transition-colors text-white/50"
+          className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/10 transition-colors text-white/60 hover:text-white relative z-10 shadow-lg"
           title="Yenile"
         >
-          <RefreshCw size={18} />
-        </button>
+          <RefreshCw size={20} />
+        </motion.button>
       </div>
 
       {/* ===== Section 1: Seyda'nin Genel Durumu ===== */}
-      <Paper>
-        <Handwriting as="h2" className="text-2xl mb-6 text-white">
-          Şeyda&apos;nın Genel Durumu
-        </Handwriting>
+      <div className="glass-panel p-6 sm:p-8 relative z-10 shadow-[0_8px_32px_rgba(255,42,133,0.05)] border-white/10 rounded-3xl overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-pink-500/5 rounded-full blur-[60px] pointer-events-none" />
+
+        <div className="flex items-center gap-3 mb-8 relative z-10">
+          <Sparkles className="text-pink-400" size={24} />
+          <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400 drop-shadow-sm tracking-tight">
+            Şeyda'nın Genel Durumu
+          </h2>
+        </div>
 
         {/* Stats cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {/* Son Deneme */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="bg-indigo-500/10 p-4 rounded-lg border border-indigo-500/20"
+            className="group bg-gradient-to-br from-indigo-500/10 to-indigo-500/5 p-5 rounded-2xl border border-indigo-500/20 shadow-lg relative overflow-hidden"
           >
-            <div className="flex items-center gap-2 text-indigo-400 mb-1">
+            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center gap-2 text-indigo-400 mb-2">
               <TrendingUp size={16} />
               <span className="font-bold text-[10px] uppercase tracking-wider">Son Deneme</span>
             </div>
-            <span className="text-2xl font-display text-white/90">{latestNet}</span>
-            <span className="text-xs text-white/50 ml-1">net</span>
+            <div className="flex items-baseline">
+              <span className="text-3xl font-black text-white/90 drop-shadow-md tracking-tight">{latestNet}</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1.5">net</span>
+            </div>
           </motion.div>
 
           {/* Ortalama Net */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20"
+            className="group bg-gradient-to-br from-blue-500/10 to-blue-500/5 p-5 rounded-2xl border border-blue-500/20 shadow-lg relative overflow-hidden"
           >
-            <div className="flex items-center gap-2 text-blue-400 mb-1">
-              <TrendingUp size={16} />
+            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center gap-2 text-blue-400 mb-2">
+              <Star size={16} />
               <span className="font-bold text-[10px] uppercase tracking-wider">Ortalama</span>
             </div>
-            <span className="text-2xl font-display text-white/90">{avgNet}</span>
-            <span className="text-xs text-white/50 ml-1">net</span>
+            <div className="flex items-baseline">
+              <span className="text-3xl font-black text-white/90 drop-shadow-md tracking-tight">{avgNet}</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1.5">net</span>
+            </div>
           </motion.div>
 
           {/* Gorev Tamamlama */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="bg-emerald-500/10 p-4 rounded-lg border border-emerald-500/20"
+            className="group bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 p-5 rounded-2xl border border-emerald-500/20 shadow-lg relative overflow-hidden"
           >
-            <div className="flex items-center gap-2 text-emerald-400 mb-1">
+            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center gap-2 text-emerald-400 mb-2">
               <CheckCircle2 size={16} />
               <span className="font-bold text-[10px] uppercase tracking-wider">Görev</span>
             </div>
-            <span className="text-2xl font-display text-white/90">{completionRate}%</span>
-            <span className="text-xs text-white/50 ml-1">{completedCount}/{totalTasks}</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-white/90 drop-shadow-md tracking-tight">{completionRate}%</span>
+              <span className="text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md">{completedCount}/{totalTasks}</span>
+            </div>
           </motion.div>
 
           {/* Son Check-in */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-amber-500/10 p-4 rounded-lg border border-amber-500/20"
+            className="group bg-gradient-to-br from-amber-500/10 to-amber-500/5 p-5 rounded-2xl border border-amber-500/20 shadow-lg relative overflow-hidden"
           >
-            <div className="flex items-center gap-2 text-amber-400 mb-1">
+            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center gap-2 text-amber-400 mb-2">
               <Smile size={16} />
               <span className="font-bold text-[10px] uppercase tracking-wider">Ruh Hali</span>
             </div>
             {lastCheckIn ? (
               <div>
-                <span className="text-lg font-display text-white/90">{moodLabel(lastCheckIn.mood)}</span>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <Zap size={12} className="text-amber-400" />
-                  <span className="text-xs text-white/50">{energyLabel(lastCheckIn.energy)}</span>
+                <span className="text-xl font-black text-white/90 drop-shadow-md tracking-tight block truncate">{moodLabel(lastCheckIn.mood)}</span>
+                <div className="flex items-center gap-1.5 mt-1 bg-amber-500/10 self-start px-2 py-0.5 rounded-md border border-amber-500/20">
+                  <Zap size={10} className="text-amber-400" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-amber-300/80">{energyLabel(lastCheckIn.energy)} Enerji</span>
                 </div>
               </div>
             ) : (
-              <span className="text-sm text-white/40 italic">Veri yok</span>
+              <span className="text-sm font-bold text-white/40 italic">Veri yok</span>
             )}
           </motion.div>
         </div>
 
         {/* Recent exam results list */}
         {trends.length > 0 && (
-          <div className="mt-4">
-            <h3 className="text-xs font-bold text-white/50 uppercase tracking-wider mb-3">
-              Son Denemeler
+          <div className="mt-8 border-t border-white/5 pt-8">
+            <h3 className="text-sm font-black text-white/60 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <TrendingUp size={16} className="text-pink-400" /> Son Denemeler
             </h3>
-            <div className="space-y-2">
+            <div className="grid gap-3">
               {trends.map((t) => (
                 <div
                   key={t.examId}
-                  className="flex items-center justify-between bg-white/[0.04] rounded-lg border border-pink-500/10 p-3"
+                  className="flex items-center justify-between bg-white/[0.02] hover:bg-white/[0.04] transition-colors rounded-xl border border-white/5 hover:border-pink-500/20 p-4"
                 >
                   <div className="flex-1">
-                    <span className="text-sm font-medium text-white/70">{t.examTitle}</span>
-                    <span className="text-xs text-white/40 ml-2">
+                    <span className="text-base font-bold tracking-wide text-white/90">{t.examTitle}</span>
+                    <span className="text-xs font-medium text-white/40 ml-3 bg-black/30 px-2 py-0.5 rounded-md uppercase tracking-wider">
                       {new Date(t.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs bg-white/[0.06] px-2 py-0.5 rounded text-white/50">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-bold uppercase tracking-widest bg-white/10 px-2.5 py-1 rounded-lg text-white/60 border border-white/5">
                       {t.examTypeName}
                     </span>
-                    <span className="text-lg font-bold text-white/90">
+                    <span className="text-xl font-black font-mono tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400 drop-shadow-md w-16 text-right">
                       {t.totalNet.toFixed(1)}
                     </span>
                   </div>
@@ -375,45 +406,50 @@ export default function AdminPage() {
         )}
 
         {trends.length === 0 && (
-          <p className="text-sm text-white/40 italic text-center py-4">
-            Henüz deneme verisi yok.
-          </p>
+          <div className="mt-8 border-t border-white/5 pt-8 flex flex-col items-center justify-center p-8 opacity-50">
+            <TrendingUp size={32} className="text-white/40 mb-3" />
+            <p className="text-sm font-bold tracking-wide text-white/60">Henüz deneme verisi yok.</p>
+          </div>
         )}
-      </Paper>
+      </div>
 
       {/* Two-column layout for forms */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* ===== Section 2: Gorev Ata ===== */}
-        <Paper>
-          <div className="flex items-center gap-2 mb-6">
-            <ClipboardList className="text-pink-400" size={22} />
-            <Handwriting as="h2" className="text-2xl text-white">
+        <div className="glass-panel p-6 sm:p-8 relative z-10 shadow-[0_8px_32px_rgba(255,42,133,0.05)] border-white/10 rounded-3xl overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none" />
+
+          <div className="flex items-center gap-3 mb-8 relative z-10">
+            <div className="bg-blue-500/10 p-2.5 rounded-xl border border-blue-500/20 shadow-inner">
+              <ClipboardList className="text-blue-400 drop-shadow-sm" size={24} />
+            </div>
+            <h2 className="text-2xl font-black text-white drop-shadow-sm tracking-tight">
               Görev Ata
-            </Handwriting>
+            </h2>
           </div>
 
-          <form onSubmit={handleTaskSubmit} className="flex flex-col gap-4">
+          <form onSubmit={handleTaskSubmit} className="flex flex-col gap-5 relative z-10">
             <div>
-              <label className="text-xs font-bold text-white/50 uppercase tracking-wider mb-1 block">
-                Görev Başlığı
+              <label className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1.5 block">
+                GÖREV BAŞLIĞI
               </label>
               <input
                 type="text"
                 value={taskTitle}
                 onChange={(e) => setTaskTitle(e.target.value)}
                 placeholder="Örneğin: Paragraf testi çöz..."
-                className="w-full px-4 py-2.5 bg-white/[0.06] rounded-lg border border-pink-500/[0.12] text-sm text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white/[0.03] rounded-xl border border-white/10 text-sm font-medium tracking-wide text-white placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-blue-400/50 focus:border-blue-400/30 transition-all shadow-inner [color-scheme:dark]"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-white/50 uppercase tracking-wider mb-1 block">
-                Klasör
+              <label className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1.5 block">
+                KLASÖR
               </label>
               <select
                 value={taskFolderId}
                 onChange={(e) => setTaskFolderId(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white/[0.06] rounded-lg border border-pink-500/[0.12] text-sm text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white/[0.03] rounded-xl border border-white/10 text-sm font-medium tracking-wide text-white focus:outline-none focus:ring-1 focus:ring-blue-400/50 focus:border-blue-400/30 transition-all shadow-inner [color-scheme:dark]"
               >
                 {folders.length === 0 && (
                   <option value="">Klasör bulunamadı</option>
@@ -426,40 +462,46 @@ export default function AdminPage() {
               </select>
             </div>
 
-            <button
+            <motion.button
+              whileHover={!taskSubmitting && !!taskTitle.trim() ? { scale: 1.02 } : {}}
+              whileTap={!taskSubmitting && !!taskTitle.trim() ? { scale: 0.98 } : {}}
               type="submit"
               disabled={taskSubmitting || !taskTitle.trim() || !taskFolderId}
-              className="flex items-center justify-center gap-2 bg-pink-500 text-white px-5 py-2.5 rounded-lg shadow-md shadow-pink-500/10 active:bg-pink-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
+              className="mt-2 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-black tracking-widest px-5 py-3.5 rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.3)] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm uppercase"
             >
               {taskSubmitting ? (
-                <Loader2 className="animate-spin" size={16} />
+                <Loader2 className="animate-spin" size={18} />
               ) : (
-                <ClipboardList size={16} />
+                <ClipboardList size={18} />
               )}
-              Görev Ata
-            </button>
+              GÖREV ATA
+            </motion.button>
           </form>
-        </Paper>
+        </div>
 
         {/* ===== Section 3: Tesvik Mesaji Gonder ===== */}
-        <Paper>
-          <div className="flex items-center gap-2 mb-6">
-            <Heart className="text-rose-400" size={22} />
-            <Handwriting as="h2" className="text-2xl text-white">
-              Teşvik Mesajı Gönder
-            </Handwriting>
+        <div className="glass-panel p-6 sm:p-8 relative z-10 shadow-[0_8px_32px_rgba(255,42,133,0.05)] border-white/10 rounded-3xl overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/10 rounded-full blur-[40px] pointer-events-none" />
+
+          <div className="flex items-center gap-3 mb-8 relative z-10">
+            <div className="bg-pink-500/10 p-2.5 rounded-xl border border-pink-500/20 shadow-inner">
+              <Heart className="text-pink-400 drop-shadow-sm" size={24} />
+            </div>
+            <h2 className="text-2xl font-black text-white drop-shadow-sm tracking-tight">
+              Teşvik Mesajı
+            </h2>
           </div>
 
-          <form onSubmit={handleMsgSubmit} className="flex flex-col gap-4">
+          <form onSubmit={handleMsgSubmit} className="flex flex-col gap-5 relative z-10">
             {users.length > 0 && (
               <div>
-                <label className="text-xs font-bold text-white/50 uppercase tracking-wider mb-1 block">
-                  Alıcı
+                <label className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1.5 block">
+                  ALICI
                 </label>
                 <select
                   value={msgRecipientId}
                   onChange={(e) => setMsgRecipientId(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-white/[0.06] rounded-lg border border-pink-500/[0.12] text-sm text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 bg-white/[0.03] rounded-xl border border-white/10 text-sm font-medium tracking-wide text-white focus:outline-none focus:ring-1 focus:ring-pink-400/50 focus:border-pink-400/30 transition-all shadow-inner [color-scheme:dark]"
                 >
                   {users.map((u) => (
                     <option key={u.id} value={u.id}>
@@ -471,103 +513,105 @@ export default function AdminPage() {
             )}
 
             <div>
-              <label className="text-xs font-bold text-white/50 uppercase tracking-wider mb-1 block">
-                Başlık
+              <label className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1.5 block">
+                BAŞLIK
               </label>
               <input
                 type="text"
                 value={msgTitle}
                 onChange={(e) => setMsgTitle(e.target.value)}
                 placeholder="Örneğin: Harika gidiyorsun!"
-                className="w-full px-4 py-2.5 bg-white/[0.06] rounded-lg border border-pink-500/[0.12] text-sm text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white/[0.03] rounded-xl border border-white/10 text-sm font-medium tracking-wide text-white placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-pink-400/50 focus:border-pink-400/30 transition-all shadow-inner [color-scheme:dark]"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-white/50 uppercase tracking-wider mb-1 block">
-                Mesaj
+              <label className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1.5 block">
+                MESAJ
               </label>
               <textarea
                 value={msgBody}
                 onChange={(e) => setMsgBody(e.target.value)}
                 placeholder="Teşvikçi bir mesaj yaz..."
                 rows={3}
-                className="w-full px-4 py-2.5 bg-white/[0.06] rounded-lg border border-pink-500/[0.12] text-sm text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400/50 focus:border-transparent transition-all resize-none"
+                className="w-full px-4 py-3 bg-white/[0.03] rounded-xl border border-white/10 text-sm font-medium tracking-wide text-white placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-pink-400/50 focus:border-pink-400/30 transition-all shadow-inner resize-none custom-scrollbar [color-scheme:dark]"
               />
             </div>
 
-            <button
+            <motion.button
+              whileHover={!msgSubmitting && !!msgTitle.trim() && !!msgBody.trim() ? { scale: 1.02 } : {}}
+              whileTap={!msgSubmitting && !!msgTitle.trim() && !!msgBody.trim() ? { scale: 0.98 } : {}}
               type="submit"
               disabled={msgSubmitting || !msgTitle.trim() || !msgBody.trim()}
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white px-5 py-2.5 rounded-lg shadow-md shadow-pink-500/10 active:from-rose-400 active:to-pink-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-sm"
+              className="mt-2 flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-black tracking-widest px-5 py-3.5 rounded-xl shadow-[0_0_15px_rgba(255,42,133,0.3)] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm uppercase"
             >
               {msgSubmitting ? (
-                <Loader2 className="animate-spin" size={16} />
+                <Loader2 className="animate-spin" size={18} />
               ) : (
-                <Send size={16} />
+                <Send size={18} />
               )}
-              Mesajı Gönder
-            </button>
+              MESAJI GÖNDER
+            </motion.button>
           </form>
-        </Paper>
+        </div>
       </div>
 
       {/* ===== Section 4: Son Gonderilen Bildirimler ===== */}
-      <Paper>
-        <div className="flex items-center gap-2 mb-6">
-          <Bell className="text-amber-400" size={22} />
-          <Handwriting as="h2" className="text-2xl text-white">
-            Son Bildirimler
-          </Handwriting>
+      <div className="glass-panel p-6 sm:p-8 relative z-10 shadow-[0_8px_32px_rgba(255,42,133,0.05)] border-white/10 rounded-3xl overflow-hidden mt-4">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-purple-500/5 rounded-full blur-[60px] pointer-events-none" />
+
+        <div className="flex items-center gap-3 mb-8 relative z-10">
+          <Bell className="text-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]" size={26} />
+          <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 drop-shadow-sm tracking-tight">
+            Son Gönderilen Bildirimler
+          </h2>
         </div>
 
         {notifications.length === 0 ? (
-          <div className="text-center py-10">
-            <Bell className="mx-auto text-white/30 mb-3" size={40} />
-            <p className="text-sm text-white/40 italic">Henüz bildirim gönderilmemiş.</p>
+          <div className="text-center py-10 opacity-50 flex flex-col items-center">
+            <Bell className="text-white/40 mb-3" size={40} />
+            <p className="text-sm font-bold tracking-wide text-white/60">Henüz bildirim gönderilmemiş.</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="grid gap-3 relative z-10">
             <AnimatePresence>
               {notifications.slice(0, 10).map((n, idx) => (
                 <motion.div
                   key={n.id}
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.03 }}
-                  className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
-                    n.isRead
-                      ? 'bg-white/[0.04] border-pink-500/10'
-                      : 'bg-amber-500/5 border-amber-500/20'
-                  }`}
+                  className={1 ? // Always use the new style instead of checking isRead because we are admin 
+                    "flex items-start gap-4 p-4 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
+                    : "flex items-start gap-4 p-4 rounded-xl border border-amber-500/20 bg-amber-500/10 transition-colors"
+                  }
                 >
-                  <div className={`mt-0.5 p-1.5 rounded-full ${
-                    n.type === 'encouragement' ? 'bg-rose-500/15 text-rose-400' :
-                    n.type === 'task_assigned' ? 'bg-blue-500/15 text-pink-400' :
-                    n.type === 'milestone' ? 'bg-amber-500/15 text-amber-400' :
-                    n.type === 'streak' ? 'bg-orange-500/15 text-orange-400' :
-                    'bg-white/[0.06] text-white/50'
-                  }`}>
-                    {n.type === 'encouragement' ? <Heart size={14} /> :
-                     n.type === 'task_assigned' ? <ClipboardList size={14} /> :
-                     <Bell size={14} />}
+                  <div className={`mt-0.5 p-2 rounded-xl shadow-inner border ${n.type === 'encouragement' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                      n.type === 'task_assigned' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                        n.type === 'milestone' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                          n.type === 'streak' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                            'bg-white/[0.06] text-white/50 border-white/10'
+                    }`}>
+                    {n.type === 'encouragement' ? <Heart size={16} /> :
+                      n.type === 'task_assigned' ? <ClipboardList size={16} /> :
+                        <Bell size={16} />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-white/70 truncate">{n.title}</span>
-                      {!n.isRead && (
-                        <span className="inline-block w-2 h-2 rounded-full bg-amber-500 flex-shrink-0" />
-                      )}
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-bold tracking-wide text-white/90 truncate">{n.title}</span>
+                      {/*!n.isRead && ( // Not critical for admin to see read status of all notifications but we could leave it
+                        <span className="inline-block w-2 h-2 rounded-full bg-amber-500 flex-shrink-0 shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
+                      )*/}
                     </div>
-                    <p className="text-xs text-white/50 mt-0.5 line-clamp-2">{n.message}</p>
-                    <span className="text-[10px] text-white/40 mt-1 block">{timeAgo(n.createdAt)}</span>
+                    <p className="text-xs font-medium tracking-wide text-white/60 line-clamp-2">{n.message}</p>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/30 mt-2 block">{timeAgo(n.createdAt)}</span>
                   </div>
                 </motion.div>
               ))}
             </AnimatePresence>
           </div>
         )}
-      </Paper>
+      </div>
     </div>
   );
 }

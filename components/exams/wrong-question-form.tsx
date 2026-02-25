@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Paper, Handwriting } from '@/components/skeuomorphic';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
-import { Plus, Trash2, Camera, Save, CheckCircle, Loader2, X, ImageIcon } from 'lucide-react';
+import { Plus, Trash2, Camera, Save, CheckCircle, Loader2, X, FileWarning, CheckCircle2 } from 'lucide-react';
 
 // --------------- Types ---------------
 
@@ -419,46 +418,58 @@ export default function WrongQuestionForm({
     }
   }
 
-  // --------------- Loading State ---------------
+  // --------------- Render ---------------
+
+  const inputClassName = "w-full bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2 text-sm font-medium text-white placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-pink-400/50 focus:border-pink-400/30 transition-all hover:border-white/20";
+  const selectClassName = "w-full bg-white/[0.03] border border-white/10 rounded-xl px-2 py-2 text-sm font-medium text-white focus:outline-none focus:ring-1 focus:ring-pink-400/50 focus:border-pink-400/30 transition-all hover:border-white/20 [color-scheme:dark]";
+  const buttonClassName = "bg-gradient-to-r from-pink-500 to-pink-600 text-white px-6 py-2.5 rounded-xl shadow-[0_0_15px_rgba(255,42,133,0.3)] hover:shadow-[0_0_25px_rgba(255,42,133,0.5)] border border-pink-400/20 transition-all font-bold tracking-wide text-sm flex items-center gap-2 block bg-contain";
 
   if (loading) {
     return (
-      <Paper className="flex items-center justify-center py-16">
-        <Loader2 className="animate-spin text-pink-400 mr-3" size={24} />
-        <span className="text-white/60 text-sm">Veriler yukleniyor...</span>
-      </Paper>
+      <div className="glass-panel flex flex-col items-center justify-center py-16">
+        <Loader2 className="animate-spin text-pink-400 mb-4" size={32} />
+        <span className="text-white/60 font-medium tracking-wide">Veriler yükleniyor...</span>
+      </div>
     );
   }
 
   if (activeSubjects.length === 0) {
     return (
-      <Paper className="text-center py-12">
-        <Handwriting className="text-xl text-white/50">
-          Yanlis veya bos soru bulunmuyor.
-        </Handwriting>
+      <div className="glass-panel text-center py-16 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-pink-500/5 to-transparent pointer-events-none" />
+        <CheckCircle2 className="mx-auto text-pink-400 mb-4 opacity-50" size={48} />
+        <h3 className="text-xl font-bold text-white mb-2">Harika!</h3>
+        <p className="text-white/50 mb-8">
+          Yanlış veya boş soru bulunmuyor.
+        </p>
         <button
           onClick={onComplete}
-          className="mt-6 bg-pink-500 text-white px-6 py-2 rounded shadow hover:bg-pink-400 transition-colors font-bold text-sm inline-flex items-center gap-2"
+          className={`${buttonClassName} opacity-100 disabled:opacity-50 mx-auto justify-center`}
         >
-          <CheckCircle size={16} />
+          <CheckCircle size={18} />
           Tamamla
         </button>
-      </Paper>
+      </div>
     );
   }
-
-  // --------------- Render ---------------
 
   const currentData = subjectData[activeTab];
   const currentTopics = getTopicsForSubject(activeTab);
 
   return (
-    <Paper className="space-y-6">
+    <div className="glass-panel p-6 sm:p-8 space-y-6 relative overflow-hidden text-white/90">
+      {/* Decorative Glows */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/10 rounded-full blur-[60px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-[60px] pointer-events-none" />
+
       {/* Section Title */}
-      <Handwriting className="text-2xl">Yanlis & Bos Soru Girisi</Handwriting>
+      <div className="flex items-center gap-3 mb-6 relative z-10">
+        <FileWarning size={28} className="text-pink-400" />
+        <h2 className="text-2xl font-bold tracking-tight text-white">Yanlış & Boş Soru Analizi</h2>
+      </div>
 
       {/* Subject Tabs */}
-      <div className="flex gap-1 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto pb-2 relative z-10 scrollbar-hide">
         {activeSubjects.map((s) => {
           const isSaved = subjectData[s.subjectId]?.saved;
           const isActive = activeTab === s.subjectId;
@@ -467,10 +478,10 @@ export default function WrongQuestionForm({
               key={s.subjectId}
               onClick={() => setActiveTab(s.subjectId)}
               className={`
-                relative px-4 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors
+                relative px-5 py-2.5 text-sm font-bold rounded-xl whitespace-nowrap transition-all duration-300 border
                 ${isActive
-                  ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/[0.03]'
-                  : 'bg-white/[0.04] text-white/60 hover:bg-white/[0.08] border border-b-0 border-pink-500/[0.12]'
+                  ? 'bg-gradient-to-r from-pink-500/20 to-pink-500/10 text-white border-pink-500/30 shadow-[0_4px_20px_-4px_rgba(255,42,133,0.3)]'
+                  : 'bg-white/[0.02] text-white/50 hover:bg-white/[0.04] border-white/5 hover:text-white/80'
                 }
               `}
             >
@@ -478,10 +489,10 @@ export default function WrongQuestionForm({
               {isSaved && (
                 <CheckCircle
                   size={14}
-                  className={`inline-block ml-1.5 ${isActive ? 'text-emerald-200' : 'text-emerald-400'}`}
+                  className={`inline-block ml-2 ${isActive ? 'text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.8)]' : 'text-emerald-500/50'}`}
                 />
               )}
-              <span className={`ml-1 text-xs ${isActive ? 'text-pink-200' : 'text-white/40'}`}>
+              <span className={`ml-1.5 text-xs ${isActive ? 'text-pink-300' : 'text-white/30'}`}>
                 ({s.wrongCount}Y {s.emptyCount}B)
               </span>
             </button>
@@ -498,46 +509,46 @@ export default function WrongQuestionForm({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
-            className="space-y-8"
+            className="space-y-8 relative z-10"
           >
             {/* ==================== YANLIS SORULAR ==================== */}
             {currentData.wrongRows.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <Handwriting className="text-lg text-rose-400">Yanlislar</Handwriting>
+              <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 sm:p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-rose-300">Yanlışlar</h3>
                   <button
                     type="button"
                     onClick={() => addWrongRow(activeTab)}
-                    className="text-xs text-pink-400 hover:text-pink-300 font-medium inline-flex items-center gap-1"
+                    className="text-xs text-rose-400 hover:text-rose-300 font-bold uppercase tracking-wider inline-flex items-center gap-1 bg-rose-500/10 hover:bg-rose-500/20 px-3 py-1.5 rounded-lg transition-colors border border-rose-500/20"
                   >
                     <Plus size={14} />
-                    Satir Ekle
+                    Soru Ekle
                   </button>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {currentData.wrongRows.map((row, idx) => (
                     <div
                       key={row.id}
-                      className="bg-white/[0.04] rounded-lg px-3 py-3 border border-white/10 space-y-2"
+                      className="bg-black/20 rounded-xl p-4 border border-white/5 space-y-3 relative group"
                     >
                       {/* Row 1: Soru No + Konu + Hata Nedeni + Zorluk + Sil */}
-                      <div className="grid grid-cols-[50px_1fr_1fr_80px_32px] gap-2 items-center">
+                      <div className="grid grid-cols-[60px_1fr_1fr_90px_32px] gap-3 items-center">
                         <input
                           type="number"
                           min={1}
                           placeholder={`${idx + 1}`}
                           value={row.questionNumber}
                           onChange={(e) => updateWrongRow(activeTab, row.id, 'questionNumber', e.target.value)}
-                          className="w-full p-1.5 text-sm rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400 text-center"
+                          className={`${inputClassName} text-center`}
                         />
 
                         <select
                           value={row.topicId}
                           onChange={(e) => updateWrongRow(activeTab, row.id, 'topicId', e.target.value)}
-                          className="w-full p-1.5 text-sm rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
+                          className={selectClassName}
                         >
-                          <option value="">Konu secin...</option>
+                          <option value="">Konu seçin...</option>
                           {currentTopics.map((t) => (
                             <option key={t.id} value={t.id}>{t.name}</option>
                           ))}
@@ -546,9 +557,9 @@ export default function WrongQuestionForm({
                         <select
                           value={row.errorReasonId}
                           onChange={(e) => updateWrongRow(activeTab, row.id, 'errorReasonId', e.target.value)}
-                          className="w-full p-1.5 text-sm rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
+                          className={selectClassName}
                         >
-                          <option value="">Neden secin...</option>
+                          <option value="">Neden seçin...</option>
                           {errorReasons.map((er) => (
                             <option key={er.id} value={er.id}>{er.label}</option>
                           ))}
@@ -557,11 +568,10 @@ export default function WrongQuestionForm({
                         <select
                           value={row.difficulty}
                           onChange={(e) => updateWrongRow(activeTab, row.id, 'difficulty', e.target.value)}
-                          className={`w-full p-1.5 text-sm rounded bg-white/[0.06] border border-pink-500/[0.12] focus:outline-none focus:ring-2 focus:ring-pink-400 ${
-                            row.difficulty === 'kolay' ? 'text-emerald-400' :
-                            row.difficulty === 'orta' ? 'text-amber-400' :
-                            row.difficulty === 'zor' ? 'text-rose-400' : 'text-white'
-                          }`}
+                          className={`${selectClassName} ${row.difficulty === 'kolay' ? '!text-emerald-400' :
+                              row.difficulty === 'orta' ? '!text-amber-400' :
+                                row.difficulty === 'zor' ? '!text-rose-400' : ''
+                            }`}
                         >
                           {DIFFICULTY_OPTIONS.map((opt) => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -571,21 +581,21 @@ export default function WrongQuestionForm({
                         <button
                           type="button"
                           onClick={() => removeWrongRow(activeTab, row.id)}
-                          className="mx-auto w-7 h-7 flex items-center justify-center rounded text-rose-400/60 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                          title="Satiri sil"
+                          className="mx-auto w-8 h-8 flex items-center justify-center rounded-lg text-rose-400/50 hover:text-rose-400 hover:bg-rose-500/20 transition-colors opacity-50 group-hover:opacity-100 border border-transparent hover:border-rose-500/30"
+                          title="Satırı sil"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={16} />
                         </button>
                       </div>
 
                       {/* Row 2: Not + Foto */}
-                      <div className="flex gap-2 items-center">
+                      <div className="flex gap-3 items-center">
                         <input
                           type="text"
-                          placeholder="Not..."
+                          placeholder="Soru notu veya açıklaması..."
                           value={row.notes}
                           onChange={(e) => updateWrongRow(activeTab, row.id, 'notes', e.target.value)}
-                          className="flex-1 p-1.5 text-sm rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
+                          className={inputClassName}
                         />
 
                         {/* Photo upload */}
@@ -602,25 +612,26 @@ export default function WrongQuestionForm({
                         />
 
                         {row.photoPreview ? (
-                          <div className="relative w-10 h-10 rounded overflow-hidden border border-pink-500/30 flex-shrink-0">
+                          <div className="relative w-11 h-11 rounded-lg overflow-hidden border border-pink-500/50 flex-shrink-0 group/photo">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={row.photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/photo:opacity-100 transition-opacity" />
                             <button
                               type="button"
                               onClick={() => removePhoto(activeTab, row.id)}
-                              className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center"
+                              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover/photo:opacity-100 transition-opacity transform hover:scale-110"
                             >
-                              <X size={10} />
+                              <X size={14} />
                             </button>
                           </div>
                         ) : (
                           <button
                             type="button"
                             onClick={() => fileInputRefs.current[row.id]?.click()}
-                            title="Fotograf yukle"
-                            className="w-10 h-10 flex items-center justify-center rounded bg-pink-500/10 hover:bg-pink-500/20 text-pink-400/60 hover:text-pink-400 transition-colors border border-pink-500/20 flex-shrink-0"
+                            title="Fotoğraf yükle"
+                            className="w-11 h-11 flex items-center justify-center rounded-lg bg-white/[0.03] hover:bg-pink-500/10 text-white/40 hover:text-pink-400 transition-colors border border-white/10 hover:border-pink-500/30 flex-shrink-0"
                           >
-                            <Camera size={18} />
+                            <Camera size={20} />
                           </button>
                         )}
                       </div>
@@ -632,32 +643,32 @@ export default function WrongQuestionForm({
 
             {/* ==================== BOS SORULAR ==================== */}
             {currentData.emptyRows.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <Handwriting className="text-lg text-amber-400">Boslar</Handwriting>
+              <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 sm:p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-cyan-300">Boşlar</h3>
                   <button
                     type="button"
                     onClick={() => addEmptyRow(activeTab)}
-                    className="text-xs text-pink-400 hover:text-pink-300 font-medium inline-flex items-center gap-1"
+                    className="text-xs text-cyan-400 hover:text-cyan-300 font-bold uppercase tracking-wider inline-flex items-center gap-1 bg-cyan-500/10 hover:bg-cyan-500/20 px-3 py-1.5 rounded-lg transition-colors border border-cyan-500/20"
                   >
                     <Plus size={14} />
-                    Satir Ekle
+                    Soru Ekle
                   </button>
                 </div>
 
                 {/* Header */}
-                <div className="hidden sm:grid sm:grid-cols-[60px_1fr_1fr_32px] gap-2 mb-1 px-1">
-                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-wide">Soru No</span>
-                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-wide">Konu</span>
-                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-wide">Not</span>
+                <div className="hidden sm:grid sm:grid-cols-[60px_1fr_1fr_32px] gap-3 mb-2 px-2">
+                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest text-center">No</span>
+                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest pl-1">Konu</span>
+                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest pl-1">Not</span>
                   <span />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {currentData.emptyRows.map((row, idx) => (
                     <div
                       key={row.id}
-                      className="grid grid-cols-1 sm:grid-cols-[60px_1fr_1fr_32px] gap-2 items-center bg-white/[0.04] rounded px-2 py-2 border border-white/10"
+                      className="grid grid-cols-1 sm:grid-cols-[60px_1fr_1fr_32px] gap-3 items-center bg-black/20 rounded-xl p-3 border border-white/5 group"
                     >
                       <input
                         type="number"
@@ -665,15 +676,15 @@ export default function WrongQuestionForm({
                         placeholder={`${idx + 1}`}
                         value={row.questionNumber}
                         onChange={(e) => updateEmptyRow(activeTab, row.id, 'questionNumber', e.target.value)}
-                        className="w-full p-1.5 text-sm rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400 text-center"
+                        className={`${inputClassName} text-center`}
                       />
 
                       <select
                         value={row.topicId}
                         onChange={(e) => updateEmptyRow(activeTab, row.id, 'topicId', e.target.value)}
-                        className="w-full p-1.5 text-sm rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
+                        className={selectClassName}
                       >
-                        <option value="">Konu secin...</option>
+                        <option value="">Konu seçin...</option>
                         {currentTopics.map((t) => (
                           <option key={t.id} value={t.id}>{t.name}</option>
                         ))}
@@ -684,16 +695,16 @@ export default function WrongQuestionForm({
                         placeholder="Not..."
                         value={row.notes}
                         onChange={(e) => updateEmptyRow(activeTab, row.id, 'notes', e.target.value)}
-                        className="w-full p-1.5 text-sm rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
+                        className={inputClassName}
                       />
 
                       <button
                         type="button"
                         onClick={() => removeEmptyRow(activeTab, row.id)}
-                        className="mx-auto w-7 h-7 flex items-center justify-center rounded text-rose-400/60 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                        title="Satiri sil"
+                        className="mx-auto w-8 h-8 flex items-center justify-center rounded-lg text-rose-400/50 hover:text-rose-400 hover:bg-rose-500/20 transition-colors opacity-50 group-hover:opacity-100 border border-transparent hover:border-rose-500/30"
+                        title="Satırı sil"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   ))}
@@ -703,87 +714,91 @@ export default function WrongQuestionForm({
 
             {/* No rows at all */}
             {currentData.wrongRows.length === 0 && currentData.emptyRows.length === 0 && (
-              <div className="text-center py-8 text-white/40 text-sm">
-                <p>Bu ders icin soru girisi bulunmuyor.</p>
-                <div className="flex items-center justify-center gap-4 mt-3">
+              <div className="text-center py-12 bg-white/[0.02] border border-white/5 rounded-2xl">
+                <p className="text-white/40 font-medium tracking-wide mb-4">Bu ders için soru girişi bulunmuyor.</p>
+                <div className="flex items-center justify-center gap-4">
                   <button
                     type="button"
                     onClick={() => addWrongRow(activeTab)}
-                    className="text-xs text-pink-400 hover:text-pink-300 font-medium inline-flex items-center gap-1"
+                    className="text-xs text-rose-400 hover:text-white font-bold inline-flex items-center gap-1.5 bg-rose-500/10 hover:bg-rose-500 px-4 py-2 rounded-xl transition-all border border-rose-500/20"
                   >
                     <Plus size={14} />
-                    Yanlis Ekle
+                    YANLIŞ EKLE
                   </button>
                   <button
                     type="button"
                     onClick={() => addEmptyRow(activeTab)}
-                    className="text-xs text-pink-400 hover:text-pink-300 font-medium inline-flex items-center gap-1"
+                    className="text-xs text-cyan-400 hover:text-white font-bold inline-flex items-center gap-1.5 bg-cyan-500/10 hover:bg-cyan-500 px-4 py-2 rounded-xl transition-all border border-cyan-500/20"
                   >
                     <Plus size={14} />
-                    Bos Ekle
+                    BOŞ EKLE
                   </button>
                 </div>
               </div>
             )}
 
             {/* Save Button for this subject */}
-            <div className="flex items-center justify-end gap-3 pt-2 border-t border-white/10">
+            <div className="flex items-center justify-end gap-4 pt-4 mt-8 border-t border-white/5">
               {currentData.saved && (
-                <span className="text-emerald-400 text-sm font-medium inline-flex items-center gap-1">
-                  <CheckCircle size={14} />
-                  Kaydedildi
+                <span className="text-emerald-400 text-sm font-bold inline-flex items-center gap-1.5 tracking-wide">
+                  <CheckCircle size={16} className="drop-shadow-[0_0_5px_rgba(52,211,153,0.8)]" />
+                  KAYDEDİLDİ
                 </span>
               )}
-              <button
+              <motion.button
+                whileHover={!currentData.saved ? { scale: 1.02 } : {}}
+                whileTap={!currentData.saved ? { scale: 0.98 } : {}}
                 type="button"
                 onClick={() => handleSaveSubject(activeTab)}
                 disabled={savingSubject === activeTab || currentData.saved}
                 className={`
-                  inline-flex items-center gap-2 px-5 py-2 rounded shadow font-bold text-sm transition-colors
+                  inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold tracking-wider text-xs transition-all border
                   ${currentData.saved
-                    ? 'bg-white/10 text-white/40 cursor-not-allowed'
-                    : 'bg-pink-500 text-white hover:bg-pink-400'
+                    ? 'bg-white/[0.03] text-white/30 border-white/5 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-[0_0_15px_rgba(255,42,133,0.3)] hover:shadow-[0_0_25px_rgba(255,42,133,0.5)] border-pink-400/20'
                   }
                 `}
               >
                 {savingSubject === activeTab ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
-                    Kaydediliyor...
+                    KAYDEDİLİYOR...
                   </>
                 ) : (
                   <>
                     <Save size={16} />
-                    Kaydet
+                    DERSİ KAYDET
                   </>
                 )}
-              </button>
+              </motion.button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Complete Button */}
-      <div className="flex items-center justify-center pt-4 border-t border-pink-500/15">
-        <button
+      <div className="flex items-center justify-center pt-8 mt-4 border-t border-pink-500/20 relative z-10">
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           type="button"
           onClick={handleComplete}
           disabled={completing}
-          className="inline-flex items-center gap-2 bg-pink-500 text-white px-8 py-2.5 rounded shadow hover:bg-pink-400 transition-colors font-bold text-sm"
+          className={`${buttonClassName} px-10 py-3 text-base opacity-100 disabled:opacity-50 mx-auto justify-center w-full max-w-sm`}
         >
           {completing ? (
             <>
-              <Loader2 size={16} className="animate-spin" />
-              Tamamlaniyor...
+              <Loader2 size={20} className="animate-spin" />
+              TÜMÜNÜ TAMAMLA...
             </>
           ) : (
             <>
-              <CheckCircle size={16} />
-              Tamamla
+              <CheckCircle size={20} />
+              TÜMÜNÜ TAMAMLA VE GÖNDER
             </>
           )}
-        </button>
+        </motion.button>
       </div>
-    </Paper>
+    </div>
   );
 }
