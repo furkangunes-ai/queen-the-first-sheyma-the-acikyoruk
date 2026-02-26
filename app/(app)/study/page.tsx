@@ -6,8 +6,11 @@ import { toast } from "sonner";
 import { clsx } from 'clsx';
 import {
   BookOpen, PenTool, Plus, Trash2, Camera, Loader2, X,
-  CheckCircle, Clock, Target, Filter, Calendar, BookMarked, BrainCircuit, Activity
+  CheckCircle, Clock, Target, Filter, Calendar, BookMarked, BrainCircuit, Activity,
+  ChevronLeft, ChevronRight
 } from "lucide-react";
+import { format, startOfWeek, addDays, isSameDay, isToday } from "date-fns";
+import { tr } from "date-fns/locale";
 
 // ---------- Types ----------
 
@@ -159,6 +162,26 @@ export default function StudyPage() {
   const [newTopicSubjectId, setNewTopicSubjectId] = useState("");
   const [addingTopic, setAddingTopic] = useState(false);
 
+  // Week calendar
+  const [weekStart, setWeekStart] = useState(() =>
+    startOfWeek(new Date(), { weekStartsOn: 1 })
+  );
+  const [weekStudyDays, setWeekStudyDays] = useState<Set<string>>(new Set());
+  const [weekReviewDays, setWeekReviewDays] = useState<Set<string>>(new Set());
+
+  const weekDays = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  }, [weekStart]);
+
+  const weekEnd = useMemo(() => addDays(weekStart, 7), [weekStart]);
+
+  const weekLabel = useMemo(() => {
+    const end = addDays(weekStart, 6);
+    const startStr = format(weekStart, "d MMM", { locale: tr });
+    const endStr = format(end, "d MMM yyyy", { locale: tr });
+    return `${startStr} – ${endStr}`;
+  }, [weekStart]);
+
   // ---------- Derived ----------
 
   const sTopics = useMemo(() => {
@@ -219,6 +242,32 @@ export default function StudyPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Fetch week summary (which days have study data)
+  const fetchWeekSummary = useCallback(async () => {
+    try {
+      const startStr = weekStart.toISOString().split("T")[0];
+      const endStr = weekEnd.toISOString().split("T")[0];
+      const [studyRes, reviewRes] = await Promise.all([
+        fetch(`/api/daily-study?startDate=${startStr}&endDate=${endStr}`),
+        fetch(`/api/topic-reviews?startDate=${startStr}&endDate=${endStr}`),
+      ]);
+      if (studyRes.ok) {
+        const data: DailyStudyEntry[] = await studyRes.json();
+        setWeekStudyDays(new Set(data.map((d) => new Date(d.date).toISOString().split("T")[0])));
+      }
+      if (reviewRes.ok) {
+        const data: TopicReviewEntry[] = await reviewRes.json();
+        setWeekReviewDays(new Set(data.map((d) => new Date(d.date).toISOString().split("T")[0])));
+      }
+    } catch {
+      // silent
+    }
+  }, [weekStart, weekEnd]);
+
+  useEffect(() => {
+    fetchWeekSummary();
+  }, [fetchWeekSummary]);
 
   // ---------- Stats ----------
 
@@ -458,21 +507,100 @@ export default function StudyPage() {
       <div className="glass-panel p-6 sm:p-8 relative z-10 overflow-hidden shadow-[0_8px_32px_rgba(255,42,133,0.05)] border-white/10 rounded-3xl">
         <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/10 rounded-full blur-[40px] pointer-events-none" />
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8 relative z-10">
-          <div className="flex items-center gap-3">
-            <BookMarked size={36} className="text-pink-400 drop-shadow-[0_0_15px_rgba(255,42,133,0.4)]" />
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white drop-shadow-md">
-              Günlük Çalışma
-            </h1>
+        <div className="flex flex-col gap-5 mb-8 relative z-10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <BookMarked size={36} className="text-pink-400 drop-shadow-[0_0_15px_rgba(255,42,133,0.4)]" />
+              <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white drop-shadow-md">
+                Günlük Çalışma
+              </h1>
+            </div>
+            <button
+              onClick={() => {
+                const now = new Date();
+                setWeekStart(startOfWeek(now, { weekStartsOn: 1 }));
+                setSelectedDate(now.toISOString().split("T")[0]);
+              }}
+              className="px-4 py-1.5 rounded-xl text-xs font-bold bg-white/[0.05] border border-white/10 text-white/60 hover:text-white hover:border-pink-400/30 transition-all"
+            >
+              Bugün
+            </button>
           </div>
-          <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 p-2 rounded-xl shadow-inner backdrop-blur-sm self-start sm:self-auto">
-            <Calendar size={18} className="text-pink-300 ml-2" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-transparent text-sm font-bold text-white uppercase tracking-wider focus:outline-none [color-scheme:dark]"
-            />
+
+          {/* Week Calendar */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setWeekStart((prev) => addDays(prev, -7))}
+                className="p-2 rounded-xl bg-white/[0.03] border border-white/10 hover:border-pink-400/30 text-white/50 hover:text-white transition-all"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <span className="text-sm font-bold text-white/70 tracking-wide uppercase">
+                {weekLabel}
+              </span>
+              <button
+                onClick={() => setWeekStart((prev) => addDays(prev, 7))}
+                className="p-2 rounded-xl bg-white/[0.03] border border-white/10 hover:border-pink-400/30 text-white/50 hover:text-white transition-all"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1.5">
+              {weekDays.map((day) => {
+                const dayStr = day.toISOString().split("T")[0];
+                const isSelected = dayStr === selectedDate;
+                const isDayToday = isToday(day);
+                const hasStudy = weekStudyDays.has(dayStr);
+                const hasReview = weekReviewDays.has(dayStr);
+                const hasActivity = hasStudy || hasReview;
+
+                return (
+                  <button
+                    key={dayStr}
+                    onClick={() => setSelectedDate(dayStr)}
+                    className={clsx(
+                      "flex flex-col items-center py-2.5 px-1 rounded-xl transition-all relative",
+                      isSelected
+                        ? "bg-gradient-to-br from-pink-500 to-pink-600 text-white shadow-[0_0_15px_rgba(255,42,133,0.3)]"
+                        : isDayToday
+                          ? "bg-white/[0.05] ring-1 ring-pink-400/40 text-white"
+                          : "bg-white/[0.02] text-white/50 hover:bg-white/[0.05] hover:text-white/80"
+                    )}
+                  >
+                    <span className={clsx(
+                      "text-[10px] font-bold uppercase tracking-widest mb-0.5",
+                      isSelected ? "text-white/80" : "text-white/30"
+                    )}>
+                      {format(day, "EEE", { locale: tr })}
+                    </span>
+                    <span className={clsx(
+                      "text-lg font-black",
+                      isSelected ? "text-white" : ""
+                    )}>
+                      {format(day, "d")}
+                    </span>
+                    {/* Activity dots */}
+                    <div className="flex gap-1 mt-1 h-1.5">
+                      {hasStudy && (
+                        <div className={clsx(
+                          "w-1.5 h-1.5 rounded-full",
+                          isSelected ? "bg-white/70" : "bg-pink-400"
+                        )} />
+                      )}
+                      {hasReview && (
+                        <div className={clsx(
+                          "w-1.5 h-1.5 rounded-full",
+                          isSelected ? "bg-white/50" : "bg-purple-400"
+                        )} />
+                      )}
+                      {!hasActivity && <div className="w-1.5 h-1.5" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 

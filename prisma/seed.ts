@@ -46,6 +46,48 @@ async function main() {
 
   console.log("✅ Sınav türleri oluşturuldu");
 
+  // ==================== DERS & KONU EKLEME HELPER ====================
+  // Mevcut dersleri korur, sadece eksik konuları ekler (idempotent)
+  async function ensureSubjectTopics(
+    examTypeId: string,
+    subjectDef: { name: string; questionCount: number; topics: string[] },
+    sortOrder: number
+  ) {
+    let subject = await prisma.subject.findFirst({
+      where: { name: subjectDef.name, examTypeId },
+    });
+    if (!subject) {
+      subject = await prisma.subject.create({
+        data: {
+          name: subjectDef.name,
+          questionCount: subjectDef.questionCount,
+          examTypeId,
+          sortOrder,
+        },
+      });
+    }
+
+    const existingTopics = await prisma.topic.findMany({
+      where: { subjectId: subject.id },
+      select: { name: true },
+    });
+    const existingNames = new Set(existingTopics.map((t) => t.name));
+    let nextOrder = existingTopics.length;
+
+    for (const topicName of subjectDef.topics) {
+      if (!existingNames.has(topicName)) {
+        await prisma.topic.create({
+          data: {
+            name: topicName,
+            subjectId: subject.id,
+            sortOrder: nextOrder++,
+          },
+        });
+      }
+    }
+    return subject;
+  }
+
   // ==================== TYT DERSLER & KONULAR ====================
   const tytSubjects = [
     {
@@ -56,6 +98,8 @@ async function main() {
         "Ses Bilgisi", "Yazım Kuralları", "Noktalama İşaretleri",
         "Sözcük Türleri", "Cümle Türleri", "Cümlenin Ögeleri",
         "Anlatım Bozuklukları", "Dil Bilgisi (Genel)",
+        "Fiiller (Eylemler)", "Ekler (Yapım-Çekim)", "Söz Sanatları",
+        "Metin Türleri", "Anlatım Türleri ve Biçimleri",
       ],
     },
     {
@@ -71,7 +115,8 @@ async function main() {
         "Yüzde-Kâr-Zarar", "Kümeler", "Fonksiyonlar",
         "Polinomlar", "İkinci Dereceden Denklemler",
         "Permütasyon-Kombinasyon", "Olasılık", "İstatistik",
-        "Veri Analizi",
+        "Veri Analizi", "Mantık", "Problemler (Faiz)",
+        "Problemler (Karışım)", "Grafik Okuma ve Yorumlama",
       ],
     },
     {
@@ -81,11 +126,15 @@ async function main() {
         "Fizik - Kuvvet ve Hareket", "Fizik - Enerji",
         "Fizik - Isı ve Sıcaklık", "Fizik - Optik",
         "Fizik - Elektrik", "Fizik - Dalga",
+        "Fizik - Basınç", "Fizik - Madde ve Özellikleri",
         "Kimya - Atom ve Periyodik Tablo", "Kimya - Kimyasal Bağlar",
         "Kimya - Madde ve Özellikleri", "Kimya - Karışımlar",
         "Kimya - Kimyasal Tepkimeler", "Kimya - Asit-Baz",
+        "Kimya - Mol Kavramı (Temel)",
         "Biyoloji - Hücre", "Biyoloji - Canlıların Sınıflandırılması",
         "Biyoloji - Kalıtım", "Biyoloji - Ekosistem",
+        "Biyoloji - Sinir Sistemi", "Biyoloji - Dolaşım Sistemi",
+        "Biyoloji - Solunum Sistemi",
       ],
     },
     {
@@ -96,34 +145,20 @@ async function main() {
         "Tarih - Türk-İslam Devletleri", "Tarih - Osmanlı Kuruluş",
         "Tarih - Osmanlı Yükselme", "Tarih - Osmanlı Duraklama",
         "Tarih - Kurtuluş Savaşı", "Tarih - İnkılap Tarihi",
+        "Tarih - Atatürk İlkeleri",
         "Coğrafya - Doğa ve İnsan", "Coğrafya - Dünya Coğrafyası",
         "Coğrafya - Türkiye Coğrafyası", "Coğrafya - Beşeri Coğrafya",
+        "Coğrafya - Harita Bilgisi",
         "Felsefe - Felsefeye Giriş", "Felsefe - Bilgi Felsefesi",
-        "Din Kültürü",
+        "Felsefe - Ahlak Felsefesi", "Felsefe - Bilim Felsefesi",
+        "Din Kültürü - İbadetler", "Din Kültürü - Hz. Muhammed",
+        "Din Kültürü - Ahlak ve Değerler",
       ],
     },
   ];
 
   for (let i = 0; i < tytSubjects.length; i++) {
-    const subj = tytSubjects[i];
-    const subject = await prisma.subject.create({
-      data: {
-        name: subj.name,
-        questionCount: subj.questionCount,
-        examTypeId: tyt.id,
-        sortOrder: i,
-      },
-    });
-
-    for (let j = 0; j < subj.topics.length; j++) {
-      await prisma.topic.create({
-        data: {
-          name: subj.topics[j],
-          subjectId: subject.id,
-          sortOrder: j,
-        },
-      });
-    }
+    await ensureSubjectTopics(tyt.id, tytSubjects[i], i);
   }
 
   console.log("✅ TYT dersleri ve konuları oluşturuldu");
@@ -138,6 +173,11 @@ async function main() {
         "Parabol", "Trigonometri", "Logaritma",
         "Diziler ve Seriler", "Limit", "Türev", "İntegral",
         "Olasılık", "Kombinatorik",
+        "Karmaşık Sayılar", "Matris ve Determinant",
+        "Doğrusal Denklem Sistemleri", "Uzay Geometri",
+        "Analitik Geometri", "Konikler (Elips, Hiperbol)",
+        "Dönüşüm Geometrisi", "Türev Uygulamaları",
+        "İntegral Uygulamaları",
       ],
     },
     {
@@ -147,7 +187,10 @@ async function main() {
         "Vektörler", "Kuvvet-Denge", "Tork",
         "Elektrik Alan ve Potansiyel", "Manyetizma",
         "İndüksiyon", "Dalgalar", "Atom Fiziği",
-        "Modern Fizik",
+        "Modern Fizik", "Çembersel Hareket",
+        "Basit Harmonik Hareket", "Dalga Mekaniği",
+        "Elektrik Devreleri", "Optik (Aynalar ve Mercekler)",
+        "Akışkanlar Mekaniği",
       ],
     },
     {
@@ -157,7 +200,10 @@ async function main() {
         "Mol Kavramı", "Kimyasal Hesaplamalar",
         "Gazlar", "Çözeltiler", "Kimyasal Denge",
         "Asitler ve Bazlar", "Elektrokimya",
-        "Organik Kimya",
+        "Organik Kimya", "Termokimya",
+        "Kimyasal Kinetik", "Çözünürlük Dengesi",
+        "Fonksiyonel Gruplar", "Polimerler",
+        "Endüstriyel Kimya",
       ],
     },
     {
@@ -168,6 +214,10 @@ async function main() {
         "Genetik Mühendisliği", "Ekoloji",
         "Bitki Biyolojisi", "Solunum",
         "Fotosentez", "İnsan Fizyolojisi",
+        "Protein Sentezi", "DNA Replikasyonu",
+        "Endokrin Sistem", "Sindirim Sistemi",
+        "Boşaltım Sistemi", "Duyu Organları",
+        "Komünite ve Popülasyon Ekolojisi",
       ],
     },
     {
@@ -178,7 +228,10 @@ async function main() {
         "Tanzimat Edebiyatı", "Servet-i Fünun",
         "Milli Edebiyat", "Cumhuriyet Dönemi",
         "Halk Edebiyatı", "Divan Edebiyatı",
-        "Roman/Hikaye Analizi",
+        "Roman/Hikaye Analizi", "Fecr-i Ati",
+        "Yedi Meşaleciler", "Garip Akımı",
+        "İkinci Yeni", "Sözlü Edebiyat Dönemi",
+        "Edebi Sanatlar (Söz Sanatları)",
       ],
     },
     {
@@ -189,6 +242,9 @@ async function main() {
         "I. Dünya Savaşı", "Kurtuluş Savaşı",
         "Atatürk İlkeleri", "Çağdaş Türk-Dünya Tarihi",
         "II. Dünya Savaşı", "Soğuk Savaş Dönemi",
+        "Türk Devrim Tarihi", "Demokratikleşme Süreci",
+        "Türkiye'nin Dış Politikası", "Çağdaş Dünya Tarihi",
+        "Osmanlı Kültür ve Medeniyeti",
       ],
     },
     {
@@ -197,31 +253,15 @@ async function main() {
       topics: [
         "Türkiye'nin Yer Şekilleri", "İklim ve Bitki Örtüsü",
         "Nüfus ve Yerleşme", "Ekonomik Coğrafya",
-        "Bölgesel Coğrafya",
+        "Bölgesel Coğrafya", "Harita Bilgisi",
+        "Toprak ve Su Kaynakları", "Çevre Sorunları",
+        "Doğal Afetler", "Ulaşım",
       ],
     },
   ];
 
   for (let i = 0; i < aytSubjects.length; i++) {
-    const subj = aytSubjects[i];
-    const subject = await prisma.subject.create({
-      data: {
-        name: subj.name,
-        questionCount: subj.questionCount,
-        examTypeId: ayt.id,
-        sortOrder: i,
-      },
-    });
-
-    for (let j = 0; j < subj.topics.length; j++) {
-      await prisma.topic.create({
-        data: {
-          name: subj.topics[j],
-          subjectId: subject.id,
-          sortOrder: j,
-        },
-      });
-    }
+    await ensureSubjectTopics(ayt.id, aytSubjects[i], i);
   }
 
   console.log("✅ AYT dersleri ve konuları oluşturuldu");

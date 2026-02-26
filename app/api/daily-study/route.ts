@@ -12,11 +12,15 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
     const subjectId = searchParams.get("subjectId");
     const limit = searchParams.get("limit");
 
     const where: any = { userId };
-    if (date) {
+    if (startDate && endDate) {
+      where.date = { gte: new Date(startDate), lt: new Date(endDate) };
+    } else if (date) {
       const d = new Date(date);
       const nextDay = new Date(d);
       nextDay.setDate(nextDay.getDate() + 1);
