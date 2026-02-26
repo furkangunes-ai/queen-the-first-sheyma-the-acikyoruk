@@ -31,6 +31,7 @@ export default function ExamsPage() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<PageView>('list');
   const [filterType, setFilterType] = useState<string>('all');
+  const [examMode, setExamMode] = useState<'all' | 'genel' | 'brans'>('all');
   const [examTypes, setExamTypes] = useState<Array<{ id: string; name: string }>>([]);
 
   // For wrong question entry after exam creation
@@ -175,14 +176,37 @@ export default function ExamsPage() {
                   {et.name}
                 </button>
               ))}
+              <div className="w-px h-8 bg-white/10 self-center mx-1" />
+              {([
+                { key: 'all' as const, label: 'Hepsi' },
+                { key: 'genel' as const, label: 'Genel Deneme' },
+                { key: 'brans' as const, label: 'Branş' },
+              ]).map((mode) => (
+                <button
+                  key={mode.key}
+                  onClick={() => setExamMode(mode.key)}
+                  className={`px-4 py-2 rounded-xl text-sm font-bold tracking-wide transition-all border ${examMode === mode.key
+                      ? 'bg-pink-500/20 text-pink-300 border-pink-500/30 shadow-[0_4px_20px_-4px_rgba(244,114,182,0.3)]'
+                      : 'bg-white/[0.02] text-white/50 border-white/5 hover:bg-white/[0.04] hover:text-white/80'
+                    }`}
+                >
+                  {mode.label}
+                </button>
+              ))}
             </div>
 
             {/* Exam Grid */}
-            {loading ? (
+            {(() => {
+              const filteredExams = exams.filter((exam) => {
+                if (examMode === 'genel') return exam.subjectResults.length > 1;
+                if (examMode === 'brans') return exam.subjectResults.length === 1;
+                return true;
+              });
+              return loading ? (
               <div className="flex items-center justify-center py-24">
                 <Loader2 className="animate-spin text-pink-400" size={40} />
               </div>
-            ) : exams.length === 0 ? (
+            ) : filteredExams.length === 0 ? (
               <div className="glass-panel text-center py-20 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-pink-500/5 to-transparent pointer-events-none" />
                 <FileArchive className="mx-auto text-pink-500/50 mb-6 drop-shadow-[0_0_15px_rgba(255,42,133,0.3)]" size={64} />
@@ -191,7 +215,7 @@ export default function ExamsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
-                {exams.map((exam, idx) => (
+                {filteredExams.map((exam, idx) => (
                   <motion.div
                     key={exam.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -259,7 +283,8 @@ export default function ExamsPage() {
                   </motion.div>
                 ))}
               </div>
-            )}
+            );
+            })()}
           </motion.div>
         )}
 

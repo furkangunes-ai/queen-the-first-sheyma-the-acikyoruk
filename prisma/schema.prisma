@@ -31,6 +31,10 @@ model User {
   notificationsSent     Notification[] @relation("NotificationSender")
   dailyStudies   DailyStudy[]
   topicReviews   TopicReview[]
+  topicKnowledge TopicKnowledge[]
+  weeklyPlans    WeeklyPlan[]
+  weeklyAnalyses WeeklyAnalysis[]
+  aiChatMessages AIChatMessage[]
 }
 
 // ==================== KLASÖRLER & GÖREVLER ====================
@@ -122,9 +126,10 @@ model Subject {
   examResults   ExamSubjectResult[]
   wrongQuestions ExamWrongQuestion[]
   emptyQuestions ExamEmptyQuestion[]
-  dailyStudies  DailyStudy[]
-  topicReviews  TopicReview[]
-  sortOrder     Int      @default(0)
+  dailyStudies    DailyStudy[]
+  topicReviews    TopicReview[]
+  weeklyPlanItems WeeklyPlanItem[]
+  sortOrder       Int      @default(0)
 
   @@index([examTypeId])
 }
@@ -136,9 +141,11 @@ model Topic {
   subject       Subject  @relation(fields: [subjectId], references: [id])
   wrongQuestions ExamWrongQuestion[]
   emptyQuestions ExamEmptyQuestion[]
-  dailyStudies  DailyStudy[]
-  topicReviews  TopicReview[]
-  sortOrder     Int      @default(0)
+  dailyStudies    DailyStudy[]
+  topicReviews    TopicReview[]
+  topicKnowledge  TopicKnowledge[]
+  weeklyPlanItems WeeklyPlanItem[]
+  sortOrder       Int      @default(0)
 
   @@index([subjectId])
 }
@@ -367,4 +374,88 @@ model UserFile {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+// ==================== STRATEJİ & AI ====================
+
+model TopicKnowledge {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  topicId   String
+  topic     Topic    @relation(fields: [topicId], references: [id])
+  level     Int      @default(0) // 0-5: 0=Hiç bilmiyorum, 1=Çok az, 2=Temel, 3=Orta, 4=İyi, 5=Çok iyi
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([userId, topicId])
+  @@index([userId])
+  @@index([topicId])
+}
+
+model WeeklyPlan {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  title     String
+  startDate DateTime
+  endDate   DateTime
+  notes     String?
+  items     WeeklyPlanItem[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([startDate])
+}
+
+model WeeklyPlanItem {
+  id            String     @id @default(cuid())
+  weeklyPlanId  String
+  weeklyPlan    WeeklyPlan @relation(fields: [weeklyPlanId], references: [id], onDelete: Cascade)
+  dayOfWeek     Int        // 0=Pazartesi, 1=Salı, ... 6=Pazar
+  subjectId     String
+  subject       Subject    @relation(fields: [subjectId], references: [id])
+  topicId       String?
+  topic         Topic?     @relation(fields: [topicId], references: [id])
+  duration      Int?       // Planlanan dakika
+  questionCount Int?       // Planlanan soru sayısı
+  completed     Boolean    @default(false)
+  notes         String?
+  sortOrder     Int        @default(0)
+
+  @@index([weeklyPlanId])
+  @@index([dayOfWeek])
+}
+
+model WeeklyAnalysis {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+  weekStartDate     DateTime
+  weekEndDate       DateTime
+  plannedItems      Int      @default(0)
+  completedItems    Int      @default(0)
+  totalStudyMinutes Int      @default(0)
+  totalQuestions    Int      @default(0)
+  netScoreChanges   Json?    // [{ subjectName, previousNet, currentNet }]
+  aiSummary         String?  // AI markdown yorumu
+  aiRecommendations String?  // AI önerileri
+  createdAt         DateTime @default(now())
+
+  @@unique([userId, weekStartDate])
+  @@index([userId])
+}
+
+model AIChatMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  role      String   // "user" | "assistant" | "system"
+  content   String
+  metadata  Json?    // { voiceInput: boolean, tokens: number }
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
 }
