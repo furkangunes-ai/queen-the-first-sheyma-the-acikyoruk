@@ -6,14 +6,16 @@ import {
   AreaChart, Area, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   Legend,
 } from 'recharts';
-import { TrendingUp, Target, Award, BookOpen, AlertTriangle, Loader2, Crosshair, Sparkles, PieChart as PieChartIcon } from 'lucide-react';
+import { TrendingUp, Target, Award, BookOpen, AlertTriangle, Loader2, Crosshair, Sparkles, PieChart as PieChartIcon, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { RegressionChart, type RegressionData } from '@/components/analytics/regression-chart';
+import TopicProgress from '@/components/analytics/topic-progress';
+import TargetTracking from '@/components/analytics/target-tracking';
 
 const COLORS = ['#ff2a85', '#ff7eb3', '#00f0ff', '#bb66ff', '#ffb84d', '#ff3366', '#00e5ff', '#ff99cc'];
 
-type Tab = 'trends' | 'topics' | 'errors' | 'regression';
+type Tab = 'trends' | 'topic-progress' | 'targets' | 'topics' | 'errors' | 'regression';
 
 interface TrendData {
   examId: string;
@@ -80,7 +82,11 @@ export default function AnalyticsPage() {
     const typeParam = filterType !== 'all' ? `examTypeId=${filterType}` : '';
 
     try {
-      if (activeTab === 'trends') {
+      if (activeTab === 'topic-progress' || activeTab === 'targets') {
+        // These components handle their own data fetching
+        setLoading(false);
+        return;
+      } else if (activeTab === 'trends') {
         const res = await fetch(`/api/analytics/trends?${typeParam}&limit=50`);
         if (!res.ok) throw new Error();
         setTrends(await res.json());
@@ -146,6 +152,8 @@ export default function AnalyticsPage() {
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'trends', label: 'Deneme Gidişatı', icon: <TrendingUp size={16} /> },
+    { key: 'topic-progress', label: 'Konu Gelişimi', icon: <Activity size={16} /> },
+    { key: 'targets', label: 'Hedefler', icon: <Target size={16} /> },
     { key: 'topics', label: 'Konu Analizi', icon: <BookOpen size={16} /> },
     { key: 'errors', label: 'Hata Analizi', icon: <AlertTriangle size={16} /> },
     { key: 'regression', label: 'Projeksiyon', icon: <Crosshair size={16} /> },
@@ -314,6 +322,30 @@ export default function AnalyticsPage() {
                   </div>
                 </>
               )}
+            </motion.div>
+          )}
+
+          {/* TOPIC PROGRESS TAB */}
+          {activeTab === 'topic-progress' && (
+            <motion.div
+              key="topic-progress"
+              initial={{ opacity: 0, scale: 0.98, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: -10 }}
+            >
+              <TopicProgress examTypeFilter={filterType} />
+            </motion.div>
+          )}
+
+          {/* TARGETS TAB */}
+          {activeTab === 'targets' && (
+            <motion.div
+              key="targets"
+              initial={{ opacity: 0, scale: 0.98, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: -10 }}
+            >
+              <TargetTracking />
             </motion.div>
           )}
 

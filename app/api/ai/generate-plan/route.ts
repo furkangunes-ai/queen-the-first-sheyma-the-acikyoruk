@@ -10,20 +10,20 @@ const SYSTEM_PROMPT_PLAN = `Sen bir YKS haftalık plan oluşturma asistanısın.
 kişiselleştirilmiş bir haftalık çalışma planı oluştur.
 
 KURALLAR:
-- Haftalık toplam 15-25 saat arası olmalı
+- Haftalık toplam 15-25 saat arası olmalı (öğrenci cevaplarına göre ayarla)
 - Zayıf konulara (bilgi seviyesi 0-2) daha fazla ağırlık ver
 - Her gün 2-4 ders arası olmalı
 - Hafta sonları biraz daha yoğun olabilir
 - Ders süreleri 30-90 dakika arası olmalı
-- Konu belirtilmemişse sadece ders adı yeterli
+- HER plan maddesi için MUTLAKA topicName belirt (sadece ders adı yeterli DEĞİL, konu da ŞART)
+- Mevcut konu listesine sadık kal, yeni konu uydurma
 
-Eğer öğrenci tercihleri verilmişse bunları mutlaka dikkate al:
+Eğer öğrenci tercihleri/cevapları verilmişse bunları mutlaka dikkate al:
 - Müsait olmayan günlere az veya hiç konu koyma
 - Fazladan çalışılabilecek günlere daha fazla yükle
-- Günlük çalışma saatine göre toplam süreyi ayarla (örn: 2-3 saat diyorsa haftalık 14-21 saat arası)
-- Plana uyum düşükse daha esnek ve hafif bir plan yap
+- Günlük çalışma saatine göre toplam süreyi ayarla
 - Çalışma düzeni düzensizse motivasyon artırıcı kısa oturumlar öner
-- Dinlenme tercihine uygun ders süreleri belirle (sık mola istiyorsa 30-40dk, uzun oturum istiyorsa 60-90dk)
+- Dinlenme tercihine uygun ders süreleri belirle
 
 JSON formatında yanıt ver, başka bir şey yazma. Format:
 {
@@ -40,7 +40,9 @@ JSON formatında yanıt ver, başka bir şey yazma. Format:
   "explanation": "Neden bu planı oluşturduğuna dair 2-3 cümle açıklama"
 }
 
-dayOfWeek: 0=Pazartesi, 1=Salı, 2=Çarşamba, 3=Perşembe, 4=Cuma, 5=Cumartesi, 6=Pazar`;
+dayOfWeek: 0=Pazartesi, 1=Salı, 2=Çarşamba, 3=Perşembe, 4=Cuma, 5=Cumartesi, 6=Pazar
+
+ÖNEMLİ: topicName her maddede ZORUNLUDUR. Eğer bir konunun tam adını bilmiyorsan, en yakın konu adını yaz.`;
 
 interface PlanItem {
   dayOfWeek: number;
@@ -56,13 +58,27 @@ interface AIPlanResponse {
   explanation: string;
 }
 
+interface WizardAnswer {
+  questionId: string;
+  question: string;
+  selectedOption: string;
+  customNote?: string;
+}
+
+interface WizardContext {
+  analysis: string;
+  weakAreas: string[];
+  strongAreas?: string[];
+  questions: WizardAnswer[];
+}
+
 export async function POST(request: NextRequest) {
   try {
     const guard = await checkAIAccess();
     if (isAIGuardError(guard)) return guard;
     const { userId } = guard;
 
-    const { weekStartDate, weekEndDate, preferences } = await request.json();
+    const { weekStartDate, weekEndDate, preferences, wizardContext } = await request.json();
     if (!weekStartDate || !weekEndDate) {
       return NextResponse.json(
         { error: "weekStartDate and weekEndDate required" },
@@ -126,7 +142,7 @@ export async function POST(request: NextRequest) {
           take: 2,
           select: { title: true, content: true },
         }),
-        // All subjects for ID matching
+        // All subjects for ID matching (include topics for available topic list)
         prisma.subject.findMany({
           include: { topics: true, examType: true },
         }),
@@ -158,7 +174,7 @@ export async function POST(request: NextRequest) {
     });
     const subjectIdToName = new Map(subjectNames.map((s) => [s.id, s.name]));
 
-    // 2. Build compact context (~800 tokens max)
+    // 2. Build compact context
     const weakTopicsStr = weakTopics
       .map(
         (tk) =>
@@ -183,16 +199,41 @@ export async function POST(request: NextRequest) {
       .map((i) => i.content.split(" ").slice(0, 50).join(" "))
       .join(" | ");
 
-    // Build preferences context if provided by wizard
-    const preferencesStr = preferences ? `
+    // Build available topics list for AI reference
+    const availableTopicsStr = allSubjects
+      .map((s) => `${s.name}: ${s.topics.map((t) => t.name).join(", ")}`)
+      .join("\n");
 
+    // Build context based on wizard type (dynamic wizard or legacy preferences)
+    let wizardStr = "";
+
+    if (wizardContext) {
+      // New dynamic wizard: AI analysis + student answers
+      const typedCtx = wizardContext as WizardContext;
+      const answersStr = typedCtx.questions
+        .map((a) => `Soru: ${a.question}\nCevap: ${a.selectedOption}${a.customNote ? ` (Not: ${a.customNote})` : ""}`)
+        .join("\n\n");
+
+      wizardStr = `
+=== AI ANALİZ ÖZETİ ===
+${typedCtx.analysis}
+
+Zayıf alanlar: ${typedCtx.weakAreas?.join(", ") || "Belirtilmedi"}
+${typedCtx.strongAreas ? `Güçlü alanlar: ${typedCtx.strongAreas.join(", ")}` : ""}
+
+=== ÖĞRENCİ CEVAPLARI ===
+${answersStr}`;
+    } else if (preferences) {
+      // Legacy fixed wizard (backward compatible)
+      wizardStr = `
 Öğrenci Tercihleri:
 - Çalışma düzeni: ${preferences.study_regularity || "Belirtilmedi"}${preferences.study_regularity_note ? ` (Not: ${preferences.study_regularity_note})` : ""}
 - Plana uyum: ${preferences.plan_adherence || "Belirtilmedi"}${preferences.plan_adherence_note ? ` (Not: ${preferences.plan_adherence_note})` : ""}
 - Günlük çalışma: ${preferences.daily_hours || "Belirtilmedi"}${preferences.daily_hours_note ? ` (Not: ${preferences.daily_hours_note})` : ""}
 - Dinlenme tercihi: ${preferences.break_preference || "Belirtilmedi"}${preferences.break_preference_note ? ` (Not: ${preferences.break_preference_note})` : ""}
 - Müsait olmayan günler: ${preferences.unavailable_days || "Belirtilmedi"}${preferences.unavailable_days_note ? ` (Not: ${preferences.unavailable_days_note})` : ""}
-- Fazladan çalışılabilecek günler: ${preferences.extra_days || "Belirtilmedi"}${preferences.extra_days_note ? ` (Not: ${preferences.extra_days_note})` : ""}` : "";
+- Fazladan çalışılabilecek günler: ${preferences.extra_days || "Belirtilmedi"}${preferences.extra_days_note ? ` (Not: ${preferences.extra_days_note})` : ""}`;
+    }
 
     const contextMessage = `Hafta: ${format(start, "d MMMM", { locale: tr })} - ${format(end, "d MMMM yyyy", { locale: tr })}
 
@@ -202,7 +243,11 @@ ${examStr}
 
 Son 2 hafta çalışma dağılımı: ${studyStr || "Veri yok"}
 
-${insightsStr ? `Geçmiş AI önerileri: ${insightsStr}` : ""}${preferencesStr}`.trim();
+${insightsStr ? `Geçmiş AI önerileri: ${insightsStr}` : ""}
+
+=== MEVCUT KONU LİSTESİ (SADECE BUNLARI KULLAN) ===
+${availableTopicsStr}
+${wizardStr}`.trim();
 
     // 3. Call OpenAI
     const completion = await getOpenAI().chat.completions.create({
@@ -256,8 +301,22 @@ ${insightsStr ? `Geçmiş AI önerileri: ${insightsStr}` : ""}${preferencesStr}`
         // Find topic ID if topic name provided
         let topicId: string | undefined;
         if (item.topicName) {
+          // Try exact key first
           const key = `${item.subjectName.toLowerCase()}-${item.topicName.toLowerCase()}`;
-          topicId = topicNameMap.get(key) || undefined;
+          topicId = topicNameMap.get(key);
+
+          // If not found, try fuzzy match on topic name alone within this subject
+          if (!topicId) {
+            const subject = allSubjects.find((s) => s.id === subjectId);
+            if (subject) {
+              const matchedTopic = subject.topics.find(
+                (t) =>
+                  t.name.toLowerCase().includes(item.topicName!.toLowerCase()) ||
+                  item.topicName!.toLowerCase().includes(t.name.toLowerCase())
+              );
+              if (matchedTopic) topicId = matchedTopic.id;
+            }
+          }
         }
 
         await tx.weeklyPlanItem.create({

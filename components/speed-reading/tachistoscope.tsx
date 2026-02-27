@@ -260,7 +260,7 @@ export default function Tachistoscope() {
           <motion.div
             initial={{ backgroundColor: "rgba(255,191,36,0.05)" }}
             animate={{ backgroundColor: "rgba(255,191,36,0.15)" }}
-            transition={{ duration: tach.displayMs / 1000 }}
+            transition={{ duration: Math.max(0.15, tach.displayMs / 1000) }}
             className="glass-panel p-12 md:p-16 flex items-center justify-center min-h-[280px] relative overflow-hidden"
           >
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />

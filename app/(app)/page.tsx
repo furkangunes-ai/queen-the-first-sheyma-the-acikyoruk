@@ -4,11 +4,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { clsx } from 'clsx';
-import { CheckCircle2, Circle, TrendingUp, Calendar, AlertCircle, Loader2, GraduationCap, Heart, CheckCircle, CheckSquare, ChevronRight, Sparkles } from 'lucide-react';
+import { CheckCircle2, Circle, TrendingUp, Calendar, AlertCircle, Loader2, GraduationCap, Heart, CheckCircle, CheckSquare, ChevronRight, Sparkles, Flame } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
+import StreakBadgeWidget from '@/components/gamification/streak-badge-widget';
 
 interface DashboardTask {
   id: string;
@@ -324,6 +325,15 @@ export default function DashboardPage() {
             </button>
           </div>
         )}
+
+        {/* Streak & Badges */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <StreakBadgeWidget />
+        </motion.div>
       </div>
 
       {/* Right Column: Todo List */}

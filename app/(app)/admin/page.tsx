@@ -8,8 +8,9 @@ import { toast } from 'sonner';
 import {
   Shield, Send, ClipboardList, Heart, TrendingUp, Loader2,
   CheckCircle2, Zap, Smile, FolderOpen, Bell, RefreshCw,
-  Sparkles, Star
+  Sparkles, Star, FileText
 } from 'lucide-react';
+import QuestionUpload from '@/components/admin/question-upload';
 
 // ---------- types ----------
 
@@ -556,7 +557,12 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* ===== Section 4: Son Gonderilen Bildirimler ===== */}
+      {/* ===== Section 4: Soru Yukleme ===== */}
+      <div className="glass-panel p-6 sm:p-8 relative z-10 shadow-[0_8px_32px_rgba(255,42,133,0.05)] border-white/10 rounded-3xl overflow-hidden mt-4">
+        <QuestionUpload />
+      </div>
+
+      {/* ===== Section 5: Son Gonderilen Bildirimler ===== */}
       <div className="glass-panel p-6 sm:p-8 relative z-10 shadow-[0_8px_32px_rgba(255,42,133,0.05)] border-white/10 rounded-3xl overflow-hidden mt-4">
         <div className="absolute top-0 right-0 w-48 h-48 bg-purple-500/5 rounded-full blur-[60px] pointer-events-none" />
 

@@ -21,32 +21,166 @@ import {
   Menu,
   X,
   Sparkles,
+  CalendarDays,
+  Bot,
+  Dumbbell,
+  Map,
+  RotateCw,
+  Target,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import NotificationBell from '@/components/notifications/notification-bell';
 
-const NAV_ITEMS = [
-  { path: '/', label: 'Genel Bakış', icon: LayoutDashboard },
-  { path: '/tasks', label: 'Planlama', icon: CheckSquare },
-  { path: '/exams', label: 'Denemeler', icon: GraduationCap },
-  { path: '/study', label: 'Günlük Çalışma', icon: BookOpenCheck },
-  { path: '/strategy', label: 'Strateji', icon: BrainCircuit },
-  { path: '/speed-reading', label: 'Hızlı Okuma', icon: Zap },
-  { path: '/analytics', label: 'Analiz', icon: BarChart2 },
-  { path: '/check-in', label: 'Check-in', icon: Heart },
-  { path: '/metrics', label: 'Metrikler', icon: Activity },
-  { path: '/gallery', label: 'Dosyalar', icon: ImageIcon },
+// ---------- Grouped Navigation ----------
+
+interface NavItem {
+  path: string;
+  label: string;
+  icon: any;
+}
+
+interface NavGroup {
+  label: string;
+  icon: any;
+  items: NavItem[];
+  defaultOpen?: boolean;
+}
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    label: "Genel",
+    icon: LayoutDashboard,
+    defaultOpen: true,
+    items: [
+      { path: '/', label: 'Genel Bakis', icon: LayoutDashboard },
+      { path: '/analytics', label: 'Analiz', icon: BarChart2 },
+    ],
+  },
+  {
+    label: "Calisma",
+    icon: BookOpenCheck,
+    defaultOpen: true,
+    items: [
+      { path: '/study', label: 'Gunluk Calisma', icon: BookOpenCheck },
+      { path: '/exams', label: 'Denemeler', icon: GraduationCap },
+      { path: '/tasks', label: 'Planlama', icon: CheckSquare },
+    ],
+  },
+  {
+    label: "Antrenman",
+    icon: Dumbbell,
+    defaultOpen: false,
+    items: [
+      { path: '/speed-reading', label: 'Hizli Okuma', icon: Zap },
+      { path: '/training', label: 'Antrenman', icon: Dumbbell },
+    ],
+  },
+  {
+    label: "Strateji",
+    icon: BrainCircuit,
+    defaultOpen: false,
+    items: [
+      { path: '/strategy', label: 'Strateji', icon: BrainCircuit },
+    ],
+  },
+  {
+    label: "Kisisel",
+    icon: Heart,
+    defaultOpen: false,
+    items: [
+      { path: '/check-in', label: 'Check-in', icon: Heart },
+      { path: '/metrics', label: 'Metrikler', icon: Activity },
+      { path: '/gallery', label: 'Dosyalar', icon: ImageIcon },
+    ],
+  },
 ];
 
 const ADMIN_NAV_ITEMS = [
   { path: '/admin', label: 'Admin Paneli', icon: Shield },
 ];
 
-function SidebarContent({ pathname, allNavItems, userName, isAdmin, onNavClick }: {
+// ---------- Collapsible Nav Group ----------
+
+function NavGroupSection({
+  group,
+  pathname,
+  onNavClick,
+}: {
+  group: NavGroup;
   pathname: string;
-  allNavItems: typeof NAV_ITEMS;
-  userName: string;
+  onNavClick?: () => void;
+}) {
+  const hasActiveItem = group.items.some(
+    (item) => pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path))
+  );
+
+  const [isOpen, setIsOpen] = useState(group.defaultOpen || hasActiveItem);
+
+  const GroupIcon = group.icon;
+
+  return (
+    <div className="mb-1">
+      {/* Group Header */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-white/30 hover:text-white/50 transition-colors"
+      >
+        <motion.div
+          animate={{ rotate: isOpen ? 0 : -90 }}
+          transition={{ duration: 0.15 }}
+        >
+          <ChevronDown size={12} />
+        </motion.div>
+        <span>{group.label}</span>
+      </button>
+
+      {/* Group Items */}
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="flex flex-col gap-1 pb-1">
+              {group.items.map((item) => {
+                const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path));
+                return (
+                  <Link
+                    key={item.path}
+                    href={item.path}
+                    onClick={onNavClick}
+                    className={`
+                      group flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-300
+                      ${isActive
+                        ? 'bg-pink-500/20 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_4px_12px_rgba(255,42,133,0.3)] border border-pink-400/30'
+                        : 'text-white/60 hover:bg-pink-500/10 hover:text-white border border-transparent hover:border-pink-500/20'
+                      }
+                    `}
+                  >
+                    <item.icon className={`w-[18px] h-[18px] flex-shrink-0 transition-transform duration-300 ${isActive ? 'scale-110 text-pink-300' : 'group-hover:scale-110 group-hover:text-pink-300'}`} />
+                    <span className="text-[14px] font-medium tracking-wide">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ---------- Sidebar Content ----------
+
+function SidebarContent({ pathname, isAdmin, userName, onNavClick }: {
+  pathname: string;
   isAdmin: boolean;
+  userName: string;
   onNavClick?: () => void;
 }) {
   return (
@@ -56,33 +190,47 @@ function SidebarContent({ pathname, allNavItems, userName, isAdmin, onNavClick }
         <div className="flex items-center gap-2">
           <Sparkles className="w-6 h-6 text-pink-400" />
           <h1 className="text-2xl font-bold tracking-tight text-gradient-candy">
-            Şeyda
+            Seyda
           </h1>
         </div>
       </div>
 
-      {/* Navigation Links */}
-      <nav className="flex-1 py-4 flex flex-col gap-2 px-4 overflow-y-auto no-scrollbar">
-        {allNavItems.map((item) => {
-          const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path));
-          return (
-            <Link
-              key={item.path}
-              href={item.path}
-              onClick={onNavClick}
-              className={`
-                group flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300
-                ${isActive
-                  ? 'bg-pink-500/20 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_4px_12px_rgba(255,42,133,0.3)] border border-pink-400/30'
-                  : 'text-white/60 hover:bg-pink-500/10 hover:text-white border border-transparent hover:border-pink-500/20'
-                }
-              `}
-            >
-              <item.icon className={`w-[20px] h-[20px] flex-shrink-0 transition-transform duration-300 ${isActive ? 'scale-110 text-pink-300' : 'group-hover:scale-110 group-hover:text-pink-300'}`} />
-              <span className="text-[15px] font-medium tracking-wide">{item.label}</span>
-            </Link>
-          );
-        })}
+      {/* Navigation Links (Grouped) */}
+      <nav className="flex-1 py-2 flex flex-col px-3 overflow-y-auto no-scrollbar">
+        {NAV_GROUPS.map((group) => (
+          <NavGroupSection
+            key={group.label}
+            group={group}
+            pathname={pathname}
+            onNavClick={onNavClick}
+          />
+        ))}
+
+        {/* Admin */}
+        {isAdmin && (
+          <div className="mt-2 pt-2 border-t border-white/5">
+            {ADMIN_NAV_ITEMS.map((item) => {
+              const isActive = pathname.startsWith(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  href={item.path}
+                  onClick={onNavClick}
+                  className={`
+                    group flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-300
+                    ${isActive
+                      ? 'bg-cyan-500/20 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_4px_12px_rgba(0,200,200,0.3)] border border-cyan-400/30'
+                      : 'text-white/60 hover:bg-cyan-500/10 hover:text-white border border-transparent hover:border-cyan-500/20'
+                    }
+                  `}
+                >
+                  <item.icon className={`w-[18px] h-[18px] flex-shrink-0 transition-transform duration-300 ${isActive ? 'scale-110 text-cyan-300' : 'group-hover:scale-110 group-hover:text-cyan-300'}`} />
+                  <span className="text-[14px] font-medium tracking-wide">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </nav>
 
       {/* User Profile + Logout */}
@@ -104,7 +252,7 @@ function SidebarContent({ pathname, allNavItems, userName, isAdmin, onNavClick }
             className="flex items-center justify-center gap-2 w-full px-4 py-2 mt-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-sm font-medium transition-colors border border-white/5"
           >
             <LogOut size={16} />
-            <span>Çıkış Yap</span>
+            <span>Cikis Yap</span>
           </button>
         </div>
       </div>
@@ -112,15 +260,15 @@ function SidebarContent({ pathname, allNavItems, userName, isAdmin, onNavClick }
   );
 }
 
+// ---------- Main Layout ----------
+
 export function BinderLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const userName = session?.user?.name || 'Kullanıcı';
+  const userName = session?.user?.name || 'Kullanici';
   const isAdmin = (session?.user as any)?.role === 'admin';
-
-  const allNavItems = isAdmin ? [...NAV_ITEMS, ...ADMIN_NAV_ITEMS] : NAV_ITEMS;
 
   return (
     <div className="min-h-screen w-full flex bg-background">
@@ -133,7 +281,6 @@ export function BinderLayout({ children }: { children: React.ReactNode }) {
         <div className="absolute inset-4 glass-panel flex flex-col h-[calc(100vh-2rem)] overflow-hidden">
            <SidebarContent
              pathname={pathname}
-             allNavItems={allNavItems}
              userName={userName}
              isAdmin={isAdmin}
            />
@@ -167,7 +314,6 @@ export function BinderLayout({ children }: { children: React.ReactNode }) {
                 </button>
                 <SidebarContent
                   pathname={pathname}
-                  allNavItems={allNavItems}
                   userName={userName}
                   isAdmin={isAdmin}
                   onNavClick={() => setMobileMenuOpen(false)}
@@ -190,10 +336,10 @@ export function BinderLayout({ children }: { children: React.ReactNode }) {
               <Menu size={20} />
             </button>
             <div className="hidden lg:block text-white/50 text-sm font-medium tracking-wide">
-              Yaşam Takibi App
+              Yasam Takibi App
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <div className="glass rounded-full p-1 border-white/10 shadow-lg shadow-pink-500/10">
               <NotificationBell />

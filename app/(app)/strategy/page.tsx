@@ -1,19 +1,21 @@
 "use client";
 
 import React, { useState } from "react";
-import { Map, CalendarDays, TrendingUp, Bot } from "lucide-react";
+import { Map, CalendarDays, TrendingUp, Bot, RotateCw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import TopicMap from "@/components/strategy/topic-map";
 import WeeklyPlan from "@/components/strategy/weekly-plan";
 import WeeklyAnalysisView from "@/components/strategy/weekly-analysis";
 import AIAssistant from "@/components/strategy/ai-assistant";
+import SpacedRepetition from "@/components/strategy/spaced-repetition";
 
-type StrategyTab = "topic-map" | "weekly-plan" | "weekly-analysis" | "ai-assistant";
+type StrategyTab = "topic-map" | "weekly-plan" | "weekly-analysis" | "ai-assistant" | "spaced-repetition";
 
 const tabs: { key: StrategyTab; label: string; icon: React.ReactNode }[] = [
-  { key: "topic-map", label: "Konu Haritası", icon: <Map size={16} /> },
-  { key: "weekly-plan", label: "Haftalık Plan", icon: <CalendarDays size={16} /> },
-  { key: "weekly-analysis", label: "Haftalık Analiz", icon: <TrendingUp size={16} /> },
+  { key: "topic-map", label: "Konu Haritasi", icon: <Map size={16} /> },
+  { key: "weekly-plan", label: "Haftalik Plan", icon: <CalendarDays size={16} /> },
+  { key: "spaced-repetition", label: "Hata Tekrar", icon: <RotateCw size={16} /> },
+  { key: "weekly-analysis", label: "Haftalik Analiz", icon: <TrendingUp size={16} /> },
   { key: "ai-assistant", label: "AI Asistan", icon: <Bot size={16} /> },
 ];
 
@@ -28,7 +30,7 @@ export default function StrategyPage() {
           Strateji
         </h1>
         <p className="text-white/50 mt-1">
-          Konu hakimiyetini değerlendir, haftalık plan oluştur ve AI destekli analiz al
+          Konu hakimiyetini degerlendir, haftalik plan olustur ve AI destekli analiz al
         </p>
       </div>
 
@@ -61,6 +63,7 @@ export default function StrategyPage() {
         >
           {activeTab === "topic-map" && <TopicMap />}
           {activeTab === "weekly-plan" && <WeeklyPlan />}
+          {activeTab === "spaced-repetition" && <SpacedRepetition />}
           {activeTab === "weekly-analysis" && <WeeklyAnalysisView />}
           {activeTab === "ai-assistant" && <AIAssistant />}
         </motion.div>

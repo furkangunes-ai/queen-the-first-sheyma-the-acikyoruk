@@ -131,7 +131,7 @@ export function useTachistoscope(config: TachistoscopeConfig) {
               .slice(-5)
               .filter((i) => i.correct).length;
             if (recentCorrect >= 4) {
-              setDisplayMs((ms) => Math.max(50, ms - 50));
+              setDisplayMs((ms) => Math.max(100, ms - 50));
             }
           }
 
@@ -147,7 +147,7 @@ export function useTachistoscope(config: TachistoscopeConfig) {
             setPhase("answering");
           }, displayMs);
         }
-      }, 1000); // 1 second feedback display
+      }, Math.max(500, displayMs * 3)); // proportional feedback display
     },
     [
       phase,

@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { updateDailyStudyStreak } from "@/lib/streak-engine";
 
 export async function GET(request: NextRequest) {
   try {
@@ -85,6 +86,11 @@ export async function POST(request: NextRequest) {
         topic: true,
       },
     });
+
+    // Update streak & check badges (fire and forget)
+    updateDailyStudyStreak(userId).catch((err) =>
+      console.error("Streak update error:", err)
+    );
 
     return NextResponse.json(study, { status: 201 });
   } catch (error) {

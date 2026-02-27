@@ -39,6 +39,11 @@ model User {
   aiEnabled      Boolean  @default(false)
   speedReadingSessions SpeedReadingSession[]
   speedReadingExercises SpeedReadingExercise[]
+  spacedRepetitionItems SpacedRepetitionItem[]
+  targetScores   TargetScore[]
+  streaks        UserStreak[]
+  badges         UserBadge[]
+  questionBanks  QuestionBank[]
 }
 
 // ==================== KLASÖRLER & GÖREVLER ====================
@@ -133,6 +138,8 @@ model Subject {
   dailyStudies    DailyStudy[]
   topicReviews    TopicReview[]
   weeklyPlanItems WeeklyPlanItem[]
+  spacedRepetitionItems SpacedRepetitionItem[]
+  targetScores   TargetScore[]
   sortOrder       Int      @default(0)
 
   @@index([examTypeId])
@@ -149,6 +156,7 @@ model Topic {
   topicReviews    TopicReview[]
   topicKnowledge  TopicKnowledge[]
   weeklyPlanItems WeeklyPlanItem[]
+  spacedRepetitionItems SpacedRepetitionItem[]
   sortOrder       Int      @default(0)
 
   @@index([subjectId])
@@ -215,6 +223,7 @@ model ExamWrongQuestion {
   photoR2Key    String?
   difficulty    String?      // "kolay" | "orta" | "zor"
   understandingStatus String? // "anladim" | "tekrar" | "anlamadim"
+  spacedRepetitionItems SpacedRepetitionItem[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime?    @updatedAt
 
@@ -501,6 +510,99 @@ model SpeedReadingExercise {
   @@index([userId])
   @@index([exerciseType])
   @@index([createdAt])
+}
+
+// ==================== SPACED REPETITION ====================
+
+model SpacedRepetitionItem {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  wrongQuestionId String
+  wrongQuestion   ExamWrongQuestion @relation(fields: [wrongQuestionId], references: [id], onDelete: Cascade)
+  subjectId       String
+  subject         Subject  @relation(fields: [subjectId], references: [id])
+  topicId         String?
+  topic           Topic?   @relation(fields: [topicId], references: [id])
+  nextReviewDate  DateTime
+  interval        Int      @default(1) // gun cinsinden
+  repetitionCount Int      @default(0)
+  easeFactor      Float    @default(2.5)
+  status          String   @default("pending") // "pending" | "mastered"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId, nextReviewDate])
+  @@index([userId, subjectId, topicId])
+  @@index([userId, status])
+}
+
+// ==================== HEDEF NET ====================
+
+model TargetScore {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  subjectId String
+  subject   Subject  @relation(fields: [subjectId], references: [id])
+  targetNet Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, subjectId])
+}
+
+// ==================== STREAK & ROZET ====================
+
+model UserStreak {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  type           String    // "daily_study" | "plan_completion"
+  currentStreak  Int       @default(0)
+  longestStreak  Int       @default(0)
+  lastActiveDate DateTime?
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([userId, type])
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  badgeType String
+  earnedAt  DateTime @default(now())
+
+  @@unique([userId, badgeType])
+}
+
+// ==================== SORU BANKASI ====================
+
+model QuestionBank {
+  id         String             @id @default(cuid())
+  type       String             // "paragraph" | "vocabulary" | ...
+  difficulty Int                @default(3) // 1-5
+  title      String?
+  content    String             // Paragraf metni
+  questions  QuestionBankItem[]
+  createdBy  String
+  creator    User               @relation(fields: [createdBy], references: [id])
+  createdAt  DateTime           @default(now())
+
+  @@index([type, difficulty])
+  @@index([createdBy])
+}
+
+model QuestionBankItem {
+  id             String       @id @default(cuid())
+  questionBankId String
+  questionBank   QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+  question       String
+  options        Json         // ["A seçeneği", "B seçeneği", "C seçeneği", "D seçeneği"]
+  correctAnswer  Int          // 0-3 (index)
+  explanation    String?
+  sortOrder      Int          @default(0)
 }
 
 // ==================== AI INSIGHT'LAR ====================
