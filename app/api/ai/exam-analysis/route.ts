@@ -152,7 +152,6 @@ ${trendStr}`.trim();
         { role: "system", content: SYSTEM_PROMPT_EXAM },
         { role: "user", content: `Bu deneme sonuçlarını analiz et:\n\n${contextMessage}` },
       ],
-      max_tokens: 1000,
     });
 
     const analysis = completion.choices[0]?.message?.content || "";

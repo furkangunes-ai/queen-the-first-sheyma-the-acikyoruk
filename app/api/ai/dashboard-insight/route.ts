@@ -113,8 +113,6 @@ export async function GET() {
           },
           { role: "user", content: contextMessage },
         ],
-        max_tokens: 300,
-        temperature: 0.8,
       });
       insightText = completion.choices[0]?.message?.content || "";
     } catch (aiError) {

@@ -54,7 +54,6 @@ ${recentInsights}
           content: m.content,
         })),
       ],
-      max_tokens: 1000,
       stream: true,
     });
 

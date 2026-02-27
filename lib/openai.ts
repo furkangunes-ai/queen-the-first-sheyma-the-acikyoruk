@@ -15,7 +15,7 @@ export function getOpenAI(): OpenAI {
   return _openai;
 }
 
-export const AI_MODEL = "gpt-4o-mini";
+export const AI_MODEL = "gpt-5-mini";
 
 export const SYSTEM_PROMPT_CHAT = `Sen bir YKS hazırlık asistanısın. Adın "Strateji Asistanı". Türkçe konuş.
 Öğrencinin deneme sonuçlarını, konu hakimiyet düzeylerini ve çalışma verilerini analiz ederek

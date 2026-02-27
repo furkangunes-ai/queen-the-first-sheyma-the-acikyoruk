@@ -125,7 +125,6 @@ Toplam çalışma: ${totalStudyMinutes} dakika, ${totalQuestions} soru
             content: `Bu haftanın çalışma verilerini analiz et ve gelecek hafta için öneriler sun:\n${contextMessage}`,
           },
         ],
-        max_tokens: 2000,
       });
 
       const response = completion.choices[0]?.message?.content || "";

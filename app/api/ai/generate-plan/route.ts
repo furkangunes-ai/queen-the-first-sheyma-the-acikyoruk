@@ -192,8 +192,6 @@ ${insightsStr ? `Geçmiş AI önerileri: ${insightsStr}` : ""}`.trim();
         { role: "system", content: SYSTEM_PROMPT_PLAN },
         { role: "user", content: contextMessage },
       ],
-      max_tokens: 1500,
-      temperature: 0.7,
     });
 
     const rawResponse = completion.choices[0]?.message?.content || "";
