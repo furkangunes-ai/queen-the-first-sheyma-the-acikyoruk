@@ -1,20 +1,26 @@
 "use client";
 
 import React, { useState } from "react";
-import { BookOpen, History } from "lucide-react";
+import { BookOpen, History, Grid3X3, Eye, Maximize2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import SpeedReader from "@/components/speed-reading/speed-reader";
 import ReadingHistory from "@/components/speed-reading/reading-history";
+import SchulteTable from "@/components/speed-reading/schulte-table";
+import Tachistoscope from "@/components/speed-reading/tachistoscope";
+import PeripheralVision from "@/components/speed-reading/peripheral-vision";
 
-type SpeedReadingTab = "reader" | "history";
+type SpeedReadingTab = "rsvp" | "schulte" | "tachistoscope" | "peripheral" | "history";
 
 const tabs: { key: SpeedReadingTab; label: string; icon: React.ReactNode }[] = [
-  { key: "reader", label: "Okuma", icon: <BookOpen size={16} /> },
+  { key: "rsvp", label: "RSVP Okuma", icon: <BookOpen size={16} /> },
+  { key: "schulte", label: "Schulte Tablosu", icon: <Grid3X3 size={16} /> },
+  { key: "tachistoscope", label: "Hızlı Tanıma", icon: <Eye size={16} /> },
+  { key: "peripheral", label: "Görüş Alanı", icon: <Maximize2 size={16} /> },
   { key: "history", label: "Geçmiş", icon: <History size={16} /> },
 ];
 
 export default function SpeedReadingPage() {
-  const [activeTab, setActiveTab] = useState<SpeedReadingTab>("reader");
+  const [activeTab, setActiveTab] = useState<SpeedReadingTab>("rsvp");
 
   return (
     <div className="space-y-6">
@@ -23,7 +29,7 @@ export default function SpeedReadingPage() {
           Hızlı Okuma
         </h1>
         <p className="text-white/50 mt-1">
-          RSVP yöntemiyle okuma hızını artır, ilerlemeyi takip et
+          RSVP, Schulte tablosu, hızlı tanıma ve görüş alanı egzersizleriyle okuma hızını artır
         </p>
       </div>
 
@@ -52,7 +58,10 @@ export default function SpeedReadingPage() {
           exit={{ opacity: 0, y: -12 }}
           transition={{ duration: 0.2 }}
         >
-          {activeTab === "reader" && <SpeedReader />}
+          {activeTab === "rsvp" && <SpeedReader />}
+          {activeTab === "schulte" && <SchulteTable />}
+          {activeTab === "tachistoscope" && <Tachistoscope />}
+          {activeTab === "peripheral" && <PeripheralVision />}
           {activeTab === "history" && <ReadingHistory />}
         </motion.div>
       </AnimatePresence>

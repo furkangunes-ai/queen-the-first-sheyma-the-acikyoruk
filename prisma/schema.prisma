@@ -36,6 +36,7 @@ model User {
   weeklyAnalyses WeeklyAnalysis[]
   aiChatMessages AIChatMessage[]
   speedReadingSessions SpeedReadingSession[]
+  speedReadingExercises SpeedReadingExercise[]
 }
 
 // ==================== KLASÖRLER & GÖREVLER ====================
@@ -464,20 +465,38 @@ model AIChatMessage {
 // ==================== HIZLI OKUMA ====================
 
 model SpeedReadingSession {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  title       String?
-  wordCount   Int
-  wordsRead   Int
-  initialWpm  Int
-  finalWpm    Int
-  chunkSize   Int      @default(1)
-  autoSpeed   Boolean  @default(false)
-  duration    Int      // saniye
-  completed   Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  title         String?
+  wordCount     Int
+  wordsRead     Int
+  initialWpm    Int
+  finalWpm      Int
+  chunkSize     Int      @default(1)
+  autoSpeed     Boolean  @default(false)
+  duration      Int      // saniye
+  completed     Boolean  @default(false)
+  comprehension Int?     // 1-5 anlama öz değerlendirmesi
+  createdAt     DateTime @default(now())
 
   @@index([userId])
+  @@index([createdAt])
+}
+
+model SpeedReadingExercise {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  exerciseType  String   // "schulte" | "tachistoscope" | "peripheral"
+  difficulty    Int      @default(1) // 1-5
+  score         Float    // 0-100 yüzde
+  duration      Int      // saniye
+  completed     Boolean  @default(true)
+  metadata      Json?    // Tip-spesifik veriler
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([exerciseType])
   @@index([createdAt])
 }

@@ -44,6 +44,7 @@ export default function SpeedReader() {
   const [title, setTitle] = useState("");
   const [phase, setPhase] = useState<ReaderPhase>("input");
   const [saving, setSaving] = useState(false);
+  const [comprehension, setComprehension] = useState<number | null>(null);
 
   const rsvp = useRSVP({
     wpm,
@@ -91,6 +92,7 @@ export default function SpeedReader() {
           autoSpeed,
           duration: rsvp.elapsedSeconds,
           completed: rsvp.isFinished,
+          comprehension,
         }),
       });
       if (!res.ok) throw new Error("Save failed");
@@ -105,6 +107,15 @@ export default function SpeedReader() {
   const handleReset = () => {
     rsvp.restart();
     setPhase("input");
+    setComprehension(null);
+  };
+
+  const comprehensionLabels: Record<number, string> = {
+    1: "Hiç anlamadım",
+    2: "Az anladım",
+    3: "Orta düzeyde anladım",
+    4: "İyi anladım",
+    5: "Tamamen anladım",
   };
 
   // Keyboard shortcuts
@@ -569,6 +580,34 @@ export default function SpeedReader() {
                 )}
               </div>
             )}
+
+            {/* Comprehension Self-Rating */}
+            <div className="pt-4 border-t border-white/5 space-y-3">
+              <label className="text-sm font-medium text-white/50 flex items-center justify-center gap-2">
+                <BookOpen size={14} className="text-amber-400" />
+                Anlama Seviyesi
+              </label>
+              <div className="flex gap-2 justify-center">
+                {[1, 2, 3, 4, 5].map((level) => (
+                  <button
+                    key={level}
+                    onClick={() => setComprehension(level)}
+                    className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center transition-all ${
+                      comprehension === level
+                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/30 shadow-lg shadow-amber-500/10"
+                        : "bg-white/5 text-white/40 border border-white/10 hover:bg-white/10"
+                    }`}
+                  >
+                    <span className="text-lg font-bold">{level}</span>
+                  </button>
+                ))}
+              </div>
+              {comprehension && (
+                <p className="text-xs text-center text-white/30">
+                  {comprehensionLabels[comprehension]}
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="flex gap-3">
