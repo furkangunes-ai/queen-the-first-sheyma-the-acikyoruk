@@ -17,6 +17,14 @@ KURALLAR:
 - Ders süreleri 30-90 dakika arası olmalı
 - Konu belirtilmemişse sadece ders adı yeterli
 
+Eğer öğrenci tercihleri verilmişse bunları mutlaka dikkate al:
+- Müsait olmayan günlere az veya hiç konu koyma
+- Fazladan çalışılabilecek günlere daha fazla yükle
+- Günlük çalışma saatine göre toplam süreyi ayarla (örn: 2-3 saat diyorsa haftalık 14-21 saat arası)
+- Plana uyum düşükse daha esnek ve hafif bir plan yap
+- Çalışma düzeni düzensizse motivasyon artırıcı kısa oturumlar öner
+- Dinlenme tercihine uygun ders süreleri belirle (sık mola istiyorsa 30-40dk, uzun oturum istiyorsa 60-90dk)
+
 JSON formatında yanıt ver, başka bir şey yazma. Format:
 {
   "title": "Haftalık Plan Başlığı",
@@ -54,7 +62,7 @@ export async function POST(request: NextRequest) {
     if (isAIGuardError(guard)) return guard;
     const { userId } = guard;
 
-    const { weekStartDate, weekEndDate } = await request.json();
+    const { weekStartDate, weekEndDate, preferences } = await request.json();
     if (!weekStartDate || !weekEndDate) {
       return NextResponse.json(
         { error: "weekStartDate and weekEndDate required" },
@@ -175,6 +183,17 @@ export async function POST(request: NextRequest) {
       .map((i) => i.content.split(" ").slice(0, 50).join(" "))
       .join(" | ");
 
+    // Build preferences context if provided by wizard
+    const preferencesStr = preferences ? `
+
+Öğrenci Tercihleri:
+- Çalışma düzeni: ${preferences.study_regularity || "Belirtilmedi"}${preferences.study_regularity_note ? ` (Not: ${preferences.study_regularity_note})` : ""}
+- Plana uyum: ${preferences.plan_adherence || "Belirtilmedi"}${preferences.plan_adherence_note ? ` (Not: ${preferences.plan_adherence_note})` : ""}
+- Günlük çalışma: ${preferences.daily_hours || "Belirtilmedi"}${preferences.daily_hours_note ? ` (Not: ${preferences.daily_hours_note})` : ""}
+- Dinlenme tercihi: ${preferences.break_preference || "Belirtilmedi"}${preferences.break_preference_note ? ` (Not: ${preferences.break_preference_note})` : ""}
+- Müsait olmayan günler: ${preferences.unavailable_days || "Belirtilmedi"}${preferences.unavailable_days_note ? ` (Not: ${preferences.unavailable_days_note})` : ""}
+- Fazladan çalışılabilecek günler: ${preferences.extra_days || "Belirtilmedi"}${preferences.extra_days_note ? ` (Not: ${preferences.extra_days_note})` : ""}` : "";
+
     const contextMessage = `Hafta: ${format(start, "d MMMM", { locale: tr })} - ${format(end, "d MMMM yyyy", { locale: tr })}
 
 Zayıf konular (seviye 0-3): ${weakTopicsStr || "Henüz belirlenmemiş"}
@@ -183,7 +202,7 @@ ${examStr}
 
 Son 2 hafta çalışma dağılımı: ${studyStr || "Veri yok"}
 
-${insightsStr ? `Geçmiş AI önerileri: ${insightsStr}` : ""}`.trim();
+${insightsStr ? `Geçmiş AI önerileri: ${insightsStr}` : ""}${preferencesStr}`.trim();
 
     // 3. Call OpenAI
     const completion = await getOpenAI().chat.completions.create({

@@ -78,6 +78,69 @@ interface DraftItem {
 
 const DAY_LABELS = ["Pazartesi", "Sali", "Carsamba", "Persembe", "Cuma", "Cumartesi", "Pazar"];
 
+const WIZARD_QUESTIONS = [
+  {
+    id: "study_regularity",
+    question: "Ne kadar düzenli çalışıyorsun?",
+    options: [
+      { value: "daily", label: "Her gün düzenli çalışıyorum" },
+      { value: "mostly", label: "Çoğu gün çalışıyorum, ara sıra aksatıyorum" },
+      { value: "irregular", label: "Düzensiz, motivasyona göre çalışıyorum" },
+      { value: "rarely", label: "Nadiren oturabiliyorum" },
+    ],
+  },
+  {
+    id: "plan_adherence",
+    question: "Planlara ne kadar uyuyorsun?",
+    options: [
+      { value: "strict", label: "Planıma sıkı sıkıya uyarım" },
+      { value: "mostly", label: "Çoğunlukla uyarım, bazen esnetirim" },
+      { value: "flexible", label: "Genel hatlarıyla uyarım, detaylara takılmam" },
+      { value: "struggle", label: "Plana uymakta zorlanıyorum" },
+    ],
+  },
+  {
+    id: "daily_hours",
+    question: "Günde ortalama kaç saat çalışabilirsin?",
+    options: [
+      { value: "2-3", label: "2-3 saat" },
+      { value: "4-5", label: "4-5 saat" },
+      { value: "6-7", label: "6-7 saat" },
+      { value: "8+", label: "8 saat veya daha fazla" },
+    ],
+  },
+  {
+    id: "break_preference",
+    question: "Dinlenme tercihin nasıl?",
+    options: [
+      { value: "frequent", label: "Sık sık kısa molalar (25dk çalış / 5dk mola)" },
+      { value: "moderate", label: "Orta sıklıkta (45-50dk çalış / 10dk mola)" },
+      { value: "long_sessions", label: "Uzun oturumlar (1.5-2 saat çalış / 15-20dk mola)" },
+      { value: "flexible", label: "Yorulunca mola veririm, zamana bakmam" },
+    ],
+  },
+  {
+    id: "unavailable_days",
+    question: "Hangi günler müsait değilsin veya az çalışabilirsin?",
+    options: [
+      { value: "none", label: "Her gün çalışabilirim" },
+      { value: "weekend", label: "Hafta sonu meşgulüm" },
+      { value: "weekdays", label: "Hafta içi bazı günler meşgulüm" },
+      { value: "friday", label: "Cuma günü müsait değilim" },
+    ],
+  },
+  {
+    id: "extra_days",
+    question: "Hangi günler fazladan çalışmaya uygunsun?",
+    options: [
+      { value: "weekend", label: "Hafta sonu daha çok çalışabilirim" },
+      { value: "weekdays", label: "Hafta içi daha verimli çalışıyorum" },
+      { value: "everyday", label: "Her gün eşit çalışabilirim" },
+      { value: "depends", label: "Haftadan haftaya değişiyor" },
+    ],
+  },
+];
+
 // ---------- Component ----------
 
 export default function WeeklyPlan() {
@@ -99,6 +162,11 @@ export default function WeeklyPlan() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
+
+  // Wizard state
+  const [showWizard, setShowWizard] = useState(false);
+  const [wizardStep, setWizardStep] = useState(0);
+  const [wizardAnswers, setWizardAnswers] = useState<Record<string, string>>({});
 
   // Create plan form
   const [createTitle, setCreateTitle] = useState("");
@@ -364,7 +432,7 @@ export default function WeeklyPlan() {
     }
   }, [plan]);
 
-  const handleAIGeneratePlan = useCallback(async () => {
+  const handleAIGeneratePlan = useCallback(async (preferences?: Record<string, string>) => {
     if (plan) {
       if (!window.confirm("Mevcut planı silip AI ile yeni plan oluşturulacak. Devam etmek istiyor musunuz?")) {
         return;
@@ -388,6 +456,7 @@ export default function WeeklyPlan() {
         body: JSON.stringify({
           weekStartDate: startDateStr,
           weekEndDate: endDate,
+          ...(preferences && Object.keys(preferences).length > 0 ? { preferences } : {}),
         }),
       });
       if (!res.ok) {
@@ -405,12 +474,23 @@ export default function WeeklyPlan() {
       const data = await res.json();
       setPlan(data);
       toast.success("AI planınızı oluşturdu!");
+      setShowWizard(false);
     } catch (err: any) {
       toast.error(err?.message || "AI plan oluşturulamadı. Lütfen tekrar deneyin.");
     } finally {
       setAiGenerating(false);
     }
   }, [plan, weekStart, startDateStr, fetchPlan]);
+
+  const openWizard = useCallback(() => {
+    setWizardStep(0);
+    setWizardAnswers({});
+    setShowWizard(true);
+  }, []);
+
+  const handleWizardAnswer = useCallback((key: string, value: string) => {
+    setWizardAnswers((prev) => ({ ...prev, [key]: value }));
+  }, []);
 
   // ---------- Draft Item Helpers ----------
 
@@ -506,7 +586,7 @@ export default function WeeklyPlan() {
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <button
-              onClick={handleAIGeneratePlan}
+              onClick={openWizard}
               disabled={aiGenerating}
               className="px-6 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-500 to-pink-500 text-white shadow-[0_4px_15px_rgba(255,42,133,0.4)] hover:shadow-[0_6px_20px_rgba(255,42,133,0.5)] transition-all flex items-center gap-2 disabled:opacity-50"
             >
@@ -550,7 +630,7 @@ export default function WeeklyPlan() {
                   {completedCount}/{totalCount} (%{progressPercent})
                 </span>
                 <button
-                  onClick={handleAIGeneratePlan}
+                  onClick={openWizard}
                   disabled={aiGenerating}
                   title="AI ile yeniden oluştur"
                   className="p-2 rounded-xl bg-white/[0.03] border border-white/10 hover:border-amber-400/30 text-white/30 hover:text-amber-400 transition-all disabled:opacity-50"
@@ -722,6 +802,24 @@ export default function WeeklyPlan() {
           </div>
         </motion.div>
       )}
+
+      {/* ---------- AI Wizard ---------- */}
+      <AnimatePresence>
+        {showWizard && (
+          <WizardModal
+            step={wizardStep}
+            answers={wizardAnswers}
+            onAnswer={handleWizardAnswer}
+            onNext={() => setWizardStep((s) => Math.min(s + 1, WIZARD_QUESTIONS.length - 1))}
+            onBack={() => setWizardStep((s) => Math.max(s - 1, 0))}
+            onComplete={() => handleAIGeneratePlan(wizardAnswers)}
+            onClose={() => {
+              if (!aiGenerating) setShowWizard(false);
+            }}
+            generating={aiGenerating}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ---------- Create Plan Dialog ---------- */}
       <AnimatePresence>
@@ -1118,6 +1216,190 @@ function CreatePlanDialog({
             {saving && <Loader2 size={14} className="animate-spin" />}
             Plani Kaydet
           </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ---------- AI Wizard Modal Component ----------
+
+function WizardModal({
+  step,
+  answers,
+  onAnswer,
+  onNext,
+  onBack,
+  onComplete,
+  onClose,
+  generating,
+}: {
+  step: number;
+  answers: Record<string, string>;
+  onAnswer: (key: string, value: string) => void;
+  onNext: () => void;
+  onBack: () => void;
+  onComplete: () => void;
+  onClose: () => void;
+  generating: boolean;
+}) {
+  const question = WIZARD_QUESTIONS[step];
+  const totalSteps = WIZARD_QUESTIONS.length;
+  const isLastStep = step === totalSteps - 1;
+  const currentAnswer = answers[question.id] || "";
+  const currentNote = answers[`${question.id}_note`] || "";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={() => {
+        if (!generating) onClose();
+      }}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg bg-slate-950/95 backdrop-blur-xl border border-pink-500/15 rounded-2xl p-6 shadow-[0_20px_60px_rgba(0,0,0,0.5)]"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500/20 to-pink-500/20 border border-amber-500/20">
+              <Sparkles size={18} className="text-amber-400" />
+            </div>
+            <h3 className="text-lg font-bold text-white/90">AI Plan Sihirbazı</h3>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-white/40 bg-white/[0.05] px-2.5 py-1 rounded-lg">
+              {step + 1}/{totalSteps}
+            </span>
+            <button
+              onClick={onClose}
+              disabled={generating}
+              className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="w-full h-1.5 rounded-full bg-white/[0.08] overflow-hidden mb-6">
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-amber-500 to-pink-500"
+            initial={{ width: 0 }}
+            animate={{ width: `${((step + 1) / totalSteps) * 100}%` }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          />
+        </div>
+
+        {/* Question with Animation */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={step}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2 }}
+          >
+            <p className="text-base font-semibold text-white/90 mb-4">
+              {question.question}
+            </p>
+
+            {/* Radio Options */}
+            <div className="space-y-2 mb-4">
+              {question.options.map((opt) => (
+                <label
+                  key={opt.value}
+                  onClick={() => onAnswer(question.id, opt.label)}
+                  className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+                    currentAnswer === opt.label
+                      ? "bg-pink-500/10 border-pink-500/30"
+                      : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.06] hover:border-white/15"
+                  }`}
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                      currentAnswer === opt.label
+                        ? "border-pink-400 bg-pink-500"
+                        : "border-white/30"
+                    }`}
+                  >
+                    {currentAnswer === opt.label && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                    )}
+                  </div>
+                  <span
+                    className={`text-sm ${
+                      currentAnswer === opt.label ? "text-white" : "text-white/70"
+                    }`}
+                  >
+                    {opt.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            {/* Optional Note Textarea */}
+            <div>
+              <label className="block text-xs font-medium text-white/40 mb-1.5">
+                Eklemek istediğin bir şey var mı? (opsiyonel)
+              </label>
+              <textarea
+                value={currentNote}
+                onChange={(e) => onAnswer(`${question.id}_note`, e.target.value)}
+                placeholder="Serbest metin..."
+                rows={2}
+                className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white/90 placeholder:text-white/30 focus:outline-none focus:border-pink-500/30 transition-all resize-none"
+              />
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Navigation Buttons */}
+        <div className="flex items-center justify-between mt-6">
+          {step > 0 ? (
+            <button
+              onClick={onBack}
+              disabled={generating}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold text-white/50 bg-white/[0.05] border border-white/10 hover:text-white/70 hover:bg-white/[0.08] transition-all disabled:opacity-30"
+            >
+              <ChevronLeft size={16} />
+              Geri
+            </button>
+          ) : (
+            <div />
+          )}
+
+          {isLastStep ? (
+            <button
+              onClick={onComplete}
+              disabled={!currentAnswer || generating}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-amber-500 to-pink-500 text-white shadow-[0_4px_15px_rgba(255,42,133,0.4)] hover:shadow-[0_6px_20px_rgba(255,42,133,0.5)] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              {generating ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Sparkles size={16} />
+              )}
+              {generating ? "Oluşturuluyor..." : "Plan Oluştur"}
+            </button>
+          ) : (
+            <button
+              onClick={onNext}
+              disabled={!currentAnswer}
+              className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30 hover:bg-pink-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              Devam
+              <ChevronRight size={16} />
+            </button>
+          )}
         </div>
       </motion.div>
     </motion.div>
