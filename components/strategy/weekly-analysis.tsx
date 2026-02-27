@@ -170,12 +170,12 @@ export default function WeeklyAnalysis() {
         `/api/weekly-analysis?weekStartDate=${toISODate(weekStart)}`
       );
       if (!res.ok) {
-        throw new Error("Analiz verileri alinamadi");
+        throw new Error("Analiz verileri alınamadı");
       }
       const data = await res.json();
       setAnalysis(data || null);
     } catch (err: any) {
-      setError(err.message || "Bir hata olustu");
+      setError(err.message || "Bir hata oluştu");
       setAnalysis(null);
     } finally {
       setLoading(false);
@@ -202,12 +202,12 @@ export default function WeeklyAnalysis() {
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => null);
-        throw new Error(errData?.error || "Analiz olusturulamadi");
+        throw new Error(errData?.error || "Analiz oluşturulamadı");
       }
       const data = await res.json();
       setAnalysis(data);
     } catch (err: any) {
-      setError(err.message || "Bir hata olustu");
+      setError(err.message || "Bir hata oluştu");
     } finally {
       setGenerating(false);
     }
@@ -247,7 +247,7 @@ export default function WeeklyAnalysis() {
           <button
             onClick={goToPreviousWeek}
             className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-pink-500/15 transition-colors"
-            aria-label="Onceki hafta"
+            aria-label="Önceki hafta"
           >
             <ChevronLeft size={18} className="text-white/70" />
           </button>
@@ -280,7 +280,7 @@ export default function WeeklyAnalysis() {
       {loading && (
         <div className="flex items-center justify-center py-16">
           <Loader2 className="animate-spin text-pink-400" size={32} />
-          <span className="ml-3 text-white/50 text-sm">Yukleniyor...</span>
+          <span className="ml-3 text-white/50 text-sm">Yükleniyor...</span>
         </div>
       )}
 
@@ -304,11 +304,11 @@ export default function WeeklyAnalysis() {
             <Bot size={28} className="text-pink-400" />
           </div>
           <h3 className="text-white/90 font-semibold text-lg mb-2">
-            Haftalik Analiz Bulunamadi
+            Haftalık Analiz Bulunamadı
           </h3>
           <p className="text-white/50 text-sm mb-6 max-w-md">
-            Bu hafta icin henuz bir analiz olusturulmamis. AI destekli haftalik
-            analizinizi olusturmak icin asagidaki butona tiklayin.
+            Bu hafta için henüz bir analiz oluşturulmamış. AI destekli haftalık
+            analizinizi oluşturmak için aşağıdaki butona tıklayın.
           </p>
           <button
             onClick={generateAnalysis}
@@ -318,12 +318,12 @@ export default function WeeklyAnalysis() {
             {generating ? (
               <>
                 <Loader2 className="animate-spin" size={18} />
-                <span>Analiz Olusturuluyor...</span>
+                <span>Analiz Oluşturuluyor...</span>
               </>
             ) : (
               <>
                 <Sparkles size={18} />
-                <span>Analiz Olustur</span>
+                <span>Analiz Oluştur</span>
               </>
             )}
           </button>
@@ -343,12 +343,12 @@ export default function WeeklyAnalysis() {
               {generating ? (
                 <>
                   <Loader2 className="animate-spin" size={14} />
-                  <span>Yeniden olusturuluyor...</span>
+                  <span>Yeniden oluşturuluyor...</span>
                 </>
               ) : (
                 <>
                   <Sparkles size={14} className="text-amber-400" />
-                  <span>Yeniden Olustur</span>
+                  <span>Yeniden Oluştur</span>
                 </>
               )}
             </button>
@@ -365,19 +365,19 @@ export default function WeeklyAnalysis() {
             <StatCard
               icon={Clock}
               value={formatMinutes(analysis.totalStudyMinutes)}
-              label="Toplam Calisma"
+              label="Toplam Çalışma"
               iconColor="text-amber-400"
             />
             <StatCard
               icon={BookOpen}
               value={analysis.totalQuestions}
-              label="Cozulen Soru"
+              label="Çözülen Soru"
               iconColor="text-indigo-400"
             />
             <StatCard
               icon={averageNetChange >= 0 ? TrendingUp : TrendingDown}
               value={`${averageNetChange >= 0 ? "+" : ""}${averageNetChange.toFixed(1)}`}
-              label="Net Degisim"
+              label="Net Değişim"
               iconColor={
                 averageNetChange >= 0 ? "text-emerald-400" : "text-red-400"
               }
@@ -389,7 +389,7 @@ export default function WeeklyAnalysis() {
             <GlassCard className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-white/50 text-xs font-bold uppercase tracking-wider">
-                  Plan Ilerleme
+                  Plan İlerleme
                 </span>
                 <span className="text-white/70 text-sm font-semibold">
                   {analysis.completedItems} / {analysis.plannedItems}
@@ -455,7 +455,7 @@ export default function WeeklyAnalysis() {
             analysis.netScoreChanges.length > 0 && (
               <GlassCard className="p-4 sm:p-6">
                 <h3 className="text-white/50 font-bold uppercase tracking-wider text-xs mb-4">
-                  Net Degisimleri
+                  Net Değişimleri
                 </h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -465,13 +465,13 @@ export default function WeeklyAnalysis() {
                           Ders
                         </th>
                         <th className="text-center text-white/50 text-xs font-semibold uppercase tracking-wider pb-3 px-4">
-                          Onceki Net
+                          Önceki Net
                         </th>
                         <th className="text-center text-white/50 text-xs font-semibold uppercase tracking-wider pb-3 px-4">
-                          Guncel Net
+                          Güncel Net
                         </th>
                         <th className="text-right text-white/50 text-xs font-semibold uppercase tracking-wider pb-3 pl-4">
-                          Degisim
+                          Değişim
                         </th>
                       </tr>
                     </thead>
@@ -543,7 +543,7 @@ export default function WeeklyAnalysis() {
               <div className="flex items-center gap-2 mb-4">
                 <Sparkles size={18} className="text-amber-400" />
                 <h3 className="text-white/50 font-bold uppercase tracking-wider text-xs">
-                  Oneriler
+                  Öneriler
                 </h3>
               </div>
               <div className="prose prose-invert prose-sm max-w-none prose-headings:text-white/90 prose-p:text-white/70 prose-strong:text-white/90 prose-ul:text-white/70 prose-li:text-white/70 prose-a:text-pink-400">

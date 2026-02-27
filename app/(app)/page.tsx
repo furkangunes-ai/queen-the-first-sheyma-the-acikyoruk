@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { clsx } from 'clsx';
-import { CheckCircle2, Circle, TrendingUp, Calendar, AlertCircle, Loader2, GraduationCap, Heart, CheckCircle, CheckSquare, ChevronRight } from 'lucide-react';
+import { CheckCircle2, Circle, TrendingUp, Calendar, AlertCircle, Loader2, GraduationCap, Heart, CheckCircle, CheckSquare, ChevronRight, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'motion/react';
@@ -50,6 +50,8 @@ export default function DashboardPage() {
   const [exams, setExams] = useState<DashboardExam[]>([]);
   const [todayCheckIn, setTodayCheckIn] = useState<DashboardCheckIn | null>(null);
   const [loading, setLoading] = useState(true);
+  const [aiInsight, setAiInsight] = useState<string | null>(null);
+  const [aiInsightLoading, setAiInsightLoading] = useState(false);
 
   const userName = session?.user?.name || 'Kullanıcı';
   const isAdmin = (session?.user as any)?.role === 'admin';
@@ -93,6 +95,28 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
+
+  // Fetch AI daily insight (only for AI-enabled users — silently fails otherwise)
+  useEffect(() => {
+    const fetchAIInsight = async () => {
+      try {
+        setAiInsightLoading(true);
+        const res = await fetch('/api/ai/dashboard-insight');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.content) {
+            setAiInsight(data.content);
+          }
+        }
+        // 403 = AI not enabled — silently ignore
+      } catch {
+        // Silently ignore — don't break dashboard
+      } finally {
+        setAiInsightLoading(false);
+      }
+    };
+    fetchAIInsight();
+  }, []);
 
   const pendingTasks = tasks.filter(t => !t.completed);
   const completedTasks = tasks.filter(t => t.completed);
@@ -202,6 +226,33 @@ export default function DashboardPage() {
             )}
           </div>
         </motion.div>
+
+        {/* AI Daily Insight */}
+        {(aiInsight || aiInsightLoading) && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="glass-panel p-5 lg:p-6 relative overflow-hidden"
+          >
+            <div className="absolute top-0 left-0 w-48 h-48 bg-amber-500/10 rounded-full blur-[50px] pointer-events-none" />
+            <div className="flex items-center gap-2 mb-3 relative z-10">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-400 to-pink-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                <Sparkles size={14} className="text-white" />
+              </div>
+              <span className="text-[10px] text-white/40 uppercase tracking-[0.15em] font-bold">Günün Önerisi</span>
+            </div>
+            {aiInsightLoading ? (
+              <div className="flex items-center gap-2 py-2 relative z-10">
+                <div className="w-2 h-2 rounded-full bg-amber-400/60 animate-pulse" />
+                <div className="w-2 h-2 rounded-full bg-amber-400/40 animate-pulse [animation-delay:0.2s]" />
+                <div className="w-2 h-2 rounded-full bg-amber-400/20 animate-pulse [animation-delay:0.4s]" />
+              </div>
+            ) : (
+              <p className="text-sm text-white/65 leading-relaxed relative z-10">{aiInsight}</p>
+            )}
+          </motion.div>
+        )}
 
         {/* Last Exam Result */}
         {lastExam && (

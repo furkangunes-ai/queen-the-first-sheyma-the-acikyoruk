@@ -1,15 +1,15 @@
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getOpenAI, AI_MODEL, SYSTEM_PROMPT_ANALYSIS } from "@/lib/openai";
+import { checkAIAccess, isAIGuardError } from "@/lib/ai-guard";
 import { NextRequest, NextResponse } from "next/server";
+import { format } from "date-fns";
+import { tr } from "date-fns/locale";
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const userId = (session.user as any).id;
+    const guard = await checkAIAccess();
+    if (isAIGuardError(guard)) return guard;
+    const { userId } = guard;
 
     const { weekStartDate, weekEndDate } = await request.json();
     if (!weekStartDate || !weekEndDate) {
@@ -167,6 +167,27 @@ Toplam çalışma: ${totalStudyMinutes} dakika, ${totalQuestions} soru
         aiRecommendations,
       },
     });
+
+    // 7. Save as AIInsight for future context
+    if (aiSummary && !aiSummary.startsWith("AI analizi şu an")) {
+      try {
+        await prisma.aIInsight.create({
+          data: {
+            userId,
+            type: "weekly_analysis",
+            title: `Hafta ${format(start, "d MMM", { locale: tr })} - ${format(end, "d MMM", { locale: tr })} Analizi`,
+            content: aiRecommendations
+              ? `${aiSummary}\n\n${aiRecommendations}`
+              : aiSummary,
+            context: { studySummary, netScoreChanges, plannedItems, completedItems },
+            metadata: { weekStart: weekStartDate, weekEnd: weekEndDate },
+          },
+        });
+      } catch (insightError) {
+        // Insight kaydetme hatası ana akışı bozmasın
+        console.error("Error saving AI insight:", insightError);
+      }
+    }
 
     return NextResponse.json(analysis);
   } catch (error) {

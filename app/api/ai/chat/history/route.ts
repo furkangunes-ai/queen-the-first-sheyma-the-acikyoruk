@@ -1,14 +1,12 @@
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { checkAIAccess, isAIGuardError } from "@/lib/ai-guard";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const userId = (session.user as any).id;
+    const guard = await checkAIAccess();
+    if (isAIGuardError(guard)) return guard;
+    const { userId } = guard;
 
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "50");
@@ -30,11 +28,9 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE() {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const userId = (session.user as any).id;
+    const guard = await checkAIAccess();
+    if (isAIGuardError(guard)) return guard;
+    const { userId } = guard;
 
     await prisma.aIChatMessage.deleteMany({ where: { userId } });
     return NextResponse.json({ success: true });

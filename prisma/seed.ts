@@ -20,12 +20,13 @@ async function main() {
 
   const seyda = await prisma.user.upsert({
     where: { username: "seyda" },
-    update: {},
+    update: { aiEnabled: true },
     create: {
       username: "seyda",
       displayName: "Şeyda A.",
       role: "user",
       passwordHash: await bcrypt.hash("seyda123", 10),
+      aiEnabled: true,
     },
   });
 

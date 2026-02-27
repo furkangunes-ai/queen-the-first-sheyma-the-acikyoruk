@@ -188,7 +188,7 @@ export default function AIAssistant() {
         if (last && last.role === "assistant" && !last.content) {
           updated[updated.length - 1] = {
             ...last,
-            content: "Bir hata olustu. Lutfen tekrar deneyin.",
+            content: "Bir hata oluştu. Lütfen tekrar deneyin.",
           };
         }
         return updated;
@@ -201,7 +201,7 @@ export default function AIAssistant() {
   // ---- Clear history -------------------------------------------------------
 
   const handleClearHistory = useCallback(async () => {
-    if (!window.confirm("Sohbet gecmisini silmek istediginize emin misiniz?")) {
+    if (!window.confirm("Sohbet geçmişini silmek istediğinize emin misiniz?")) {
       return;
     }
     try {
@@ -265,7 +265,7 @@ export default function AIAssistant() {
               YKS Asistan
             </h2>
             <p className="text-xs text-white/50">
-              Yapay zeka destekli calisma arkadasi
+              Yapay zeka destekli çalışma arkadaşı
             </p>
           </div>
         </div>
@@ -276,7 +276,7 @@ export default function AIAssistant() {
             className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-white/50 transition-colors hover:bg-white/5 hover:text-pink-400"
           >
             <Trash2 className="h-3.5 w-3.5" />
-            Gecmisi Temizle
+            Geçmişi Temizle
           </button>
         )}
       </div>
@@ -304,8 +304,8 @@ export default function AIAssistant() {
               transition={{ duration: 0.4, delay: 0.15 }}
               className="max-w-md text-sm leading-relaxed text-white/60"
             >
-              Merhaba! Ben YKS hazirlik asistanin. Calisma planin, deneme
-              sonuclarin ve konu durumun hakkinda konusabiliriz. Ne sormak
+              Merhaba! Ben YKS hazırlık asistanın. Çalışma planın, deneme
+              sonuçların ve konu durumun hakkında konuşabiliriz. Ne sormak
               istersin?
             </motion.p>
           </div>
@@ -396,7 +396,7 @@ export default function AIAssistant() {
                   ? "animate-pulse bg-red-500/20 text-red-400 ring-2 ring-red-500/40"
                   : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
               } disabled:pointer-events-none disabled:opacity-40`}
-              aria-label={isListening ? "Dinlemeyi durdur" : "Sesli giris"}
+              aria-label={isListening ? "Dinlemeyi durdur" : "Sesli giriş"}
             >
               {isListening ? (
                 <MicOff className="h-4.5 w-4.5" />
@@ -417,7 +417,7 @@ export default function AIAssistant() {
                 autoResizeTextarea();
               }}
               onKeyDown={handleKeyDown}
-              placeholder="Mesajinizi yazin..."
+              placeholder="Mesajınızı yazın..."
               disabled={isStreaming}
               rows={1}
               className="w-full resize-none rounded-xl border border-pink-500/15 bg-white/5 px-4 py-2.5 text-sm text-white/90 placeholder-white/30 backdrop-blur transition-colors focus:border-pink-500/30 focus:outline-none focus:ring-1 focus:ring-pink-500/20 disabled:opacity-50"
@@ -431,7 +431,7 @@ export default function AIAssistant() {
             onClick={handleSend}
             disabled={!input.trim() || isStreaming}
             className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 text-white shadow-lg shadow-pink-500/20 transition-all hover:shadow-pink-500/30 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
-            aria-label="Mesaj gonder"
+            aria-label="Mesaj gönder"
           >
             {isStreaming ? (
               <Loader2 className="h-4.5 w-4.5 animate-spin" />
@@ -450,7 +450,7 @@ export default function AIAssistant() {
               exit={{ opacity: 0, height: 0 }}
               className="mt-2 text-center text-xs text-red-400"
             >
-              Dinleniyor... Konusmanizi bitirdiginde otomatik durur.
+              Dinleniyor... Konuşmanızı bitirdiğinde otomatik durur.
             </motion.p>
           )}
         </AnimatePresence>

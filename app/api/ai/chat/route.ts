@@ -1,15 +1,14 @@
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getOpenAI, AI_MODEL, SYSTEM_PROMPT_CHAT } from "@/lib/openai";
+import { checkAIAccess, isAIGuardError } from "@/lib/ai-guard";
 import { NextRequest } from "next/server";
+import { format } from "date-fns";
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
-    }
-    const userId = (session.user as any).id;
+    const guard = await checkAIAccess();
+    if (isAIGuardError(guard)) return guard;
+    const { userId } = guard;
 
     const { message, metadata } = await request.json();
     if (!message) {
@@ -29,11 +28,12 @@ export async function POST(request: NextRequest) {
     });
     history.reverse();
 
-    // 3. Build user context summary
-    const [knowledgeSummary, recentExams, currentPlan] = await Promise.all([
+    // 3. Build user context summary (parallel queries for efficiency)
+    const [knowledgeSummary, recentExams, currentPlan, recentInsights] = await Promise.all([
       getKnowledgeSummary(userId),
       getRecentExamSummary(userId),
       getCurrentPlanSummary(userId),
+      getRecentInsightsSummary(userId),
     ]);
 
     const contextBlock = `
@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
 ${knowledgeSummary}
 ${recentExams}
 ${currentPlan}
+${recentInsights}
 `.trim();
 
     // 4. Stream response from OpenAI
@@ -157,4 +158,26 @@ async function getCurrentPlanSummary(userId: string): Promise<string> {
 
   const completed = plan.items.filter((i) => i.completed).length;
   return `Haftalık plan: "${plan.title}" — ${completed}/${plan.items.length} tamamlandı`;
+}
+
+async function getRecentInsightsSummary(userId: string): Promise<string> {
+  const insights = await prisma.aIInsight.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: 3,
+    select: { type: true, title: true, content: true, createdAt: true },
+  });
+
+  if (insights.length === 0) return "";
+
+  // Her insight'tan sadece ilk 80 kelime — token tasarrufu
+  return `Son AI Analizleri:\n${insights
+    .map(
+      (i) =>
+        `- ${i.title} (${format(i.createdAt, "d MMM")}): ${i.content
+          .split(" ")
+          .slice(0, 80)
+          .join(" ")}...`
+    )
+    .join("\n")}`;
 }

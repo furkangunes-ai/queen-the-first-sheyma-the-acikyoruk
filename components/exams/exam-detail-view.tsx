@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Paper, Handwriting, Tape } from '@/components/skeuomorphic';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Camera, BookOpen, PieChart as PieChartIcon, BarChart3, Image, Trash2, Pencil, Check, X, Loader2, ListOrdered, Target, CheckCircle, AlertTriangle, RefreshCw, Filter } from 'lucide-react';
+import { ArrowLeft, Camera, BookOpen, PieChart as PieChartIcon, BarChart3, Image, Trash2, Pencil, Check, X, Loader2, ListOrdered, Target, CheckCircle, AlertTriangle, RefreshCw, Filter, Sparkles, Bot } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -771,6 +772,36 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
   // Question detail modal
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null);
 
+  // AI Analysis state
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
+  const [aiAnalysisCached, setAiAnalysisCached] = useState(false);
+
+  const handleAIAnalysis = async () => {
+    setAiAnalysisLoading(true);
+    try {
+      const res = await fetch('/api/ai/exam-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ examId }),
+      });
+      if (!res.ok) {
+        if (res.status === 403) {
+          toast.error('AI erişiminiz aktif değil');
+          return;
+        }
+        throw new Error('AI analizi oluşturulamadı');
+      }
+      const data = await res.json();
+      setAiAnalysis(data.analysis);
+      setAiAnalysisCached(data.cached);
+    } catch {
+      toast.error('AI analizi oluşturulurken hata oluştu');
+    } finally {
+      setAiAnalysisLoading(false);
+    }
+  };
+
   const handleDelete = async () => {
     setDeleting(true);
     try {
@@ -1049,7 +1080,52 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
               >
-                {activeTab === 'summary' && <SummaryTab exam={exam} />}
+                {activeTab === 'summary' && (
+                  <>
+                    <SummaryTab exam={exam} />
+                    {/* AI Analysis Section */}
+                    <div className="mt-8">
+                      {aiAnalysis ? (
+                        <div className="bg-white/5 backdrop-blur-md border border-pink-500/15 rounded-2xl p-5 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Bot size={18} className="text-pink-400" />
+                              <h3 className="text-sm font-bold text-white/60 uppercase tracking-wider">
+                                AI Analizi
+                              </h3>
+                              {aiAnalysisCached && (
+                                <span className="text-[10px] text-white/30 bg-white/5 px-2 py-0.5 rounded-lg">
+                                  Kayıtlı
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="prose prose-invert prose-sm max-w-none prose-headings:text-white/90 prose-p:text-white/70 prose-strong:text-white/90 prose-ul:text-white/70 prose-li:text-white/70 prose-a:text-pink-400">
+                            <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={handleAIAnalysis}
+                          disabled={aiAnalysisLoading}
+                          className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-pink-500/20 hover:from-amber-500/30 hover:to-pink-500/30 border border-pink-500/20 text-white/70 hover:text-white font-medium text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          {aiAnalysisLoading ? (
+                            <>
+                              <Loader2 size={16} className="animate-spin" />
+                              AI Analiz Oluşturuluyor...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles size={16} className="text-amber-400" />
+                              AI ile Analiz Et
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
                 {activeTab === 'questions' && (
                   <QuestionsTab
                     exam={exam}

@@ -35,6 +35,8 @@ model User {
   weeklyPlans    WeeklyPlan[]
   weeklyAnalyses WeeklyAnalysis[]
   aiChatMessages AIChatMessage[]
+  aiInsights     AIInsight[]
+  aiEnabled      Boolean  @default(false)
   speedReadingSessions SpeedReadingSession[]
   speedReadingExercises SpeedReadingExercise[]
 }
@@ -498,5 +500,23 @@ model SpeedReadingExercise {
 
   @@index([userId])
   @@index([exerciseType])
+  @@index([createdAt])
+}
+
+// ==================== AI INSIGHT'LAR ====================
+
+model AIInsight {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // "weekly_analysis" | "exam_analysis" | "plan_generation" | "dashboard"
+  title     String   // Kısa başlık: "Hafta 8 Analizi", "TYT Deneme 3 Yorumu"
+  content   String   // Markdown AI çıktısı
+  context   Json?    // AI'a gönderilen context verisi (tekrar işlenebilir)
+  metadata  Json?    // { examId?, weekStart?, planId?, tokens? }
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([type])
   @@index([createdAt])
 }

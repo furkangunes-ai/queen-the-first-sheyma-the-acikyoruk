@@ -14,6 +14,7 @@ import {
   X,
   CalendarDays,
   BookOpen,
+  Sparkles,
 } from "lucide-react";
 import { format, startOfWeek, addDays, addWeeks } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -97,6 +98,7 @@ export default function WeeklyPlan() {
   const [addItemDay, setAddItemDay] = useState(0);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   // Create plan form
   const [createTitle, setCreateTitle] = useState("");
@@ -286,13 +288,13 @@ export default function WeeklyPlan() {
         }),
       });
       if (!res.ok) throw new Error();
-      toast.success("Plan olusturuldu");
+      toast.success("Plan oluşturuldu");
       setShowCreateDialog(false);
       setDraftItems([]);
       setCreateTitle("");
       fetchPlan();
     } catch {
-      toast.error("Plan olusturulamadi");
+      toast.error("Plan oluşturulamadı");
     } finally {
       setSaving(false);
     }
@@ -346,7 +348,7 @@ export default function WeeklyPlan() {
 
   const handleDeletePlan = useCallback(async () => {
     if (!plan) return;
-    if (!window.confirm("Bu plani silmek istediginize emin misiniz?")) return;
+    if (!window.confirm("Bu planı silmek istediğinize emin misiniz?")) return;
     setDeleting(true);
     try {
       const res = await fetch(`/api/weekly-plans/${plan.id}`, {
@@ -361,6 +363,54 @@ export default function WeeklyPlan() {
       setDeleting(false);
     }
   }, [plan]);
+
+  const handleAIGeneratePlan = useCallback(async () => {
+    if (plan) {
+      if (!window.confirm("Mevcut planı silip AI ile yeni plan oluşturulacak. Devam etmek istiyor musunuz?")) {
+        return;
+      }
+      // Delete existing plan first
+      try {
+        await fetch(`/api/weekly-plans/${plan.id}`, { method: "DELETE" });
+        setPlan(null);
+      } catch {
+        toast.error("Mevcut plan silinemedi");
+        return;
+      }
+    }
+
+    setAiGenerating(true);
+    try {
+      const endDate = format(addDays(weekStart, 6), "yyyy-MM-dd");
+      const res = await fetch("/api/ai/generate-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          weekStartDate: startDateStr,
+          weekEndDate: endDate,
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        if (res.status === 403) {
+          toast.error("AI erişiminiz aktif değil");
+        } else if (res.status === 409) {
+          toast.error(errData?.error || "Bu hafta için zaten bir plan mevcut");
+          fetchPlan();
+        } else {
+          throw new Error(errData?.error || "Plan oluşturulamadı");
+        }
+        return;
+      }
+      const data = await res.json();
+      setPlan(data);
+      toast.success("AI planınızı oluşturdu!");
+    } catch (err: any) {
+      toast.error(err?.message || "AI plan oluşturulamadı. Lütfen tekrar deneyin.");
+    } finally {
+      setAiGenerating(false);
+    }
+  }, [plan, weekStart, startDateStr, fetchPlan]);
 
   // ---------- Draft Item Helpers ----------
 
@@ -452,18 +502,33 @@ export default function WeeklyPlan() {
             className="mx-auto text-white/20 mb-4"
           />
           <p className="text-white/50 mb-6">
-            Bu hafta icin henuz bir plan olusturulmanis.
+            Bu hafta için henüz bir plan oluşturulmamış.
           </p>
-          <button
-            onClick={() => {
-              setCreateTitle(defaultTitle);
-              setDraftItems([]);
-              setShowCreateDialog(true);
-            }}
-            className="px-6 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-[0_4px_15px_rgba(255,42,133,0.4)] hover:shadow-[0_6px_20px_rgba(255,42,133,0.5)] transition-all"
-          >
-            Yeni Plan Olustur
-          </button>
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <button
+              onClick={handleAIGeneratePlan}
+              disabled={aiGenerating}
+              className="px-6 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-500 to-pink-500 text-white shadow-[0_4px_15px_rgba(255,42,133,0.4)] hover:shadow-[0_6px_20px_rgba(255,42,133,0.5)] transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+              {aiGenerating ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Sparkles size={16} />
+              )}
+              {aiGenerating ? "AI Plan Oluşturuluyor..." : "AI ile Plan Oluştur"}
+            </button>
+            <span className="text-white/30 text-xs">veya</span>
+            <button
+              onClick={() => {
+                setCreateTitle(defaultTitle);
+                setDraftItems([]);
+                setShowCreateDialog(true);
+              }}
+              className="px-6 py-3 rounded-xl font-bold text-sm bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white transition-all"
+            >
+              Manuel Plan Oluştur
+            </button>
+          </div>
         </motion.div>
       )}
 
@@ -484,6 +549,18 @@ export default function WeeklyPlan() {
                 <span className="text-sm font-bold text-pink-400">
                   {completedCount}/{totalCount} (%{progressPercent})
                 </span>
+                <button
+                  onClick={handleAIGeneratePlan}
+                  disabled={aiGenerating}
+                  title="AI ile yeniden oluştur"
+                  className="p-2 rounded-xl bg-white/[0.03] border border-white/10 hover:border-amber-400/30 text-white/30 hover:text-amber-400 transition-all disabled:opacity-50"
+                >
+                  {aiGenerating ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Sparkles size={16} />
+                  )}
+                </button>
                 <button
                   onClick={handleDeletePlan}
                   disabled={deleting}
@@ -506,6 +583,13 @@ export default function WeeklyPlan() {
                 transition={{ duration: 0.5, ease: "easeOut" }}
               />
             </div>
+            {/* AI Explanation */}
+            {plan.notes && (
+              <div className="mt-3 flex items-start gap-2 text-xs text-white/50 bg-white/[0.03] rounded-xl p-3 border border-white/5">
+                <Sparkles size={12} className="text-amber-400/60 mt-0.5 flex-shrink-0" />
+                <p className="leading-relaxed">{plan.notes}</p>
+              </div>
+            )}
           </div>
 
           {/* 7-Day Grid */}
@@ -861,7 +945,7 @@ function CreatePlanDialog({
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-lg font-bold text-white/90">
-            Yeni Plan Olustur
+            Yeni Plan Oluştur
           </h3>
           <button
             onClick={onClose}
