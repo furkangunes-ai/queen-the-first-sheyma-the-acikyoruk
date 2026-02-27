@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { getTurkeyDateString } from "@/lib/utils";
 
 /**
  * GET /api/analytics/topic-progress
@@ -214,7 +215,7 @@ export async function GET(request: NextRequest) {
       entry.totalEmpty += ds.emptyCount;
       entry.totalDuration += ds.duration || 0;
 
-      const dateStr = new Date(ds.date).toISOString().split("T")[0];
+      const dateStr = getTurkeyDateString(new Date(ds.date));
       entry.lastStudied = dateStr;
 
       // Add to history
@@ -240,7 +241,7 @@ export async function GET(request: NextRequest) {
         tr.subject.examType.name
       );
       entry.totalReviews++;
-      const dateStr = new Date(tr.date).toISOString().split("T")[0];
+      const dateStr = getTurkeyDateString(new Date(tr.date));
       entry.lastReview = dateStr;
     }
 
@@ -265,7 +266,7 @@ export async function GET(request: NextRequest) {
       const examMap = examWrongsByTopicAndExam.get(ew.topicId)!;
       if (!examMap.has(examKey)) {
         examMap.set(examKey, {
-          date: new Date(ew.exam.date).toISOString().split("T")[0],
+          date: getTurkeyDateString(new Date(ew.exam.date)),
           examTitle: ew.exam.title || "Deneme",
           count: 0,
         });

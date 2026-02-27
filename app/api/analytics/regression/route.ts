@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { getTurkeyDateString } from "@/lib/utils";
 
 // ─── OLS Linear Regression (pure TypeScript) ───────────────────────
 
@@ -110,7 +111,7 @@ function addDays(date: Date, days: number): Date {
 }
 
 function formatDate(date: Date): string {
-  return date.toISOString().split("T")[0];
+  return getTurkeyDateString(date);
 }
 
 export async function GET(request: NextRequest) {

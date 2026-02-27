@@ -80,7 +80,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { title, date, notes } = body;
+    const { title, date, notes, examTypeId, examCategory } = body;
 
     const exam = await prisma.exam.update({
       where: { id },
@@ -88,6 +88,8 @@ export async function PATCH(
         ...(title !== undefined && { title }),
         ...(date !== undefined && { date: new Date(date) }),
         ...(notes !== undefined && { notes }),
+        ...(examTypeId !== undefined && { examTypeId }),
+        ...(examCategory !== undefined && { examCategory: examCategory || null }),
       },
       include: {
         examType: true,

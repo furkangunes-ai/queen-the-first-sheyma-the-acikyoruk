@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     const userId = (session.user as any).id;
 
     const body = await request.json();
-    const { title, examTypeId, date, notes } = body;
+    const { title, examTypeId, date, notes, examCategory } = body;
 
     if (!title || !examTypeId) {
       return NextResponse.json(
@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
         date: date ? new Date(date) : new Date(),
         notes,
         userId,
+        ...(examCategory && { examCategory }),
       },
       include: {
         examType: true,

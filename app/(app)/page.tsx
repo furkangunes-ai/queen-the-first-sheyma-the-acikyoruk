@@ -4,7 +4,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { clsx } from 'clsx';
-import { CheckCircle2, Circle, TrendingUp, Calendar, AlertCircle, Loader2, GraduationCap, Heart, CheckCircle, CheckSquare, ChevronRight, Sparkles, Flame } from 'lucide-react';
+import { getTurkeyDateString } from '@/lib/utils';
+import { CheckCircle2, Circle, TrendingUp, Calendar, AlertCircle, Loader2, GraduationCap, Heart, CheckCircle, CheckSquare, ChevronRight, Sparkles, Flame, CalendarDays, Clock, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'motion/react';
@@ -43,6 +44,31 @@ interface DashboardCheckIn {
   date: string;
 }
 
+interface WeeklyPlanItem {
+  id: string;
+  dayOfWeek: number;
+  duration: number | null;
+  questionCount: number | null;
+  completed: boolean;
+  notes: string | null;
+  sortOrder: number;
+  subject: {
+    id: string;
+    name: string;
+    examType: { id: string; name: string };
+  };
+  topic: { id: string; name: string } | null;
+}
+
+interface WeeklyPlan {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  notes: string | null;
+  items: WeeklyPlanItem[];
+}
+
 export default function DashboardPage() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -50,9 +76,11 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState<DashboardTask[]>([]);
   const [exams, setExams] = useState<DashboardExam[]>([]);
   const [todayCheckIn, setTodayCheckIn] = useState<DashboardCheckIn | null>(null);
+  const [weeklyPlan, setWeeklyPlan] = useState<WeeklyPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [aiInsightLoading, setAiInsightLoading] = useState(false);
+  const [upcomingExpanded, setUpcomingExpanded] = useState(false);
 
   const userName = session?.user?.name || 'Kullanıcı';
   const isAdmin = (session?.user as any)?.role === 'admin';
@@ -60,10 +88,11 @@ export default function DashboardPage() {
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      const [tasksRes, examsRes, checkInRes] = await Promise.all([
+      const [tasksRes, examsRes, checkInRes, planRes] = await Promise.all([
         fetch('/api/tasks'),
         fetch('/api/exams?limit=5'),
         fetch('/api/check-ins?limit=1'),
+        fetch('/api/weekly-plans?current=true'),
       ]);
 
       if (tasksRes.ok) {
@@ -78,12 +107,16 @@ export default function DashboardPage() {
         const checkInsData = await checkInRes.json();
         if (checkInsData.length > 0) {
           const latest = checkInsData[0];
-          const today = format(new Date(), 'yyyy-MM-dd');
+          const today = getTurkeyDateString();
           const checkInDate = format(new Date(latest.date), 'yyyy-MM-dd');
           if (checkInDate === today) {
             setTodayCheckIn(latest);
           }
         }
+      }
+      if (planRes.ok) {
+        const planData = await planRes.json();
+        setWeeklyPlan(planData);
       }
     } catch (err) {
       console.error('Dashboard verileri yüklenirken hata:', err);
@@ -133,6 +166,70 @@ export default function DashboardPage() {
       sum + exam.subjectResults.reduce((s, sr) => s + sr.netScore, 0), 0
     ) / exams.length).toFixed(1)
     : '0';
+
+  // ─── Weekly Plan: Today & Upcoming ───
+  const DAY_NAMES_TR = ['Pazartesi', 'Sal\u0131', '\u00c7ar\u015famba', 'Per\u015fembe', 'Cuma', 'Cumartesi', 'Pazar'];
+
+  // JS getDay: 0=Sunday..6=Saturday => convert to 0=Monday..6=Sunday
+  const todayDayOfWeek = (new Date().getDay() + 6) % 7;
+  const todayPlanItems = weeklyPlan?.items?.filter(i => i.dayOfWeek === todayDayOfWeek) || [];
+  const todayPlanCompleted = todayPlanItems.filter(i => i.completed).length;
+
+  // Upcoming: next 3 days (wrap around week)
+  const upcomingDays: { dayOfWeek: number; dayName: string; items: WeeklyPlanItem[] }[] = [];
+  for (let offset = 1; offset <= 3; offset++) {
+    const dow = (todayDayOfWeek + offset) % 7;
+    const items = weeklyPlan?.items?.filter(i => i.dayOfWeek === dow) || [];
+    if (items.length > 0) {
+      upcomingDays.push({ dayOfWeek: dow, dayName: DAY_NAMES_TR[dow], items });
+    }
+  }
+
+  const handleTogglePlanItem = async (itemId: string, currentCompleted: boolean) => {
+    if (!weeklyPlan) return;
+    // Optimistic update
+    setWeeklyPlan(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        items: prev.items.map(item =>
+          item.id === itemId ? { ...item, completed: !currentCompleted } : item
+        ),
+      };
+    });
+    try {
+      const res = await fetch(`/api/weekly-plans/${weeklyPlan.id}/items/${itemId}/toggle`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed: !currentCompleted }),
+      });
+      if (!res.ok) {
+        // Revert on error
+        setWeeklyPlan(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            items: prev.items.map(item =>
+              item.id === itemId ? { ...item, completed: currentCompleted } : item
+            ),
+          };
+        });
+        toast.error('Plan \u00f6\u011fesi g\u00fcncellenirken hata olu\u015ftu');
+      }
+    } catch {
+      // Revert on error
+      setWeeklyPlan(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          items: prev.items.map(item =>
+            item.id === itemId ? { ...item, completed: currentCompleted } : item
+          ),
+        };
+      });
+      toast.error('Plan \u00f6\u011fesi g\u00fcncellenirken hata olu\u015ftu');
+    }
+  };
 
   const MOOD_EMOJIS: Record<number, string> = {
     1: '\u{1F61E}',
@@ -336,19 +433,125 @@ export default function DashboardPage() {
         </motion.div>
       </div>
 
-      {/* Right Column: Todo List */}
-      <div className="h-full">
+      {/* Right Column: Today's Plan, Tasks, Upcoming Plan */}
+      <div className="flex flex-col gap-6 lg:gap-8">
+
+        {/* ─── A. Bugünün Planı (Today's Plan) ─── */}
+        {weeklyPlan && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.15 }}
+            className="glass-panel relative overflow-hidden"
+          >
+            <div className="absolute top-0 left-0 w-48 h-48 bg-amber-500/8 rounded-full blur-[50px] pointer-events-none" />
+            <div className="p-6 lg:p-8">
+              <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/5 relative z-10">
+                <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2.5">
+                  <CalendarDays size={22} className="text-amber-400" />
+                  Bug{'\u00fc'}n{'\u00fc'}n Plan{'\u0131'}
+                </h2>
+                <div className="glass bg-white/[0.05] border-white/10 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                  <span className="text-xs font-bold text-amber-300">{todayPlanCompleted}</span>
+                  <span className="text-xs text-white/30">/</span>
+                  <span className="text-xs font-bold text-white/70">{todayPlanItems.length}</span>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              {todayPlanItems.length > 0 && (
+                <div className="mb-5 relative z-10">
+                  <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-amber-400 to-pink-500 rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${todayPlanItems.length > 0 ? (todayPlanCompleted / todayPlanItems.length) * 100 : 0}%` }}
+                      transition={{ duration: 0.6, ease: 'easeOut' }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2.5 relative z-10">
+                {todayPlanItems.length === 0 ? (
+                  <div className="text-center py-10 flex flex-col items-center justify-center relative">
+                    <div className="absolute inset-0 bg-amber-500/5 blur-3xl rounded-full" />
+                    <CalendarDays size={40} className="text-amber-400/20 mb-3" />
+                    <p className="text-white/40 font-medium z-10">Bug{'\u00fc'}n i{'\u00e7'}in plan {'\u00f6'}{'\u011f'}esi yok</p>
+                    <p className="text-white/30 text-sm mt-1 z-10">Haftal{'\u0131'}k plan{'\u0131'}n{'\u0131'} olu{'\u015f'}turarak ba{'\u015f'}la.</p>
+                  </div>
+                ) : (
+                  todayPlanItems.map((item, idx) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 + (idx * 0.04) }}
+                      className={clsx(
+                        "group flex items-start gap-3.5 p-4 glass rounded-2xl border transition-all duration-300 cursor-pointer",
+                        item.completed
+                          ? "bg-white/[0.01] border-white/5 opacity-60"
+                          : "bg-white/[0.02] hover:bg-white/[0.05] border-white/5 hover:border-amber-500/30"
+                      )}
+                      onClick={() => handleTogglePlanItem(item.id, item.completed)}
+                    >
+                      <div className="mt-0.5 relative flex-shrink-0">
+                        {item.completed ? (
+                          <CheckCircle size={20} className="text-amber-400" />
+                        ) : (
+                          <>
+                            <Circle size={20} className="text-white/20 group-hover:text-amber-400/50 transition-colors" />
+                            <div className="absolute inset-0 bg-amber-400/20 rounded-full scale-0 group-hover:scale-150 opacity-0 group-hover:opacity-100 transition-all duration-500 blur-md" />
+                          </>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={clsx(
+                          "text-[14px] leading-snug font-medium transition-colors",
+                          item.completed ? "line-through text-white/30" : "text-white/80 group-hover:text-white"
+                        )}>
+                          {item.subject.name}
+                          {item.topic && (
+                            <span className="text-white/40 font-normal"> &mdash; {item.topic.name}</span>
+                          )}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                          <span className={clsx(
+                            "text-[10px] px-2 py-0.5 rounded-md border uppercase tracking-widest font-bold",
+                            item.subject.examType.name === 'TYT'
+                              ? "bg-cyan-500/10 text-cyan-300 border-cyan-500/20"
+                              : "bg-purple-500/10 text-purple-300 border-purple-500/20"
+                          )}>
+                            {item.subject.examType.name}
+                          </span>
+                          {item.duration && (
+                            <span className="text-[10px] text-white/40 flex items-center gap-1 font-medium">
+                              <Clock size={10} />
+                              {item.duration} dk
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ─── B. Yapılacaklar (Tasks) — Existing ─── */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
-          className="glass-panel h-full flex flex-col relative"
+          className="glass-panel flex flex-col relative"
         >
-          <div className="p-6 lg:p-8 flex flex-col h-full">
+          <div className="p-6 lg:p-8 flex flex-col">
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
               <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
                 <CheckSquare size={24} className="text-cyan-400" />
-                Yapılacaklar
+                Yap{'\u0131'}lacaklar
               </h2>
               <div className="glass bg-white/[0.05] border-white/10 px-3 py-1.5 rounded-xl flex items-center gap-2">
                 <span className="text-xs font-bold text-pink-300">{completedTasks.length}</span>
@@ -357,12 +560,12 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-2 space-y-3 no-scrollbar">
+            <div className="space-y-3">
               {todaysTasks.length === 0 ? (
                 <div className="text-center py-16 flex flex-col items-center justify-center relative">
                   <div className="absolute inset-0 bg-pink-500/5 blur-3xl rounded-full" />
                   <CheckCircle size={48} className="text-pink-400/20 mb-4" />
-                  <p className="text-white/40 font-medium z-10">Bugün için bekleyen görev yok!</p>
+                  <p className="text-white/40 font-medium z-10">Bug{'\u00fc'}n i{'\u00e7'}in bekleyen g{'\u00f6'}rev yok!</p>
                   <p className="text-white/30 text-sm mt-1 z-10">Harika gidiyorsun.</p>
                 </div>
               ) : (
@@ -400,7 +603,7 @@ export default function DashboardPage() {
                         )}
                         {task.priority === 'high' && (
                           <span className="text-[10px] bg-rose-500/10 px-2 py-1 rounded-md text-rose-400 border border-rose-500/20 uppercase tracking-widest font-bold">
-                            Yüksek Öncelik
+                            Y{'\u00fc'}ksek {'\u00d6'}ncelik
                           </span>
                         )}
                       </div>
@@ -413,15 +616,93 @@ export default function DashboardPage() {
                 <div className="text-center pt-6 pb-2">
                   <button
                     onClick={() => router.push('/tasks')}
-                    className="inline-flexItems-center justify-center gap-2 text-sm text-pink-400 hover:text-pink-300 font-medium transition-colors hover:glow-pink-soft px-4 py-2 rounded-full border border-transparent hover:border-pink-500/30"
+                    className="inline-flex items-center justify-center gap-2 text-sm text-pink-400 hover:text-pink-300 font-medium transition-colors hover:glow-pink-soft px-4 py-2 rounded-full border border-transparent hover:border-pink-500/30"
                   >
-                    Tümünü Gör ({pendingTasks.length} görev) →
+                    T{'\u00fc'}m{'\u00fc'}n{'\u00fc'} G{'\u00f6'}r ({pendingTasks.length} g{'\u00f6'}rev) →
                   </button>
                 </div>
               )}
             </div>
           </div>
         </motion.div>
+
+        {/* ─── C. Yaklaşan Plan (Upcoming Plan) ─── */}
+        {weeklyPlan && upcomingDays.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.25 }}
+            className="glass-panel relative overflow-hidden"
+          >
+            <div className="p-6 lg:p-8">
+              <button
+                onClick={() => setUpcomingExpanded(prev => !prev)}
+                className="w-full flex items-center justify-between mb-1 relative z-10"
+              >
+                <h2 className="text-lg font-bold text-white/70 tracking-tight flex items-center gap-2.5">
+                  <Calendar size={20} className="text-white/40" />
+                  Yakla{'\u015f'}an Plan
+                </h2>
+                <ChevronDown
+                  size={20}
+                  className={clsx(
+                    "text-white/30 transition-transform duration-300",
+                    upcomingExpanded && "rotate-180"
+                  )}
+                />
+              </button>
+
+              {upcomingExpanded && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="mt-4 space-y-5 relative z-10"
+                >
+                  {upcomingDays.map(day => (
+                    <div key={day.dayOfWeek}>
+                      <div className="flex items-center gap-2 mb-2.5">
+                        <span className="text-[11px] text-white/30 uppercase tracking-widest font-bold">
+                          {day.dayName}
+                        </span>
+                        <div className="flex-1 h-px bg-white/5" />
+                        <span className="text-[10px] text-white/20 font-medium">
+                          {day.items.length} {'\u00f6'}{'\u011f'}e
+                        </span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {day.items.map(item => (
+                          <div
+                            key={item.id}
+                            className="flex items-center gap-3 px-3.5 py-2.5 glass bg-white/[0.015] rounded-xl border border-white/[0.03]"
+                          >
+                            <div className="w-1.5 h-1.5 rounded-full bg-white/15 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[13px] text-white/45 font-medium truncate">
+                                {item.subject.name}
+                                {item.topic && (
+                                  <span className="text-white/25"> &mdash; {item.topic.name}</span>
+                                )}
+                              </p>
+                            </div>
+                            {item.duration && (
+                              <span className="text-[10px] text-white/25 flex items-center gap-1 flex-shrink-0">
+                                <Clock size={9} />
+                                {item.duration} dk
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
       </div>
     </div>
   );

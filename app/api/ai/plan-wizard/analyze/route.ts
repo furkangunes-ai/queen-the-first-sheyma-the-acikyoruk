@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import { format, subDays } from "date-fns";
 import { tr } from "date-fns/locale";
 
-const SYSTEM_PROMPT_ANALYZE = `Sen bir YKS stratejistisin. Öğrencinin verilerini analiz et. Türkçe konuş. Öğrenciye "sen" diye hitap et.
+const SYSTEM_PROMPT_ANALYZE_BASE = `Sen bir YKS stratejistisin. Öğrencinin verilerini analiz et. Türkçe konuş. Öğrenciye "sen" diye hitap et.
 
 Görevin:
 1. Öğrencinin son 2-4 haftalık çalışma verilerini, deneme sonuçlarını ve konu haritasını analiz et.
@@ -17,12 +17,7 @@ Görevin:
    - Strateji belirlemeye yönelik olmalı
    - "Bu hafta..." veya "Önümüzdeki hafta..." gibi başlamalı
 
-ÖNEMLİ: TYT/AYT tercihi ve ders seçimi gibi sorular SORMA — bunlar ayrıca sorulacak. Sen sadece çalışma düzeni ve strateji soruları sor:
-- Çalışma düzenini sor (kaç saat, hangi günler)
-- Müsait olmayan günleri sor
-- Mola/dinlenme tercihini sor
-- Zayıf konulara odaklanma stratejisi sor
-- Varsa deneme performansına göre strateji sor
+ÖNEMLİ: TYT/AYT tercihi ve ders seçimi gibi sorular SORMA — bunlar ayrıca sorulacak.
 
 JSON formatında yanıt ver, başka bir şey yazma:
 {
@@ -45,15 +40,59 @@ JSON formatında yanıt ver, başka bir şey yazma:
   ]
 }`;
 
+const PROFILE_EXISTS_ADDON = (profileStr: string) => `
+
+${profileStr}
+
+Profil zaten mevcut olduğundan bu temel bilgileri TEKRAR SORMA (günlük saat, müsait günler, mola tercihi vs.).
+Bunun yerine bu haftaya özel stratejik sorular sor:
+- Zayıf konulara odaklanma stratejisi sor
+- Varsa deneme performansına göre strateji sor
+- Çalışma yoğunluğu/temposu hakkında sor
+- Tekrar ve pekiştirme stratejisi sor`;
+
+const NO_PROFILE_ADDON = `
+
+Öğrenci profili henüz oluşturulmamış. Genel çalışma düzeni ve strateji soruları sorabilirsin:
+- Çalışma düzenini sor (kaç saat, hangi günler)
+- Müsait olmayan günleri sor
+- Mola/dinlenme tercihini sor
+- Zayıf konulara odaklanma stratejisi sor
+- Varsa deneme performansına göre strateji sor`;
+
 export async function POST() {
   try {
     const guard = await checkAIAccess();
     if (isAIGuardError(guard)) return guard;
     const { userId } = guard;
 
-    // Fetch user's exam track for subject filtering
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { examTrack: true } });
+    // Fetch user's exam track and student profile for subject filtering
+    const [user, studentProfile] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId }, select: { examTrack: true } }),
+      prisma.studentProfile.findUnique({ where: { userId } }),
+    ]);
     const examTrack = user?.examTrack;
+
+    // Build dynamic system prompt based on profile availability
+    const DAY_LABELS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+    let systemPrompt = SYSTEM_PROMPT_ANALYZE_BASE;
+    if (studentProfile && studentProfile.dailyStudyHours != null) {
+      const availDays = Array.isArray(studentProfile.availableDays) ? (studentProfile.availableDays as number[]) : [];
+      const daysStr = availDays.map((d: number) => DAY_LABELS[d] || `${d}`).join(", ");
+      const breakLabel = studentProfile.breakPreference === "25_5" ? "25/5 Pomodoro"
+        : studentProfile.breakPreference === "45_15" ? "45/15"
+        : studentProfile.breakPreference === "60_15" ? "60/15"
+        : studentProfile.breakPreference || "Belirtilmedi";
+      const regularityLabel = studentProfile.studyRegularity === "duzenli" ? "Düzenli" : studentProfile.studyRegularity === "duzensiz" ? "Düzensiz" : "Belirtilmedi";
+      const profileStr = `=== ÖĞRENCİ PROFİLİ ===
+Günlük ${studentProfile.dailyStudyHours} saat çalışıyor.
+Müsait günler: ${daysStr || "Belirtilmedi"} (${availDays.length} gün)
+Çalışma düzeni: ${regularityLabel}
+Mola tercihi: ${breakLabel}${studentProfile.targetRank ? `\nHedef sıralama: ${studentProfile.targetRank}` : ""}${studentProfile.examDate ? `\nSınav tarihi: ${format(new Date(studentProfile.examDate), "d MMMM yyyy", { locale: tr })}` : ""}`;
+      systemPrompt += PROFILE_EXISTS_ADDON(profileStr);
+    } else {
+      systemPrompt += NO_PROFILE_ADDON;
+    }
 
     const now = new Date();
     const fourWeeksAgo = subDays(now, 28);
@@ -257,7 +296,7 @@ ${insightsStr ? `=== GEÇMİŞ AI ÖNERİLERİ ===\n${insightsStr}` : ""}`.trim(
     const completion = await getOpenAI().chat.completions.create({
       model: AI_MODEL,
       messages: [
-        { role: "system", content: SYSTEM_PROMPT_ANALYZE },
+        { role: "system", content: systemPrompt },
         { role: "user", content: contextMessage },
       ],
     });

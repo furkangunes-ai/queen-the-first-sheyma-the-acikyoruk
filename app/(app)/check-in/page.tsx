@@ -40,7 +40,9 @@ export default function CheckInPage() {
   const [sleep, setSleep] = useState<string>('');
   const [gratitude, setGratitude] = useState('');
   const [notes, setNotes] = useState('');
-  const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [date, setDate] = useState(() => {
+    return new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" });
+  });
   const [submitting, setSubmitting] = useState(false);
 
   const [recentCheckIns, setRecentCheckIns] = useState<CheckIn[]>([]);
@@ -99,7 +101,7 @@ export default function CheckInPage() {
       setSleep('');
       setGratitude('');
       setNotes('');
-      setDate(format(new Date(), 'yyyy-MM-dd'));
+      setDate(new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" }));
       fetchRecentCheckIns();
     } catch {
       toast.error('Kaydederken hata oluştu');

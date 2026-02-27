@@ -131,7 +131,7 @@ export function useTachistoscope(config: TachistoscopeConfig) {
               .slice(-5)
               .filter((i) => i.correct).length;
             if (recentCorrect >= 4) {
-              setDisplayMs((ms) => Math.max(100, ms - 50));
+              setDisplayMs((ms) => Math.max(50, ms - 50));
             }
           }
 

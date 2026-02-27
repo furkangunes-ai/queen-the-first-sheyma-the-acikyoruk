@@ -9,9 +9,11 @@ import {
   Sparkles,
   Clock,
   BookOpen,
+  Tag,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { filterExamTypesByTrack, type ExamTrack } from "@/lib/exam-track-filter";
+import { LEVEL_COLORS, LEVEL_BORDER_COLORS, LEVEL_LABELS } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -68,29 +70,14 @@ interface Recommendation {
   priorityScore: number;
 }
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const LEVEL_COLORS: Record<number, string> = {
-  0: "bg-red-500",
-  1: "bg-orange-500",
-  2: "bg-amber-400",
-  3: "bg-yellow-400",
-  4: "bg-emerald-400",
-  5: "bg-cyan-400",
-};
-
-const LEVEL_BORDER_COLORS: Record<number, string> = {
-  0: "border-red-500/50 text-red-400",
-  1: "border-orange-500/50 text-orange-400",
-  2: "border-amber-400/50 text-amber-300",
-  3: "border-yellow-400/50 text-yellow-300",
-  4: "border-emerald-400/50 text-emerald-300",
-  5: "border-cyan-400/50 text-cyan-300",
-};
-
-const LEVEL_LABELS = ["Bilmiyorum", "Tanıdık", "Anlıyorum", "Uyguluyorum", "Analiz", "Uzman"];
+interface TopicConcept {
+  id: string;
+  topicId: string;
+  name: string;
+  description: string | null;
+  formula: string | null;
+  sortOrder: number;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -142,6 +129,7 @@ export default function TopicMap() {
     Map<string, { date: string; daysSince: number }>
   >(new Map());
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [conceptsMap, setConceptsMap] = useState<Map<string, TopicConcept[]>>(new Map());
 
   // UI state
   const [loading, setLoading] = useState(true);
@@ -217,6 +205,27 @@ export default function TopicMap() {
       // Auto-expand all exam types on first load
       if (Array.isArray(examTypesData)) {
         setExpandedExamTypes(new Set(examTypesData.map((et: ExamType) => et.id)));
+      }
+
+      // Fetch concepts for all topics
+      try {
+        const allTopicIds = (Array.isArray(examTypesData) ? examTypesData : [])
+          .flatMap((et: ExamType) => et.subjects?.flatMap((s) => s.topics?.map((t) => t.id) ?? []) ?? []);
+        if (allTopicIds.length > 0) {
+          const conceptRes = await fetch(`/api/topic-concepts?topicIds=${allTopicIds.join(",")}`);
+          if (conceptRes.ok) {
+            const conceptData: TopicConcept[] = await conceptRes.json();
+            const cMap = new Map<string, TopicConcept[]>();
+            for (const c of conceptData) {
+              const existing = cMap.get(c.topicId) || [];
+              existing.push(c);
+              cMap.set(c.topicId, existing);
+            }
+            setConceptsMap(cMap);
+          }
+        }
+      } catch {
+        // concepts are optional, fail silently
       }
     } catch (error) {
       console.error("TopicMap: failed to fetch data", error);
@@ -550,10 +559,29 @@ export default function TopicMap() {
                                             }}
                                             className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.02] transition-colors border-b border-white/[0.03] last:border-b-0"
                                           >
-                                            {/* Topic name */}
-                                            <span className="text-sm text-white/80 flex-1 min-w-0 truncate">
-                                              {topic.name}
-                                            </span>
+                                            {/* Topic name + concepts */}
+                                            <div className="flex-1 min-w-0">
+                                              <span className="text-sm text-white/80 truncate block">
+                                                {topic.name}
+                                              </span>
+                                              {/* Concept tags */}
+                                              {conceptsMap.get(topic.id)?.length ? (
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                  {conceptsMap.get(topic.id)!.sort((a, b) => a.sortOrder - b.sortOrder).map((concept) => (
+                                                    <span
+                                                      key={concept.id}
+                                                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 text-white/40 border border-white/[0.06] hover:bg-white/10 hover:text-white/60 transition-colors cursor-default"
+                                                      title={
+                                                        (concept.description ? concept.description : "") +
+                                                        (concept.formula ? `\nFormül: ${concept.formula}` : "")
+                                                      }
+                                                    >
+                                                      {concept.name}
+                                                    </span>
+                                                  ))}
+                                                </div>
+                                              ) : null}
+                                            </div>
 
                                             {/* Last studied badge */}
                                             <div className="flex items-center gap-1 shrink-0">

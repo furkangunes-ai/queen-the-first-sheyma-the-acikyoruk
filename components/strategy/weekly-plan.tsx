@@ -28,6 +28,19 @@ import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { useSession } from "next-auth/react";
 import { filterSubjectsByTrack, type ExamTrack } from "@/lib/exam-track-filter";
+import { LEVEL_COLORS } from "@/lib/constants";
+import StudentProfileForm from "@/components/strategy/student-profile-form";
+
+// ---------- StudentProfile Type ----------
+
+interface StudentProfileData {
+  dailyStudyHours: number | null;
+  availableDays: number[];
+  studyRegularity: string | null;
+  breakPreference: string | null;
+  examDate: string | null;
+  targetRank: number | null;
+}
 
 // ---------- Types ----------
 
@@ -141,6 +154,7 @@ function DraggablePlanItem({
   onDrop,
   onEdit,
   onDelete,
+  knowledgeLevel,
 }: {
   item: WeeklyPlanItem;
   toggling: boolean;
@@ -149,6 +163,7 @@ function DraggablePlanItem({
   onDrop: (itemId: string, newDay: number, newSort: number) => void;
   onEdit: () => void;
   onDelete: () => void;
+  knowledgeLevel?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -216,15 +231,20 @@ function DraggablePlanItem({
             {item.subject.name}
           </p>
           {item.topic && (
-            <p
-              className={`text-[10px] truncate mt-0.5 ${
-                item.completed
-                  ? "text-white/25 line-through"
-                  : "text-white/50"
-              }`}
-            >
-              {item.topic.name}
-            </p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              {knowledgeLevel !== undefined && (
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${LEVEL_COLORS[knowledgeLevel] || "bg-gray-500"}`} title={`Seviye: ${knowledgeLevel}/5`} />
+              )}
+              <p
+                className={`text-[10px] truncate ${
+                  item.completed
+                    ? "text-white/25 line-through"
+                    : "text-white/50"
+                }`}
+              >
+                {item.topic.name}
+              </p>
+            </div>
           )}
           {item.duration && (
             <div className="flex items-center gap-1 mt-1">
@@ -278,6 +298,7 @@ function DroppableDayColumn({
   onAddClick,
   onEdit,
   onDelete,
+  knowledgeMap,
 }: {
   dayIdx: number;
   dayDate: Date;
@@ -289,6 +310,7 @@ function DroppableDayColumn({
   onAddClick: () => void;
   onEdit: (item: WeeklyPlanItem) => void;
   onDelete: (itemId: string) => void;
+  knowledgeMap: Map<string, number>;
 }) {
   const dayName = format(dayDate, "EEEE", { locale: tr });
   const dayShort = format(dayDate, "d MMM", { locale: tr });
@@ -343,6 +365,7 @@ function DroppableDayColumn({
             onDrop={onDrop}
             onEdit={() => onEdit(item)}
             onDelete={() => onDelete(item.id)}
+            knowledgeLevel={knowledgeMap.get(item.topicId || "")}
           />
         ))}
       </div>
@@ -397,12 +420,16 @@ export default function WeeklyPlan() {
   const [showWizard, setShowWizard] = useState(false);
   const [wizardData, setWizardData] = useState<WizardData | null>(null);
   const [wizardLoading, setWizardLoading] = useState(false);
-  const [wizardStep, setWizardStep] = useState(0); // 0=analysis, 1=examScope, 2=subjects, 3..N=AI questions
+  const [wizardStep, setWizardStep] = useState(0); // -1=profile (if needed), 0=analysis, 1=examScope, 2=subjects, 3..N=AI questions
   const [wizardAnswers, setWizardAnswers] = useState<Map<string, WizardAnswer>>(new Map());
   const [fixedAnswers, setFixedAnswers] = useState<FixedAnswers>({
     examScope: "both",
     selectedSubjectIds: [],
   });
+
+  // Student Profile State (for wizard integration)
+  const [studentProfile, setStudentProfile] = useState<StudentProfileData | null>(null);
+  const [profileNeeded, setProfileNeeded] = useState(false); // true if profile is missing/empty
 
   // Create plan form
   const [createTitle, setCreateTitle] = useState("");
@@ -416,6 +443,9 @@ export default function WeeklyPlan() {
   // Edit item
   const [editingItem, setEditingItem] = useState<WeeklyPlanItem | null>(null);
   const [editSaving, setEditSaving] = useState(false);
+
+  // Topic knowledge levels for color coding
+  const [knowledgeMap, setKnowledgeMap] = useState<Map<string, number>>(new Map());
 
   // ---------- Derived ----------
 
@@ -530,9 +560,25 @@ export default function WeeklyPlan() {
     }
   }, [startDateStr]);
 
+  // Fetch topic knowledge levels for color coding
+  const fetchKnowledgeLevels = useCallback(async () => {
+    try {
+      const res = await fetch("/api/topic-knowledge");
+      if (res.ok) {
+        const data = await res.json();
+        const map = new Map<string, number>();
+        data.forEach((tk: { topicId: string; level: number }) => map.set(tk.topicId, tk.level));
+        setKnowledgeMap(map);
+      }
+    } catch {
+      // silent
+    }
+  }, []);
+
   useEffect(() => {
     fetchSubjects();
-  }, [fetchSubjects]);
+    fetchKnowledgeLevels();
+  }, [fetchSubjects, fetchKnowledgeLevels]);
 
   useEffect(() => {
     fetchPlan();
@@ -774,7 +820,6 @@ export default function WeeklyPlan() {
   // ---------- Dynamic Wizard ----------
 
   const openWizard = useCallback(async () => {
-    setWizardStep(0);
     setWizardAnswers(new Map());
     setFixedAnswers({ examScope: "both", selectedSubjectIds: [] });
     setWizardData(null);
@@ -782,6 +827,38 @@ export default function WeeklyPlan() {
     setWizardLoading(true);
 
     try {
+      // 1. Check if student profile exists
+      let profileData: StudentProfileData | null = null;
+      let needsProfile = false;
+      try {
+        const profileRes = await fetch("/api/student-profile");
+        if (profileRes.ok) {
+          const p = await profileRes.json();
+          if (p && p.dailyStudyHours != null && Array.isArray(p.availableDays) && p.availableDays.length > 0) {
+            profileData = {
+              dailyStudyHours: p.dailyStudyHours,
+              availableDays: p.availableDays,
+              studyRegularity: p.studyRegularity,
+              breakPreference: p.breakPreference,
+              examDate: p.examDate ? (typeof p.examDate === "string" ? p.examDate : new Date(p.examDate).toISOString()) : null,
+              targetRank: p.targetRank,
+            };
+          } else {
+            needsProfile = true;
+          }
+        } else {
+          needsProfile = true;
+        }
+      } catch {
+        needsProfile = true;
+      }
+      setStudentProfile(profileData);
+      setProfileNeeded(needsProfile);
+
+      // Start at step -1 (profile) if profile is missing, otherwise step 0 (analysis)
+      setWizardStep(needsProfile ? -1 : 0);
+
+      // 2. Fetch AI analysis
       const res = await fetch("/api/ai/plan-wizard/analyze", {
         method: "POST",
       });
@@ -833,7 +910,7 @@ export default function WeeklyPlan() {
     try {
       const endDate = format(addDays(weekStart, 6), "yyyy-MM-dd");
 
-      // Build wizard context from fixed + dynamic answers
+      // Build wizard context from fixed + dynamic answers + student profile
       const wizardContext = {
         analysis: wizardData.analysis,
         weakAreas: wizardData.weakAreas,
@@ -846,6 +923,7 @@ export default function WeeklyPlan() {
             .filter(Boolean)
             .map((s) => ({ id: s!.id, name: s!.name, examType: s!.examType.name })),
         },
+        studentProfile: studentProfile || undefined,
       };
 
       const res = await fetch("/api/ai/generate-plan", {
@@ -878,7 +956,7 @@ export default function WeeklyPlan() {
     } finally {
       setAiGenerating(false);
     }
-  }, [plan, weekStart, startDateStr, fetchPlan, wizardData, wizardAnswers, fixedAnswers, subjects]);
+  }, [plan, weekStart, startDateStr, fetchPlan, wizardData, wizardAnswers, fixedAnswers, subjects, studentProfile]);
 
   // ---------- Draft Item Helpers ----------
 
@@ -1086,6 +1164,7 @@ export default function WeeklyPlan() {
                   }}
                   onEdit={(item) => setEditingItem(item)}
                   onDelete={handleDeleteItem}
+                  knowledgeMap={knowledgeMap}
                 />
               ))}
             </div>
@@ -1102,6 +1181,25 @@ export default function WeeklyPlan() {
               answers={wizardAnswers}
               fixedAnswers={fixedAnswers}
               subjects={subjects}
+              studentProfile={studentProfile}
+              profileNeeded={profileNeeded}
+              onProfileSave={async (data) => {
+                // Save profile to API
+                const res = await fetch("/api/student-profile", {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(data),
+                });
+                if (!res.ok) throw new Error("Profil kaydedilemedi");
+                setStudentProfile(data);
+                setProfileNeeded(false);
+                // Move to step 0 (analysis)
+                setWizardStep(0);
+              }}
+              onProfileSkip={() => {
+                setProfileNeeded(false);
+                setWizardStep(0);
+              }}
               onAnswer={handleWizardAnswer}
               onFixedAnswersChange={setFixedAnswers}
               onNext={() => {
@@ -1110,7 +1208,7 @@ export default function WeeklyPlan() {
                 const maxStep = wizardData.questions.length + 2;
                 setWizardStep((s) => Math.min(s + 1, maxStep));
               }}
-              onBack={() => setWizardStep((s) => Math.max(s - 1, 0))}
+              onBack={() => setWizardStep((s) => Math.max(s - 1, profileNeeded ? -1 : 0))}
               onComplete={handleAIGeneratePlan}
               onClose={() => {
                 if (!aiGenerating) setShowWizard(false);
@@ -1699,6 +1797,10 @@ function DynamicWizardModal({
   answers,
   fixedAnswers,
   subjects,
+  studentProfile,
+  profileNeeded,
+  onProfileSave,
+  onProfileSkip,
   onAnswer,
   onFixedAnswersChange,
   onNext,
@@ -1709,10 +1811,14 @@ function DynamicWizardModal({
 }: {
   data: WizardData | null;
   loading: boolean;
-  step: number;
+  step: number; // -1=profile, 0=analysis, 1=examScope, 2=subjects, 3..N=AI questions
   answers: Map<string, WizardAnswer>;
   fixedAnswers: FixedAnswers;
   subjects: Subject[];
+  studentProfile: StudentProfileData | null;
+  profileNeeded: boolean;
+  onProfileSave: (data: StudentProfileData) => Promise<void>;
+  onProfileSkip: () => void;
   onAnswer: (questionId: string, question: string, selectedOption: string, customNote?: string) => void;
   onFixedAnswersChange: (fa: FixedAnswers) => void;
   onNext: () => void;
@@ -1721,9 +1827,11 @@ function DynamicWizardModal({
   onClose: () => void;
   generating: boolean;
 }) {
-  // Steps: 0=analysis, 1=examScope(fixed), 2=subjects(fixed), 3..N=AI questions
+  // Steps: -1=profile(optional), 0=analysis, 1=examScope(fixed), 2=subjects(fixed), 3..N=AI questions
+  const isProfileStep = step === -1;
   const FIXED_STEP_COUNT = 2; // examScope + subjects
-  const totalSteps = data ? data.questions.length + 1 + FIXED_STEP_COUNT : 1;
+  const totalSteps = data ? data.questions.length + 1 + FIXED_STEP_COUNT + (profileNeeded ? 1 : 0) : 1;
+  const displayStep = profileNeeded ? step + 1 : step; // for progress display
   const isAnalysisStep = step === 0;
   const isExamScopeStep = step === 1;
   const isSubjectSelectStep = step === 2;
@@ -1756,12 +1864,13 @@ function DynamicWizardModal({
 
   // Can proceed from current step?
   const canProceed = useMemo(() => {
+    if (isProfileStep) return false; // profile step uses its own save/skip buttons
     if (isAnalysisStep) return true;
     if (isExamScopeStep) return true; // always has a default
     if (isSubjectSelectStep) return fixedAnswers.selectedSubjectIds.length > 0;
-    if (isAIQuestionStep) return !!currentAnswer;
+    if (isAIQuestionStep) return !!currentAnswer || customNote.trim().length > 0;
     return false;
-  }, [isAnalysisStep, isExamScopeStep, isSubjectSelectStep, isAIQuestionStep, fixedAnswers.selectedSubjectIds.length, currentAnswer]);
+  }, [isProfileStep, isAnalysisStep, isExamScopeStep, isSubjectSelectStep, isAIQuestionStep, fixedAnswers.selectedSubjectIds.length, currentAnswer, customNote]);
 
   return (
     <motion.div
@@ -1769,9 +1878,6 @@ function DynamicWizardModal({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-      onClick={() => {
-        if (!generating && !loading) onClose();
-      }}
     >
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
@@ -1790,14 +1896,14 @@ function DynamicWizardModal({
             <h3 className="text-lg font-bold text-white/90">AI Strateji Sihirbazı</h3>
           </div>
           <div className="flex items-center gap-3">
-            {!loading && data && (
+            {!loading && (data || isProfileStep) && (
               <span className="text-xs font-bold text-white/40 bg-white/[0.05] px-2.5 py-1 rounded-lg">
-                {step + 1}/{totalSteps}
+                {displayStep + 1}/{totalSteps}
               </span>
             )}
             <button
               onClick={onClose}
-              disabled={generating || loading}
+              disabled={generating || (loading && !isProfileStep)}
               className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30"
             >
               <X size={18} />
@@ -1805,8 +1911,31 @@ function DynamicWizardModal({
           </div>
         </div>
 
+        {/* Profile Step (step = -1) */}
+        {isProfileStep && (
+          <motion.div
+            key="profile-step"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="bg-gradient-to-br from-amber-500/10 to-pink-500/5 border border-amber-500/20 rounded-xl p-4 mb-5">
+              <p className="text-sm text-white/80 leading-relaxed">
+                Sana daha iyi bir plan oluşturabilmem için önce çalışma alışkanlıklarını öğrenmem gerekiyor.
+                Profilini doldur, AI sana özel sorular sorsun.
+              </p>
+            </div>
+            <StudentProfileForm
+              initialData={studentProfile}
+              onSave={onProfileSave}
+              onSkip={onProfileSkip}
+            />
+          </motion.div>
+        )}
+
         {/* Loading State */}
-        {loading && (
+        {loading && !isProfileStep && (
           <div className="py-12 flex flex-col items-center gap-4">
             <motion.div
               animate={{ rotate: 360 }}
@@ -1841,7 +1970,7 @@ function DynamicWizardModal({
               <motion.div
                 className="h-full rounded-full bg-gradient-to-r from-amber-500 to-pink-500"
                 initial={{ width: 0 }}
-                animate={{ width: `${((step + 1) / totalSteps) * 100}%` }}
+                animate={{ width: `${((displayStep + 1) / totalSteps) * 100}%` }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
               />
             </div>
@@ -2041,7 +2170,7 @@ function DynamicWizardModal({
                   <div>
                     <label className="flex items-center gap-1.5 text-xs font-medium text-white/40 mb-1.5">
                       <MessageSquare size={11} />
-                      Eklemek istediğin bir şey var mı? (opsiyonel)
+                      {currentAnswer ? "Eklemek istediğin bir şey var mı? (opsiyonel)" : "Hiçbiri uygun değilse açıklamanı yaz ve devam et"}
                     </label>
                     <textarea
                       value={customNote}
@@ -2060,7 +2189,8 @@ function DynamicWizardModal({
               )}
             </AnimatePresence>
 
-            {/* Navigation Buttons */}
+            {/* Navigation Buttons (hidden on profile step which has its own buttons) */}
+            {!isProfileStep && (
             <div className="flex items-center justify-between mt-6">
               {step > 0 ? (
                 <button
@@ -2090,7 +2220,13 @@ function DynamicWizardModal({
                 </button>
               ) : (
                 <button
-                  onClick={onNext}
+                  onClick={() => {
+                    // Şık seçilmeden sadece serbest cevap yazıldıysa, answer olarak kaydet
+                    if (isAIQuestionStep && currentQuestion && !currentAnswer && customNote.trim()) {
+                      onAnswer(currentQuestion.id, currentQuestion.question, "[Serbest cevap]", customNote);
+                    }
+                    onNext();
+                  }}
                   disabled={!canProceed}
                   className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30 hover:bg-pink-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
@@ -2099,6 +2235,7 @@ function DynamicWizardModal({
                 </button>
               )}
             </div>
+            )}
           </>
         )}
       </motion.div>

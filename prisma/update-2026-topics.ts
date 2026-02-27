@@ -298,6 +298,94 @@ async function main() {
     if (count > 0) console.log(`✅ AYT ${subjectName}: ${count} yeni konu eklendi`);
   }
 
+  // ==================== DÜZELTME: Kimya'da yanlış konuları sil ====================
+  console.log("\n--- Yanlış ders atamaları düzeltiliyor ---");
+
+  // "Karbonhidratlar-Yağlar-Proteinler" Kimya'da değil, Biyoloji'de olmalı
+  const kimyaSubjects = await prisma.subject.findMany({
+    where: { name: "Kimya" },
+    include: { topics: true },
+  });
+  for (const kimya of kimyaSubjects) {
+    for (const topic of kimya.topics) {
+      if (topic.name.includes("Karbonhidrat") || topic.name.includes("Protein")) {
+        // Check if there are references
+        const refs = await Promise.all([
+          prisma.dailyStudy.count({ where: { topicId: topic.id } }),
+          prisma.topicKnowledge.count({ where: { topicId: topic.id } }),
+          prisma.weeklyPlanItem.count({ where: { topicId: topic.id } }),
+          prisma.examWrongQuestion.count({ where: { topicId: topic.id } }),
+        ]);
+        const totalRefs = refs.reduce((a, b) => a + b, 0);
+
+        if (totalRefs === 0) {
+          await prisma.topic.delete({ where: { id: topic.id } });
+          console.log(`  🗑️ Kimya'dan '${topic.name}' silindi (referans yok)`);
+        } else {
+          console.log(`  ⚠️ Kimya'da '${topic.name}' ${totalRefs} referansa sahip — taşınması gerekiyor`);
+          // Try to find the Biyoloji equivalent and transfer
+          const bioSubject = await prisma.subject.findFirst({
+            where: { name: "Biyoloji", examType: { slug: kimya.topics[0] ? "tyt" : "ayt" } },
+          });
+          if (bioSubject) {
+            await prisma.topic.update({
+              where: { id: topic.id },
+              data: { subjectId: bioSubject.id },
+            });
+            console.log(`  📦 '${topic.name}' Kimya → Biyoloji'ye taşındı`);
+          }
+        }
+      }
+    }
+  }
+
+  // ==================== DÜZELTME: Duplike konuları birleştir ====================
+  console.log("\n--- Duplike konular birleştiriliyor ---");
+
+  // "Solunum" vs "Hücresel Solunum" vs "Solunum Sistemi" duplikasyonu
+  // Biyoloji derslerindeki solunum konularını kontrol et
+  const bioSubjects = await prisma.subject.findMany({
+    where: { name: "Biyoloji" },
+    include: { topics: true },
+  });
+
+  for (const bio of bioSubjects) {
+    const solunumTopics = bio.topics.filter(
+      (t) => t.name.includes("Solunum") && !t.name.includes("Sistem")
+    );
+    if (solunumTopics.length > 1) {
+      // Keep the first, merge others into it
+      const keeper = solunumTopics[0];
+      for (let i = 1; i < solunumTopics.length; i++) {
+        const dup = solunumTopics[i];
+        // Transfer all references
+        await prisma.dailyStudy.updateMany({ where: { topicId: dup.id }, data: { topicId: keeper.id } });
+        await prisma.topicReview.updateMany({ where: { topicId: dup.id }, data: { topicId: keeper.id } });
+        // TopicKnowledge has unique constraint, so delete duplicates first
+        const existingTk = await prisma.topicKnowledge.findMany({ where: { topicId: dup.id } });
+        for (const tk of existingTk) {
+          const already = await prisma.topicKnowledge.findFirst({
+            where: { topicId: keeper.id, userId: tk.userId },
+          });
+          if (already) {
+            // Keep the higher level
+            if (tk.level > already.level) {
+              await prisma.topicKnowledge.update({ where: { id: already.id }, data: { level: tk.level } });
+            }
+            await prisma.topicKnowledge.delete({ where: { id: tk.id } });
+          } else {
+            await prisma.topicKnowledge.update({ where: { id: tk.id }, data: { topicId: keeper.id } });
+          }
+        }
+        await prisma.weeklyPlanItem.updateMany({ where: { topicId: dup.id }, data: { topicId: keeper.id } });
+        await prisma.examWrongQuestion.updateMany({ where: { topicId: dup.id }, data: { topicId: keeper.id } });
+        await prisma.examEmptyQuestion.updateMany({ where: { topicId: dup.id }, data: { topicId: keeper.id } });
+        await prisma.topic.delete({ where: { id: dup.id } });
+        console.log(`  🔀 '${dup.name}' → '${keeper.name}' birleştirildi ve silindi`);
+      }
+    }
+  }
+
   console.log("\n🎉 2026 YKS müfredat güncellemesi tamamlandı!");
 }
 

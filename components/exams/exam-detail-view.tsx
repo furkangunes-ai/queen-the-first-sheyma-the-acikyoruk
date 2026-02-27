@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Paper, Handwriting, Tape } from '@/components/skeuomorphic';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Camera, BookOpen, PieChart as PieChartIcon, BarChart3, Image, Trash2, Pencil, Check, X, Loader2, ListOrdered, Target, CheckCircle, AlertTriangle, RefreshCw, Filter, Sparkles, Bot } from 'lucide-react';
+import { ArrowLeft, Camera, BookOpen, PieChart as PieChartIcon, BarChart3, Image, Trash2, Pencil, Check, X, Loader2, ListOrdered, Target, CheckCircle, AlertTriangle, RefreshCw, Filter, Sparkles, Bot, ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 import {
@@ -45,11 +45,18 @@ interface EmptyQuestion {
   notes: string | null;
 }
 
+interface ExamType {
+  id: string;
+  name: string;
+}
+
 interface ExamDetail {
   id: string;
   title: string;
   date: string;
-  examType: { name: string };
+  examTypeId: string;
+  examType: { id: string; name: string };
+  examCategory?: string | null;
   subjectResults: SubjectResult[];
   wrongQuestions: WrongQuestion[];
   emptyQuestions: EmptyQuestion[];
@@ -777,6 +784,24 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
   const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
   const [aiAnalysisCached, setAiAnalysisCached] = useState(false);
 
+  // Exam type change state
+  const [examTypes, setExamTypes] = useState<ExamType[]>([]);
+  const [showExamTypeDropdown, setShowExamTypeDropdown] = useState(false);
+  const [changingExamType, setChangingExamType] = useState(false);
+  const examTypeDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!showExamTypeDropdown) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (examTypeDropdownRef.current && !examTypeDropdownRef.current.contains(e.target as Node)) {
+        setShowExamTypeDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showExamTypeDropdown]);
+
   const handleAIAnalysis = async () => {
     setAiAnalysisLoading(true);
     try {
@@ -802,6 +827,45 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
     }
   };
 
+  // Fetch exam types for dropdown
+  useEffect(() => {
+    async function fetchExamTypes() {
+      try {
+        const res = await fetch('/api/exam-types');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (Array.isArray(data)) setExamTypes(data);
+      } catch {
+        // silently fail
+      }
+    }
+    fetchExamTypes();
+  }, []);
+
+  const handleExamTypeChange = async (newExamTypeId: string) => {
+    if (!exam || newExamTypeId === exam.examType.id) {
+      setShowExamTypeDropdown(false);
+      return;
+    }
+    setChangingExamType(true);
+    try {
+      const res = await fetch(`/api/exams/${examId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ examTypeId: newExamTypeId }),
+      });
+      if (!res.ok) throw new Error('Sınav türü güncellenemedi');
+      const updated = await res.json();
+      setExam(prev => prev ? { ...prev, examTypeId: updated.examTypeId, examType: updated.examType } : prev);
+      toast.success('Sınav türü güncellendi');
+    } catch {
+      toast.error('Sınav türü güncellenirken hata oluştu');
+    } finally {
+      setChangingExamType(false);
+      setShowExamTypeDropdown(false);
+    }
+  };
+
   const handleDelete = async () => {
     setDeleting(true);
     try {
@@ -820,7 +884,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
   const startEditing = () => {
     if (!exam) return;
     setEditTitle(exam.title);
-    setEditDate(new Date(exam.date).toISOString().split('T')[0]);
+    setEditDate(new Date(exam.date).toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" }));
     setEditNotes('');
     setEditing(true);
   };
@@ -911,6 +975,51 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
 
           {exam && !loading && (
             <div className="flex items-center gap-2">
+              {/* Exam Type Badge with Dropdown */}
+              <div className="relative" ref={examTypeDropdownRef}>
+                <button
+                  onClick={() => setShowExamTypeDropdown(!showExamTypeDropdown)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-pink-500/10 text-pink-400 px-3 py-1 text-xs font-medium border border-pink-500/20 hover:bg-pink-500/20 transition-colors"
+                  title="Sınav türünü değiştir"
+                >
+                  {changingExamType ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <>
+                      {exam.examType.name}
+                      <ChevronDown className="w-3 h-3" />
+                    </>
+                  )}
+                </button>
+                <AnimatePresence>
+                  {showExamTypeDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-full mt-1 z-50 bg-[#1a1a2e] border border-white/10 rounded-lg shadow-xl overflow-hidden min-w-[120px]"
+                    >
+                      {examTypes.map((et) => (
+                        <button
+                          key={et.id}
+                          onClick={() => handleExamTypeChange(et.id)}
+                          className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
+                            exam.examType.id === et.id
+                              ? 'text-pink-400 bg-pink-500/10'
+                              : 'text-white/70 hover:text-white hover:bg-white/[0.06]'
+                          }`}
+                        >
+                          {et.name}
+                          {exam.examType.id === et.id && (
+                            <Check className="w-3.5 h-3.5 inline ml-2" />
+                          )}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
               <button
                 onClick={startEditing}
                 className="p-2 text-white/40 hover:text-pink-400 hover:bg-pink-500/10 rounded-lg transition-colors"

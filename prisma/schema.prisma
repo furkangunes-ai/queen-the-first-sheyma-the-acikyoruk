@@ -45,6 +45,7 @@ model User {
   streaks        UserStreak[]
   badges         UserBadge[]
   questionBanks  QuestionBank[]
+  studentProfile StudentProfile?
 }
 
 // ==================== KLASÖRLER & GÖREVLER ====================
@@ -151,6 +152,8 @@ model Topic {
   name          String   // "Türev", "Paragraf"
   subjectId     String
   subject       Subject  @relation(fields: [subjectId], references: [id])
+  difficulty    Int      @default(3)  // 1-5 zorluk seviyesi
+  estimatedHours Float   @default(2)  // Tahmini toplam çalışma saati
   wrongQuestions ExamWrongQuestion[]
   emptyQuestions ExamEmptyQuestion[]
   dailyStudies    DailyStudy[]
@@ -158,6 +161,9 @@ model Topic {
   topicKnowledge  TopicKnowledge[]
   weeklyPlanItems WeeklyPlanItem[]
   spacedRepetitionItems SpacedRepetitionItem[]
+  prerequisites    TopicPrerequisite[] @relation("TopicPrereqs")
+  prerequisiteOf   TopicPrerequisite[] @relation("PrereqOf")
+  concepts         TopicConcept[]
   sortOrder       Int      @default(0)
 
   @@index([subjectId])
@@ -178,6 +184,7 @@ model Exam {
   title         String              // "Özdebir TYT Deneme 3"
   examTypeId    String
   examType      ExamType            @relation(fields: [examTypeId], references: [id])
+  examCategory  String?             // null = genel deneme, "brans" = branş denemesi
   date          DateTime
   userId        String
   user          User                @relation(fields: [userId], references: [id])
@@ -622,4 +629,50 @@ model AIInsight {
   @@index([userId])
   @@index([type])
   @@index([createdAt])
+}
+
+// ==================== ÖĞRENCİ PROFİLİ ====================
+
+model StudentProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyStudyHours  Float?   // Günlük ortalama çalışma saati
+  availableDays    Json?    // [0,1,2,3,4,5,6] — hangi günler müsait
+  studyRegularity  String?  // "duzenli" | "duzensiz"
+  breakPreference  String?  // "25_5" | "45_15" | "60_15" (pomodoro vs.)
+  examDate         DateTime? // YKS sınav tarihi
+  targetRank       Int?     // Hedef sıralama
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+// ==================== KONU ÖN-KOŞULLARI ====================
+
+model TopicPrerequisite {
+  id              String @id @default(cuid())
+  topicId         String
+  topic           Topic  @relation("TopicPrereqs", fields: [topicId], references: [id], onDelete: Cascade)
+  prerequisiteId  String
+  prerequisite    Topic  @relation("PrereqOf", fields: [prerequisiteId], references: [id], onDelete: Cascade)
+  strength        String @default("hard") // "hard" = kesin gerekli, "soft" = tavsiye edilen
+
+  @@unique([topicId, prerequisiteId])
+  @@index([topicId])
+  @@index([prerequisiteId])
+}
+
+// ==================== ANAHTAR KAVRAMLAR ====================
+
+model TopicConcept {
+  id          String   @id @default(cuid())
+  topicId     String
+  topic       Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  name        String   // "Türev tanımı", "L'Hôpital kuralı"
+  description String?  // Kısa açıklama
+  formula     String?  // "lim(x→a) f(x) = L" veya LaTeX
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([topicId])
 }

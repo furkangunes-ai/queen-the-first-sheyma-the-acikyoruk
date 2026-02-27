@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getTurkeyDateString } from "@/lib/utils";
 
 // ─── Badge Definitions ─────────────────────────────
 
@@ -126,7 +127,7 @@ export async function updateDailyStudyStreak(userId: string): Promise<{
 }> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().split("T")[0];
+  const todayStr = getTurkeyDateString(today);
 
   // Get or create streak
   let streak = await prisma.userStreak.findUnique({
@@ -153,7 +154,7 @@ export async function updateDailyStudyStreak(userId: string): Promise<{
 
   if (lastActive) {
     lastActive.setHours(0, 0, 0, 0);
-    const lastActiveStr = lastActive.toISOString().split("T")[0];
+    const lastActiveStr = getTurkeyDateString(lastActive);
 
     if (lastActiveStr === todayStr) {
       // Already active today — no change
@@ -166,7 +167,7 @@ export async function updateDailyStudyStreak(userId: string): Promise<{
 
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split("T")[0];
+    const yesterdayStr = getTurkeyDateString(yesterday);
 
     if (lastActiveStr === yesterdayStr) {
       // Consecutive day — increment streak

@@ -5,12 +5,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 
-const SYSTEM_PROMPT_PLAN = `Sen bir YKS haftalık plan oluşturma asistanısın. Türkçe konuş.
+const SYSTEM_PROMPT_PLAN_BASE = `Sen bir YKS haftalık plan oluşturma asistanısın. Türkçe konuş.
 Öğrencinin zayıf konularına, son deneme sonuçlarına ve geçmiş çalışma verilerine göre
 kişiselleştirilmiş bir haftalık çalışma planı oluştur.
 
 KURALLAR:
-- Haftalık toplam 15-25 saat arası olmalı (öğrenci cevaplarına göre ayarla)
 - Zayıf konulara (bilgi seviyesi 0-2) daha fazla ağırlık ver
 - Her gün 2-4 ders arası olmalı
 - Hafta sonları biraz daha yoğun olabilir
@@ -42,7 +41,65 @@ JSON formatında yanıt ver, başka bir şey yazma. Format:
 
 dayOfWeek: 0=Pazartesi, 1=Salı, 2=Çarşamba, 3=Perşembe, 4=Cuma, 5=Cumartesi, 6=Pazar
 
-ÖNEMLİ: topicName her maddede ZORUNLUDUR. Eğer bir konunun tam adını bilmiyorsan, en yakın konu adını yaz.`;
+ÖNEMLİ: topicName her maddede ZORUNLUDUR. Eğer bir konunun tam adını bilmiyorsan, en yakın konu adını yaz.
+
+ZORUNLU KONU DAĞITIM KURALLARI:
+- Her gün için bilinmeyen (seviye 0-1) konu sayısı EN FAZLA 1 olsun
+- Her günde en az 1 bilinen konu (seviye 4-5) tekrar olarak konulsun (motivasyon)
+- Gün içi sıralama: kolay konu → zor konu → kolay konu (nefes aldırma prensibi)
+- Öğrenci 3 konu çalışacaksa: 1 bilinmeyen + 1 orta + 1 bilinen ideal dağılımdır
+
+KONU ÖN-KOŞUL KURALLARI:
+- İntegral planlamak için Türev en az seviye 2 olmalı
+- Eğer ön-koşul bu hafta yeni öğreniliyorsa (seviye 0-1), bağımlı konuyu EN ERKEN 2 gün sonraya planla
+- "hard" ön-koşullar kesinlikle uyulmalı, "soft" önerilir ama esnetilebilir
+
+KONU AĞIRLIK KURALLARI:
+- Zorluk 5 konulara tek oturumda en fazla 90dk ver, birden fazla güne yay
+- Zorluk 1-2 konular tek oturumda tamamlanabilir (30-60dk)
+- Tahmini toplam saati dikkate al: Türev ~6 saat, tek seferde bitirilemez
+- Her konunun "duration" önerisini zorluk seviyesine göre belirle`;
+
+interface ProfileInfo {
+  dailyStudyHours: number;
+  availableDays: number[];
+  breakPreference: string | null;
+  studyRegularity: string | null;
+  targetRank: number | null;
+  examDate: Date | null;
+}
+
+function buildProfilePromptAddon(profile: ProfileInfo): string {
+  const DAY_LABELS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+  const daysStr = profile.availableDays.map((d) => DAY_LABELS[d] || `${d}`).join(", ");
+  const availCount = profile.availableDays.length;
+  const maxWeeklyHours = profile.dailyStudyHours * availCount;
+
+  const breakLabel = profile.breakPreference === "25_5" ? "25/5 Pomodoro (kısa oturumlar)"
+    : profile.breakPreference === "45_15" ? "45/15 (orta oturumlar)"
+    : profile.breakPreference === "60_15" ? "60/15 (uzun oturumlar)"
+    : null;
+
+  let addon = `
+
+=== ÖĞRENCİ PROFİL BİLGİLERİ ===
+Öğrenci günlük ${profile.dailyStudyHours} saat çalışıyor.
+Müsait günler: ${daysStr} (${availCount} gün)
+Haftalık toplam planı ${maxWeeklyHours} saati AŞMAMALI.
+Müsait olmayan günlere (${DAY_LABELS.filter((_, i) => !profile.availableDays.includes(i)).join(", ") || "yok"}) ders KOYMA.`;
+
+  if (breakLabel) {
+    addon += `\nMola tercihi: ${breakLabel} — ders sürelerini buna göre ayarla.`;
+  }
+  if (profile.studyRegularity === "duzensiz") {
+    addon += `\nÇalışma düzeni düzensiz — motivasyon artırıcı kısa ve çeşitli oturumlar öner.`;
+  }
+  if (profile.targetRank) {
+    addon += `\nHedef sıralama: ${profile.targetRank} — plan yoğunluğunu buna göre ayarla.`;
+  }
+
+  return addon;
+}
 
 interface PlanItem {
   dayOfWeek: number;
@@ -76,12 +133,22 @@ interface FixedAnswersContext {
   selectedSubjects: FixedSubject[];
 }
 
+interface StudentProfileContext {
+  dailyStudyHours: number | null;
+  availableDays: number[];
+  studyRegularity: string | null;
+  breakPreference: string | null;
+  examDate: string | null;
+  targetRank: number | null;
+}
+
 interface WizardContext {
   analysis: string;
   weakAreas: string[];
   strongAreas?: string[];
   questions: WizardAnswer[];
   fixedAnswers?: FixedAnswersContext;
+  studentProfile?: StudentProfileContext;
 }
 
 export async function POST(request: NextRequest) {
@@ -90,8 +157,11 @@ export async function POST(request: NextRequest) {
     if (isAIGuardError(guard)) return guard;
     const { userId } = guard;
 
-    // Fetch user's exam track for subject filtering
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { examTrack: true } });
+    // Fetch user's exam track and student profile
+    const [user, studentProfile] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId }, select: { examTrack: true } }),
+      prisma.studentProfile.findUnique({ where: { userId } }),
+    ]);
     const examTrack = user?.examTrack;
 
     const { weekStartDate, weekEndDate, preferences, wizardContext } = await request.json();
@@ -121,7 +191,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Gather context data in parallel (token-efficient)
-    const [weakTopics, recentExam, studyDistribution, recentInsights, allSubjects] =
+    const [weakTopics, allTopicKnowledge, recentExam, studyDistribution, recentInsights, allSubjects, prerequisites] =
       await Promise.all([
         // Weak topics (knowledge level 0-3)
         prisma.topicKnowledge.findMany({
@@ -129,6 +199,11 @@ export async function POST(request: NextRequest) {
           include: { topic: { include: { subject: { include: { examType: true } } } } },
           orderBy: { level: "asc" },
           take: 20,
+        }),
+        // ALL topic knowledge for categorized view (Faz 4B)
+        prisma.topicKnowledge.findMany({
+          where: { userId },
+          include: { topic: { include: { subject: true } } },
         }),
         // Most recent exam
         prisma.exam.findFirst({
@@ -158,9 +233,13 @@ export async function POST(request: NextRequest) {
           take: 2,
           select: { title: true, content: true },
         }),
-        // All subjects for ID matching (include topics for available topic list)
+        // All subjects for ID matching (include topics with difficulty/estimatedHours for available topic list)
         prisma.subject.findMany({
           include: { topics: true, examType: true },
+        }),
+        // Topic prerequisites (Faz 4C)
+        prisma.topicPrerequisite.findMany({
+          include: { topic: true, prerequisite: true },
         }),
       ]);
 
@@ -228,10 +307,34 @@ export async function POST(request: NextRequest) {
       .map((i) => i.content.split(" ").slice(0, 50).join(" "))
       .join(" | ");
 
-    // Build available topics list for AI reference
+    // Build available topics list for AI reference (with difficulty & estimated hours — Faz 4D)
     const availableTopicsStr = filteredSubjects
-      .map((s) => `${s.name}: ${s.topics.map((t) => t.name).join(", ")}`)
+      .map((s) => `${s.name}: ${s.topics.map((t) => `${t.name} [zorluk:${t.difficulty}, ~${t.estimatedHours}sa]`).join(", ")}`)
       .join("\n");
+
+    // Categorize topic knowledge by level for balanced planning (Faz 4B)
+    const topicsByLevel = {
+      bilinmeyen: allTopicKnowledge.filter(t => t.level <= 1).map(t => `${t.topic.name} (${t.topic.subject.name})`),
+      orta: allTopicKnowledge.filter(t => t.level >= 2 && t.level <= 3).map(t => `${t.topic.name} (${t.topic.subject.name})`),
+      bilinen: allTopicKnowledge.filter(t => t.level >= 4).map(t => `${t.topic.name} (${t.topic.subject.name})`),
+    };
+    const topicsByLevelStr = `=== KONU BİLGİ SEVİYELERİ (DAĞITIM İÇİN KULLAN) ===
+Bilinmeyen (seviye 0-1): ${topicsByLevel.bilinmeyen.join(", ") || "Yok"}
+Orta (seviye 2-3): ${topicsByLevel.orta.join(", ") || "Yok"}
+Bilinen (seviye 4-5): ${topicsByLevel.bilinen.join(", ") || "Yok"}`;
+
+    // Format prerequisites for AI context (Faz 4C)
+    const prerequisitesStr = prerequisites.length > 0
+      ? `=== ÖN-KOŞUL LİSTESİ ===\n${prerequisites.map(p => `- ${p.topic.name} → ${p.prerequisite.name} (${p.strength === "hard" ? "zorunlu" : "önerilen"})`).join("\n")}`
+      : "";
+
+    // Format topic difficulty & estimated hours for AI context (Faz 4D)
+    const allTopicsWithDifficulty = filteredSubjects.flatMap(s =>
+      s.topics.filter(t => t.difficulty >= 4 || t.estimatedHours >= 4).map(t => `${t.name} (${s.name}): zorluk ${t.difficulty}/5, ~${t.estimatedHours} saat`)
+    );
+    const difficultyStr = allTopicsWithDifficulty.length > 0
+      ? `=== ZOR / UZUN KONULAR (DİKKAT) ===\n${allTopicsWithDifficulty.join("\n")}`
+      : "";
 
     // Build context based on wizard type (dynamic wizard or legacy preferences)
     let wizardStr = "";
@@ -288,6 +391,8 @@ Alan: ${examTrackLabel}
 
 Zayıf konular (seviye 0-3): ${weakTopicsStr || "Henüz belirlenmemiş"}
 
+${topicsByLevelStr}
+
 ${examStr}
 
 Son 2 hafta çalışma dağılımı: ${studyStr || "Veri yok"}
@@ -296,20 +401,52 @@ ${insightsStr ? `Geçmiş AI önerileri: ${insightsStr}` : ""}
 
 === MEVCUT KONU LİSTESİ (SADECE BUNLARI KULLAN) ===
 ${availableTopicsStr}
+${prerequisitesStr ? `\n${prerequisitesStr}` : ""}
+${difficultyStr ? `\n${difficultyStr}` : ""}
 ${wizardStr}`.trim();
 
-    // 3. Call OpenAI
+    // 3. Build dynamic system prompt with profile data
+    let systemPrompt = SYSTEM_PROMPT_PLAN_BASE;
+
+    // Add profile info from DB or from wizard context
+    const profileFromWizard = wizardContext?.studentProfile as StudentProfileContext | undefined;
+    if (studentProfile && studentProfile.dailyStudyHours != null) {
+      const availDays = Array.isArray(studentProfile.availableDays) ? (studentProfile.availableDays as number[]) : [];
+      systemPrompt += buildProfilePromptAddon({
+        dailyStudyHours: studentProfile.dailyStudyHours,
+        availableDays: availDays,
+        breakPreference: studentProfile.breakPreference,
+        studyRegularity: studentProfile.studyRegularity,
+        targetRank: studentProfile.targetRank,
+        examDate: studentProfile.examDate,
+      });
+    } else if (profileFromWizard && profileFromWizard.dailyStudyHours != null) {
+      // Fallback: use profile data sent from frontend wizard context
+      systemPrompt += buildProfilePromptAddon({
+        dailyStudyHours: profileFromWizard.dailyStudyHours,
+        availableDays: Array.isArray(profileFromWizard.availableDays) ? profileFromWizard.availableDays : [],
+        breakPreference: profileFromWizard.breakPreference,
+        studyRegularity: profileFromWizard.studyRegularity,
+        targetRank: profileFromWizard.targetRank,
+        examDate: profileFromWizard.examDate ? new Date(profileFromWizard.examDate) : null,
+      });
+    } else {
+      // No profile — use default range
+      systemPrompt += `\n\nHaftalık toplam 15-25 saat arası olmalı (öğrenci cevaplarına göre ayarla).`;
+    }
+
+    // 4. Call OpenAI
     const completion = await getOpenAI().chat.completions.create({
       model: AI_MODEL,
       messages: [
-        { role: "system", content: SYSTEM_PROMPT_PLAN },
+        { role: "system", content: systemPrompt },
         { role: "user", content: contextMessage },
       ],
     });
 
     const rawResponse = completion.choices[0]?.message?.content || "";
 
-    // 4. Parse JSON response
+    // 5. Parse JSON response
     let parsed: AIPlanResponse;
     try {
       // Extract JSON from response (in case AI wraps it in markdown code blocks)
@@ -326,7 +463,7 @@ ${wizardStr}`.trim();
       );
     }
 
-    // 5. Map AI subject/topic names to database IDs and create plan
+    // 6. Map AI subject/topic names to database IDs and create plan
     const plan = await prisma.$transaction(async (tx) => {
       const newPlan = await tx.weeklyPlan.create({
         data: {
@@ -392,7 +529,7 @@ ${wizardStr}`.trim();
       });
     });
 
-    // 6. Save as AI Insight
+    // 7. Save as AI Insight
     try {
       await prisma.aIInsight.create({
         data: {

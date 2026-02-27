@@ -13,6 +13,7 @@ import { format, startOfWeek, addDays, isSameDay, isToday } from "date-fns";
 import { tr } from "date-fns/locale";
 import { useSession } from "next-auth/react";
 import { filterSubjectsByTrack, type ExamTrack } from "@/lib/exam-track-filter";
+import { getTurkeyDateString } from "@/lib/utils";
 
 // ---------- Types ----------
 
@@ -122,7 +123,7 @@ export default function StudyPage() {
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("questions");
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
+    getTurkeyDateString()
   );
 
   // Data
@@ -253,19 +254,19 @@ export default function StudyPage() {
   // Fetch week summary (which days have study data)
   const fetchWeekSummary = useCallback(async () => {
     try {
-      const startStr = weekStart.toISOString().split("T")[0];
-      const endStr = weekEnd.toISOString().split("T")[0];
+      const startStr = getTurkeyDateString(weekStart);
+      const endStr = getTurkeyDateString(weekEnd);
       const [studyRes, reviewRes] = await Promise.all([
         fetch(`/api/daily-study?startDate=${startStr}&endDate=${endStr}`),
         fetch(`/api/topic-reviews?startDate=${startStr}&endDate=${endStr}`),
       ]);
       if (studyRes.ok) {
         const data: DailyStudyEntry[] = await studyRes.json();
-        setWeekStudyDays(new Set(data.map((d) => new Date(d.date).toISOString().split("T")[0])));
+        setWeekStudyDays(new Set(data.map((d) => getTurkeyDateString(new Date(d.date)))));
       }
       if (reviewRes.ok) {
         const data: TopicReviewEntry[] = await reviewRes.json();
-        setWeekReviewDays(new Set(data.map((d) => new Date(d.date).toISOString().split("T")[0])));
+        setWeekReviewDays(new Set(data.map((d) => getTurkeyDateString(new Date(d.date)))));
       }
     } catch {
       // silent
@@ -526,7 +527,7 @@ export default function StudyPage() {
               onClick={() => {
                 const now = new Date();
                 setWeekStart(startOfWeek(now, { weekStartsOn: 1 }));
-                setSelectedDate(now.toISOString().split("T")[0]);
+                setSelectedDate(getTurkeyDateString(now));
               }}
               className="px-4 py-1.5 rounded-xl text-xs font-bold bg-white/[0.05] border border-white/10 text-white/60 hover:text-white hover:border-pink-400/30 transition-all"
             >
@@ -556,7 +557,7 @@ export default function StudyPage() {
 
             <div className="grid grid-cols-7 gap-1.5">
               {weekDays.map((day) => {
-                const dayStr = day.toISOString().split("T")[0];
+                const dayStr = getTurkeyDateString(day);
                 const isSelected = dayStr === selectedDate;
                 const isDayToday = isToday(day);
                 const hasStudy = weekStudyDays.has(dayStr);

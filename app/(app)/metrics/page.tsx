@@ -61,7 +61,7 @@ export default function MetricsPage() {
 
   // Entry form
   const [entryValue, setEntryValue] = useState('');
-  const [entryDate, setEntryDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [entryDate, setEntryDate] = useState(() => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" }));
   const [entryNote, setEntryNote] = useState('');
   const [submittingEntry, setSubmittingEntry] = useState(false);
 
@@ -105,7 +105,7 @@ export default function MetricsPage() {
       setSelectedMetricId(metricId);
       fetchEntries(metricId);
       setEntryValue('');
-      setEntryDate(format(new Date(), 'yyyy-MM-dd'));
+      setEntryDate(new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" }));
       setEntryNote('');
     }
   };
@@ -169,7 +169,7 @@ export default function MetricsPage() {
       toast.success('Değer kaydedildi!');
       setEntryValue('');
       setEntryNote('');
-      setEntryDate(format(new Date(), 'yyyy-MM-dd'));
+      setEntryDate(new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" }));
       fetchEntries(selectedMetricId);
       fetchDefinitions();
     } catch {

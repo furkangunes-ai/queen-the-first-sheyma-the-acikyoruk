@@ -37,9 +37,14 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
   const [step, setStep] = useState(1);
 
   // Step 1: Basic info
+  const [examCategory, setExamCategory] = useState<'genel' | 'brans'>('genel');
+  const [branchSubjectId, setBranchSubjectId] = useState('');
   const [title, setTitle] = useState('');
   const [examTypeId, setExamTypeId] = useState('');
-  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(() => {
+    const d = new Date();
+    return d.toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" });
+  });
   const [notes, setNotes] = useState('');
 
   // Data fetching
@@ -76,6 +81,11 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
     fetchExamTypes();
   }, []);
 
+  // Reset branchSubjectId when switching category or examType
+  useEffect(() => {
+    setBranchSubjectId('');
+  }, [examCategory, examTypeId]);
+
   // Fetch subjects when exam type changes
   useEffect(() => {
     if (!examTypeId) {
@@ -92,15 +102,18 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
         const data = await res.json();
         if (!Array.isArray(data)) throw new Error('Beklenmeyen veri formatı');
         setSubjects(data);
-        setResults(
-          data.map((s: Subject) => ({
-            subjectId: s.id,
-            subjectName: s.name,
-            correctCount: 0,
-            wrongCount: 0,
-            emptyCount: 0,
-          }))
-        );
+        // Only set all results for genel mode; for brans, results are set when branch subject is selected
+        if (examCategory === 'genel') {
+          setResults(
+            data.map((s: Subject) => ({
+              subjectId: s.id,
+              subjectName: s.name,
+              correctCount: 0,
+              wrongCount: 0,
+              emptyCount: 0,
+            }))
+          );
+        }
       } catch {
         toast.error('Dersler yüklenirken hata oluştu');
         setSubjects([]);
@@ -110,7 +123,23 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
       }
     }
     fetchSubjects();
-  }, [examTypeId]);
+  }, [examTypeId, examCategory]);
+
+  // When branch subject is selected, set results to only that subject
+  useEffect(() => {
+    if (examCategory === 'brans' && branchSubjectId) {
+      const subject = subjects.find(s => s.id === branchSubjectId);
+      if (subject) {
+        setResults([{
+          subjectId: subject.id,
+          subjectName: subject.name,
+          correctCount: 0,
+          wrongCount: 0,
+          emptyCount: 0,
+        }]);
+      }
+    }
+  }, [branchSubjectId, examCategory, subjects]);
 
   // Calculate nets
   const nets = useMemo(() => {
@@ -130,7 +159,11 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
   }
 
   function canProceedToStep2() {
-    return title.trim() !== '' && examTypeId !== '' && date !== '';
+    const baseValid = title.trim() !== '' && examTypeId !== '' && date !== '';
+    if (examCategory === 'brans') {
+      return baseValid && branchSubjectId !== '';
+    }
+    return baseValid;
   }
 
   function goToStep2() {
@@ -153,6 +186,7 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
           examTypeId,
           date,
           notes: notes.trim() || undefined,
+          examCategory: examCategory === 'brans' ? 'brans' : undefined,
         }),
       });
 
@@ -238,6 +272,37 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
             </div>
 
             <div className="space-y-6">
+              {/* Exam Category Toggle */}
+              <div>
+                <label className="block text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-2">
+                  Deneme Kategorisi
+                </label>
+                <div className="flex rounded-xl overflow-hidden border border-white/10 bg-white/[0.02]">
+                  <button
+                    type="button"
+                    onClick={() => setExamCategory('genel')}
+                    className={`flex-1 py-3 px-4 text-sm font-bold tracking-wide transition-all ${
+                      examCategory === 'genel'
+                        ? 'bg-gradient-to-r from-pink-500/20 to-pink-600/20 text-pink-400 border-r border-pink-500/20 shadow-[inset_0_0_20px_rgba(255,42,133,0.1)]'
+                        : 'text-white/40 hover:text-white/60 hover:bg-white/[0.03] border-r border-white/10'
+                    }`}
+                  >
+                    Genel Deneme
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExamCategory('brans')}
+                    className={`flex-1 py-3 px-4 text-sm font-bold tracking-wide transition-all ${
+                      examCategory === 'brans'
+                        ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-400 shadow-[inset_0_0_20px_rgba(245,158,11,0.1)]'
+                        : 'text-white/40 hover:text-white/60 hover:bg-white/[0.03]'
+                    }`}
+                  >
+                    Branş Denemesi
+                  </button>
+                </div>
+              </div>
+
               {/* Title */}
               <div>
                 <label className="block text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-2">
@@ -245,7 +310,7 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                 </label>
                 <input
                   type="text"
-                  placeholder="Örn: Özdebir TYT Deneme 3"
+                  placeholder={examCategory === 'brans' ? 'Örn: Matematik Branş Denemesi 1' : 'Örn: Özdebir TYT Deneme 3'}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className={inputClassName}
@@ -292,6 +357,34 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                   />
                 </div>
               </div>
+
+              {/* Branch Subject Picker - only shown in brans mode */}
+              {examCategory === 'brans' && examTypeId && (
+                <div>
+                  <label className="block text-[11px] font-bold text-amber-400/70 uppercase tracking-widest px-1 mb-2">
+                    Branş Dersi
+                  </label>
+                  {loadingSubjects ? (
+                    <div className="flex items-center gap-2 text-white/40 h-[46px] px-4">
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                      <span className="text-sm font-medium">Dersler yükleniyor...</span>
+                    </div>
+                  ) : (
+                    <select
+                      value={branchSubjectId}
+                      onChange={(e) => setBranchSubjectId(e.target.value)}
+                      className={`${inputClassName} [color-scheme:dark] !border-amber-500/20 focus:!ring-amber-400/50 focus:!border-amber-400/30`}
+                    >
+                      <option value="">Branş dersi seçin</option>
+                      {subjects.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} ({s.questionCount} soru)
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
 
               {/* Notes */}
               <div>
@@ -340,8 +433,17 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
             className="relative z-10 flex flex-col h-full"
           >
             <div className="flex items-center gap-3 mb-8 pb-4 border-b border-white/5">
-              <FileText size={24} className="text-cyan-400" />
-              <h2 className="text-2xl font-bold tracking-tight text-white">Ders Sonuçları</h2>
+              <FileText size={24} className={examCategory === 'brans' ? 'text-amber-400' : 'text-cyan-400'} />
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight text-white">
+                  {examCategory === 'brans' ? 'Branş Sonuçları' : 'Ders Sonuçları'}
+                </h2>
+                {examCategory === 'brans' && results.length > 0 && (
+                  <p className="text-sm text-amber-400/70 mt-1">
+                    {results[0].subjectName} branş denemesi
+                  </p>
+                )}
+              </div>
             </div>
 
             {loadingSubjects ? (

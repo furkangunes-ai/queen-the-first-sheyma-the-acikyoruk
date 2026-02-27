@@ -58,9 +58,21 @@ const mediumCalc: QuestionGenerator = () => {
   }
 };
 
-// Difficulty 3: Two digit multiply, simple division, mixed
+// Difficulty 3: Two digit multiply, simple division, mixed, square root, powers
+const sqrtCalc: QuestionGenerator = () => {
+  const perfectSquares = [4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196, 225, 256, 324, 400];
+  const n = pick(perfectSquares);
+  return { expression: `\u221a${n}`, answer: Math.sqrt(n), type: "karekok", difficulty: 3 };
+};
+
+const powerCalc: QuestionGenerator = () => {
+  const bases: [number, number][] = [[2, rand(3,8)], [3, rand(2,4)], [5, rand(2,3)], [4, 3], [6, 2], [7, 2], [8, 2], [9, 2]];
+  const [base, exp] = pick(bases);
+  return { expression: `${base}^${exp}`, answer: Math.pow(base, exp), type: "us", difficulty: 3 };
+};
+
 const hardCalc: QuestionGenerator = () => {
-  const type = pick(["mul2", "div", "mixed"]);
+  const type = pick(["mul2", "div", "mixed", "sqrt", "power"]);
   switch (type) {
     case "mul2": {
       const a = rand(11, 25);
@@ -83,14 +95,35 @@ const hardCalc: QuestionGenerator = () => {
       }
       return { expression: `${a} - ${b} + ${c}`, answer: a - b + c, type: "karisik", difficulty: 3 };
     }
+    case "sqrt":
+      return sqrtCalc();
+    case "power":
+      return powerCalc();
     default:
       return mediumCalc();
   }
 };
 
-// Difficulty 4: Percentage, fraction, complex
+// Difficulty 4: Percentage, fraction, complex, ratio, equation, factorial
+const ratioCalc: QuestionGenerator = () => {
+  const a = rand(2, 8), b = rand(2, 8), multiplier = rand(2, 7);
+  return { expression: `${a}:${b} = x:${b * multiplier} \u2192 x`, answer: a * multiplier, type: "oran", difficulty: 4 };
+};
+
+const equationCalc: QuestionGenerator = () => {
+  const a = rand(2, 7), answer = rand(2, 10), b = rand(3, 15);
+  const result = a * answer + b;
+  return { expression: `${a}x + ${b} = ${result} \u2192 x`, answer, type: "denklem", difficulty: 4 };
+};
+
+const factorialCalc: QuestionGenerator = () => {
+  const factorials: [string, number][] = [["5!", 120], ["4!", 24], ["6!/4!", 30], ["5!/3!", 20], ["6!/5!", 6], ["7!/6!", 7], ["3!+4!", 30]];
+  const [expr, ans] = pick(factorials);
+  return { expression: expr, answer: ans, type: "faktoriyel", difficulty: 4 };
+};
+
 const advancedCalc: QuestionGenerator = () => {
-  const type = pick(["percent", "fraction", "complex"]);
+  const type = pick(["percent", "fraction", "complex", "ratio", "equation", "factorial"]);
   switch (type) {
     case "percent": {
       const percents = [10, 20, 25, 50, 75];
@@ -131,14 +164,75 @@ const advancedCalc: QuestionGenerator = () => {
         difficulty: 4,
       };
     }
+    case "ratio":
+      return ratioCalc();
+    case "equation":
+      return equationCalc();
+    case "factorial":
+      return factorialCalc();
     default:
       return hardCalc();
   }
 };
 
-// Difficulty 5: EBOB-EKOK style, multi-step, YKS-level
+// Difficulty 5: EBOB-EKOK style, multi-step, YKS-level, triangle, geometric sequence, modular, compound
+const triangleCalc: QuestionGenerator = () => {
+  const triangles: [string, number][] = [
+    ["3-4-5 \u00fc\u00e7genin alan\u0131", 6],
+    ["5-12-13 \u00fc\u00e7genin alan\u0131", 30],
+    ["6-8-10 \u00fc\u00e7genin alan\u0131", 24],
+    ["8-15-17 \u00fc\u00e7genin alan\u0131", 60],
+    ["Taban 10, y\u00fckseklik 6 \u2192 alan", 30],
+    ["Taban 12, y\u00fckseklik 5 \u2192 alan", 30],
+    ["Taban 7, y\u00fckseklik 8 \u2192 alan", 28],
+  ];
+  const [expr, ans] = pick(triangles);
+  return { expression: expr, answer: ans, type: "ucgen", difficulty: 5 };
+};
+
+const geometricCalc: QuestionGenerator = () => {
+  const r = pick([2, 3]);
+  const a1 = pick([2, 3, 5]);
+  const n = rand(4, 6);
+  const answer = a1 * Math.pow(r, n - 1);
+  const terms = [a1, a1*r, a1*r*r].join(", ");
+  return { expression: `${terms}, ... \u2192 ${n}. terim`, answer, type: "dizi", difficulty: 5 };
+};
+
+const modCalc: QuestionGenerator = () => {
+  const a = rand(30, 99), b = rand(3, 11);
+  return { expression: `${a} mod ${b}`, answer: a % b, type: "mod", difficulty: 5 };
+};
+
+const squareCalc: QuestionGenerator = () => {
+  const n = rand(11, 25);
+  return { expression: `${n}\u00b2`, answer: n * n, type: "kare", difficulty: 5 };
+};
+
+const compoundCalc: QuestionGenerator = () => {
+  const type = pick(["a", "b", "c"]);
+  switch (type) {
+    case "a": {
+      const n = rand(10, 20);
+      const sub = rand(10, 50);
+      const div = pick([2, 5, 10]);
+      const answer = (n * n - sub) / div;
+      if (!Number.isInteger(answer) || answer < 0) return compoundCalc();
+      return { expression: `(${n}\u00b2 - ${sub}) / ${div}`, answer, type: "bilesik", difficulty: 5 };
+    }
+    case "b": {
+      const a = rand(2, 5), b = rand(2, 5), c = rand(2, 9);
+      return { expression: `${a} \u00d7 ${b} + ${c}\u00b2`, answer: a * b + c * c, type: "bilesik", difficulty: 5 };
+    }
+    default: {
+      const a = rand(10, 30), b = rand(10, 30);
+      return { expression: `${a}\u00b2 - ${b}\u00b2`, answer: a*a - b*b, type: "bilesik", difficulty: 5 };
+    }
+  }
+};
+
 const yksCalc: QuestionGenerator = () => {
-  const type = pick(["ebob", "ekok", "square", "multi"]);
+  const type = pick(["ebob", "ekok", "square", "multi", "triangle", "geometric", "mod", "squareCalc", "compound"]);
   switch (type) {
     case "ebob": {
       // GCD of two numbers
@@ -206,6 +300,16 @@ const yksCalc: QuestionGenerator = () => {
         difficulty: 5,
       };
     }
+    case "triangle":
+      return triangleCalc();
+    case "geometric":
+      return geometricCalc();
+    case "mod":
+      return modCalc();
+    case "squareCalc":
+      return squareCalc();
+    case "compound":
+      return compoundCalc();
     default:
       return advancedCalc();
   }
@@ -241,7 +345,7 @@ export const DIFFICULTY_LABELS: Record<number, string> = {
 export const DIFFICULTY_DESCRIPTIONS: Record<number, string> = {
   1: "Tek haneli toplama ve cikarma",
   2: "Iki haneli islemler, carpim tablosu",
-  3: "Iki haneli carpma, bolme, karisik",
-  4: "Yuzde, kesir, karmasik islemler",
-  5: "EBOB-EKOK, kare hesaplama, cok adimli",
+  3: "Iki haneli carpma, bolme, karisik, karekok, us hesaplama",
+  4: "Yuzde, kesir, karmasik islemler, oran-oranti, denklem, faktoriyel",
+  5: "EBOB-EKOK, kare hesaplama, ucgen alani, geometrik dizi, mod, bilesik islemler",
 };
