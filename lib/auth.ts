@@ -32,15 +32,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.displayName,
           email: user.username,
           role: user.role,
+          examTrack: user.examTrack,
         };
       },
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    jwt({ token, user, trigger, session }) {
       if (user) {
         token.role = (user as any).role;
         token.userId = user.id;
+        token.examTrack = (user as any).examTrack;
+      }
+      // Handle session.update() from client — e.g. after examTrack change
+      if (trigger === "update" && session?.examTrack !== undefined) {
+        token.examTrack = session.examTrack;
       }
       return token;
     },
@@ -48,6 +54,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         (session.user as any).role = token.role;
         (session.user as any).id = token.userId;
+        (session.user as any).examTrack = token.examTrack;
       }
       return session;
     },

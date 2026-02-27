@@ -82,9 +82,9 @@ const DIFFICULTY_MAP: Record<string, { label: string; color: string; bg: string 
 };
 
 const STATUS_MAP: Record<string, { label: string; icon: React.ElementType; color: string; bg: string }> = {
-  anladim: { label: 'Anladim', icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+  anladim: { label: 'Anladım', icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
   tekrar: { label: 'Tekrar Lazim', icon: RefreshCw, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
-  anlamadim: { label: 'Anlamadim', icon: AlertTriangle, color: 'text-rose-400', bg: 'bg-rose-500/10 border-rose-500/20' },
+  anlamadim: { label: 'Anlamadım', icon: AlertTriangle, color: 'text-rose-400', bg: 'bg-rose-500/10 border-rose-500/20' },
 };
 
 // ---------- Helpers ----------
@@ -307,7 +307,7 @@ function QuestionsTab({
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-center">
             <CheckCircle className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
             <p className="text-lg font-bold text-emerald-400">{statusCounts.anladim}</p>
-            <p className="text-[10px] text-emerald-400/70 uppercase font-medium">Anladim</p>
+            <p className="text-[10px] text-emerald-400/70 uppercase font-medium">Anladım</p>
           </div>
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-center">
             <RefreshCw className="w-5 h-5 text-amber-400 mx-auto mb-1" />
@@ -317,12 +317,12 @@ function QuestionsTab({
           <div className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-3 text-center">
             <AlertTriangle className="w-5 h-5 text-rose-400 mx-auto mb-1" />
             <p className="text-lg font-bold text-rose-400">{statusCounts.anlamadim}</p>
-            <p className="text-[10px] text-rose-400/70 uppercase font-medium">Anlamadim</p>
+            <p className="text-[10px] text-rose-400/70 uppercase font-medium">Anlamadım</p>
           </div>
           <div className="bg-white/[0.04] border border-white/10 rounded-lg p-3 text-center">
             <Target className="w-5 h-5 text-white/40 mx-auto mb-1" />
             <p className="text-lg font-bold text-white/60">{statusCounts.none}</p>
-            <p className="text-[10px] text-white/40 uppercase font-medium">Belirtilmemis</p>
+            <p className="text-[10px] text-white/40 uppercase font-medium">Belirtilmemiş</p>
           </div>
         </div>
       )}
@@ -348,10 +348,10 @@ function QuestionsTab({
           className="text-sm p-1.5 rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
         >
           <option value="all">Tum Durumlar</option>
-          <option value="anladim">Anladim</option>
+          <option value="anladim">Anladım</option>
           <option value="tekrar">Tekrar Lazim</option>
-          <option value="anlamadim">Anlamadim</option>
-          <option value="none">Belirtilmemis</option>
+          <option value="anlamadim">Anlamadım</option>
+          <option value="none">Belirtilmemiş</option>
         </select>
       </div>
 
@@ -463,7 +463,7 @@ function WrongAnalysisTab({ exam }: { exam: ExamDetail }) {
   const errorReasonData = useMemo(() => {
     const counts: Record<string, number> = {};
     exam.wrongQuestions.forEach((wq) => {
-      const label = wq.errorReason?.label ?? 'Belirtilmemis';
+      const label = wq.errorReason?.label ?? 'Belirtilmemiş';
       counts[label] = (counts[label] || 0) + 1;
     });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
@@ -572,7 +572,7 @@ function TopicDistributionTab({ exam }: { exam: ExamDetail }) {
   const topicData = useMemo(() => {
     const topicMap: Record<string, { topic: string; subject: string; count: number }> = {};
     exam.wrongQuestions.forEach((wq) => {
-      const topicName = wq.topic?.name ?? 'Belirtilmemis';
+      const topicName = wq.topic?.name ?? 'Belirtilmemiş';
       const key = `${wq.subject.name}::${topicName}`;
       if (!topicMap[key]) {
         topicMap[key] = { topic: topicName, subject: wq.subject.name, count: 0 };
@@ -806,7 +806,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
     setDeleting(true);
     try {
       const res = await fetch(`/api/exams/${examId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Silme basarisiz');
+      if (!res.ok) throw new Error('Silme başarısız');
       toast.success('Deneme silindi');
       onDeleted ? onDeleted() : onBack();
     } catch {
@@ -837,7 +837,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
           ...(editNotes && { notes: editNotes }),
         }),
       });
-      if (!res.ok) throw new Error('Guncelleme basarisiz');
+      if (!res.ok) throw new Error('Güncelleme başarısız');
       const updated = await res.json();
       setExam(prev => prev ? { ...prev, title: updated.title, date: updated.date } : prev);
       toast.success('Deneme guncellendi');
@@ -956,7 +956,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
                     disabled={deleting}
                     className="px-4 py-2 bg-white/[0.06] text-white/70 border border-white/10 rounded-lg text-sm font-medium hover:bg-white/10"
                   >
-                    Iptal
+                    İptal
                   </button>
                 </div>
               </div>
@@ -1010,7 +1010,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
                     className="px-4 py-2 bg-white/[0.06] text-white/70 border border-white/10 rounded-lg text-sm font-medium hover:bg-white/10 flex items-center gap-2"
                   >
                     <X className="w-4 h-4" />
-                    Iptal
+                    İptal
                   </button>
                 </div>
               </div>

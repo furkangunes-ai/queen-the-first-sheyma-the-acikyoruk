@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { format, startOfWeek, addDays, isSameDay, isToday } from "date-fns";
 import { tr } from "date-fns/locale";
+import { useSession } from "next-auth/react";
+import { filterSubjectsByTrack, type ExamTrack } from "@/lib/exam-track-filter";
 
 // ---------- Types ----------
 
@@ -115,6 +117,9 @@ async function uploadPhoto(file: File): Promise<{ photoUrl: string; photoR2Key: 
 // ---------- Component ----------
 
 export default function StudyPage() {
+  const { data: session } = useSession();
+  const examTrack = (session?.user as any)?.examTrack as ExamTrack;
+
   const [activeTab, setActiveTab] = useState<ActiveTab>("questions");
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0]
@@ -227,7 +232,9 @@ export default function StudyPage() {
             }
           }
         }
-        setSubjects(allSubjects);
+        // Filter by exam track (sayısal won't see AYT Edebiyat etc.)
+        const filtered = filterSubjectsByTrack(allSubjects, examTrack);
+        setSubjects(filtered);
       }
 
       if (studyRes.ok) setStudies(await studyRes.json());
@@ -237,7 +244,7 @@ export default function StudyPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedDate]);
+  }, [selectedDate, examTrack]);
 
   useEffect(() => {
     fetchData();

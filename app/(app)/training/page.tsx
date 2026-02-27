@@ -7,7 +7,7 @@ import MentalMath from "@/components/training/mental-math";
 import ParagraphComprehension from "@/components/training/paragraph-comprehension";
 
 const TABS = [
-  { key: "mental-math", label: "Islem Hizi", icon: Brain, color: "cyan" },
+  { key: "mental-math", label: "İşlem Hızı", icon: Brain, color: "cyan" },
   { key: "paragraph", label: "Paragraf Anlama", icon: BookOpen, color: "purple" },
 ] as const;
 
@@ -25,7 +25,7 @@ export default function TrainingPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-white">Antrenman</h1>
-          <p className="text-sm text-white/40">Zihinsel yeteneklerini gelistir</p>
+          <p className="text-sm text-white/40">Zihinsel yeteneklerini geliştir</p>
         </div>
       </div>
 

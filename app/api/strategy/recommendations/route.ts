@@ -10,17 +10,34 @@ export async function GET(request: NextRequest) {
     }
     const userId = (session.user as any).id;
 
+    // Fetch user's exam track for subject filtering
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { examTrack: true } });
+    const examTrack = user?.examTrack;
+
     const { searchParams } = new URL(request.url);
     const examTypeId = searchParams.get("examTypeId");
     const limit = parseInt(searchParams.get("limit") || "20");
 
     // 1. Get all topics with subject info
-    const topics = await prisma.topic.findMany({
+    const allTopics = await prisma.topic.findMany({
       where: examTypeId ? { subject: { examTypeId } } : {},
       include: {
         subject: { include: { examType: true } },
       },
     });
+
+    // Filter topics by exam track
+    // TYT subjects always shown; AYT subjects filtered by track
+    const topics = examTrack ? allTopics.filter(t => {
+      const isAYT = t.subject.examType.slug === "ayt" || t.subject.examType.name === "AYT";
+      if (!isAYT) return true;
+      const excluded: Record<string, string[]> = {
+        sayisal: ["Edebiyat", "Tarih", "Coğrafya"],
+        ea: ["Fizik", "Kimya", "Biyoloji"],
+        sozel: ["Fizik", "Kimya", "Biyoloji", "Matematik"],
+      };
+      return !(excluded[examTrack] || []).includes(t.subject.name);
+    }) : allTopics;
 
     // 2. Get knowledge levels
     const knowledge = await prisma.topicKnowledge.findMany({

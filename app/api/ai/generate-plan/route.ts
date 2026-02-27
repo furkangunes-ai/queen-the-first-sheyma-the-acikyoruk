@@ -65,11 +65,23 @@ interface WizardAnswer {
   customNote?: string;
 }
 
+interface FixedSubject {
+  id: string;
+  name: string;
+  examType: string;
+}
+
+interface FixedAnswersContext {
+  examScope: "tyt" | "ayt" | "both";
+  selectedSubjects: FixedSubject[];
+}
+
 interface WizardContext {
   analysis: string;
   weakAreas: string[];
   strongAreas?: string[];
   questions: WizardAnswer[];
+  fixedAnswers?: FixedAnswersContext;
 }
 
 export async function POST(request: NextRequest) {
@@ -77,6 +89,10 @@ export async function POST(request: NextRequest) {
     const guard = await checkAIAccess();
     if (isAIGuardError(guard)) return guard;
     const { userId } = guard;
+
+    // Fetch user's exam track for subject filtering
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { examTrack: true } });
+    const examTrack = user?.examTrack;
 
     const { weekStartDate, weekEndDate, preferences, wizardContext } = await request.json();
     if (!weekStartDate || !weekEndDate) {
@@ -148,10 +164,23 @@ export async function POST(request: NextRequest) {
         }),
       ]);
 
+    // Filter subjects by exam track
+    // TYT subjects always shown; AYT subjects filtered by track
+    const filteredSubjects = examTrack ? allSubjects.filter(s => {
+      const isAYT = s.examType.slug === "ayt" || s.examType.name === "AYT";
+      if (!isAYT) return true;
+      const excluded: Record<string, string[]> = {
+        sayisal: ["Edebiyat", "Tarih", "Coğrafya"],
+        ea: ["Fizik", "Kimya", "Biyoloji"],
+        sozel: ["Fizik", "Kimya", "Biyoloji", "Matematik"],
+      };
+      return !(excluded[examTrack] || []).includes(s.name);
+    }) : allSubjects;
+
     // Build subject name → ID map
     const subjectNameMap = new Map<string, string>();
     const topicNameMap = new Map<string, string>(); // "SubjectName-TopicName" → topicId
-    for (const subject of allSubjects) {
+    for (const subject of filteredSubjects) {
       subjectNameMap.set(subject.name.toLowerCase(), subject.id);
       // Also map with exam type prefix for disambiguation
       subjectNameMap.set(
@@ -200,7 +229,7 @@ export async function POST(request: NextRequest) {
       .join(" | ");
 
     // Build available topics list for AI reference
-    const availableTopicsStr = allSubjects
+    const availableTopicsStr = filteredSubjects
       .map((s) => `${s.name}: ${s.topics.map((t) => t.name).join(", ")}`)
       .join("\n");
 
@@ -208,11 +237,28 @@ export async function POST(request: NextRequest) {
     let wizardStr = "";
 
     if (wizardContext) {
-      // New dynamic wizard: AI analysis + student answers
+      // New dynamic wizard: AI analysis + student answers + fixed choices
       const typedCtx = wizardContext as WizardContext;
       const answersStr = typedCtx.questions
         .map((a) => `Soru: ${a.question}\nCevap: ${a.selectedOption}${a.customNote ? ` (Not: ${a.customNote})` : ""}`)
         .join("\n\n");
+
+      // Fixed answers from wizard
+      let fixedStr = "";
+      if (typedCtx.fixedAnswers) {
+        const scopeLabel = typedCtx.fixedAnswers.examScope === "tyt" ? "Sadece TYT"
+          : typedCtx.fixedAnswers.examScope === "ayt" ? "Sadece AYT"
+          : "TYT ve AYT birlikte";
+        const subjectNames = typedCtx.fixedAnswers.selectedSubjects
+          .map((s) => `${s.examType} - ${s.name}`)
+          .join(", ");
+        fixedStr = `
+=== ÖĞRENCİ TERCİHLERİ ===
+Çalışma kapsamı: ${scopeLabel}
+Seçilen dersler: ${subjectNames || "Belirtilmedi"}
+
+ÖNEMLİ: Sadece öğrencinin seçtiği derslere çalışma planı oluştur. Seçilmeyen dersleri EKLEME.`;
+      }
 
       wizardStr = `
 === AI ANALİZ ÖZETİ ===
@@ -220,6 +266,7 @@ ${typedCtx.analysis}
 
 Zayıf alanlar: ${typedCtx.weakAreas?.join(", ") || "Belirtilmedi"}
 ${typedCtx.strongAreas ? `Güçlü alanlar: ${typedCtx.strongAreas.join(", ")}` : ""}
+${fixedStr}
 
 === ÖĞRENCİ CEVAPLARI ===
 ${answersStr}`;
@@ -235,7 +282,9 @@ ${answersStr}`;
 - Fazladan çalışılabilecek günler: ${preferences.extra_days || "Belirtilmedi"}${preferences.extra_days_note ? ` (Not: ${preferences.extra_days_note})` : ""}`;
     }
 
+    const examTrackLabel = examTrack === "sayisal" ? "Sayısal" : examTrack === "ea" ? "Eşit Ağırlık" : examTrack === "sozel" ? "Sözel" : "Belirlenmedi";
     const contextMessage = `Hafta: ${format(start, "d MMMM", { locale: tr })} - ${format(end, "d MMMM yyyy", { locale: tr })}
+Alan: ${examTrackLabel}
 
 Zayıf konular (seviye 0-3): ${weakTopicsStr || "Henüz belirlenmemiş"}
 
@@ -292,7 +341,7 @@ ${wizardStr}`.trim();
       let sortOrder = 0;
       for (const item of parsed.items) {
         // Find subject ID by name (case-insensitive)
-        const subjectId = findSubjectId(item.subjectName, subjectNameMap, allSubjects);
+        const subjectId = findSubjectId(item.subjectName, subjectNameMap, filteredSubjects);
         if (!subjectId) {
           console.warn(`Subject not found: ${item.subjectName}, skipping`);
           continue;
@@ -307,7 +356,7 @@ ${wizardStr}`.trim();
 
           // If not found, try fuzzy match on topic name alone within this subject
           if (!topicId) {
-            const subject = allSubjects.find((s) => s.id === subjectId);
+            const subject = filteredSubjects.find((s) => s.id === subjectId);
             if (subject) {
               const matchedTopic = subject.topics.find(
                 (t) =>

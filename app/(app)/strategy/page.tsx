@@ -12,10 +12,10 @@ import SpacedRepetition from "@/components/strategy/spaced-repetition";
 type StrategyTab = "topic-map" | "weekly-plan" | "weekly-analysis" | "ai-assistant" | "spaced-repetition";
 
 const tabs: { key: StrategyTab; label: string; icon: React.ReactNode }[] = [
-  { key: "topic-map", label: "Konu Haritasi", icon: <Map size={16} /> },
-  { key: "weekly-plan", label: "Haftalik Plan", icon: <CalendarDays size={16} /> },
+  { key: "topic-map", label: "Konu Haritası", icon: <Map size={16} /> },
+  { key: "weekly-plan", label: "Haftalık Plan", icon: <CalendarDays size={16} /> },
   { key: "spaced-repetition", label: "Hata Tekrar", icon: <RotateCw size={16} /> },
-  { key: "weekly-analysis", label: "Haftalik Analiz", icon: <TrendingUp size={16} /> },
+  { key: "weekly-analysis", label: "Haftalık Analiz", icon: <TrendingUp size={16} /> },
   { key: "ai-assistant", label: "AI Asistan", icon: <Bot size={16} /> },
 ];
 
@@ -30,7 +30,7 @@ export default function StrategyPage() {
           Strateji
         </h1>
         <p className="text-white/50 mt-1">
-          Konu hakimiyetini degerlendir, haftalik plan olustur ve AI destekli analiz al
+          Konu hakimiyetini değerlendir, haftalık plan oluştur ve AI destekli analiz al
         </p>
       </div>
 

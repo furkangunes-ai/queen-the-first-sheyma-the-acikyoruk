@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
@@ -32,6 +33,129 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import NotificationBell from '@/components/notifications/notification-bell';
+import { Beaker, BookText, Scale } from 'lucide-react';
+import { getExamTrackLabel, type ExamTrack } from '@/lib/exam-track-filter';
+
+// ---------- Exam Track Profile Modal ----------
+
+function ExamTrackModal({ onSelect }: { onSelect: (track: string) => void }) {
+  const [selecting, setSelecting] = useState<string | null>(null);
+
+  const tracks = [
+    {
+      value: 'sayisal',
+      label: 'Sayısal',
+      description: 'Matematik, Fizik, Kimya, Biyoloji',
+      icon: Beaker,
+      color: 'from-cyan-500 to-blue-500',
+      border: 'border-cyan-500/30',
+      shadow: 'shadow-cyan-500/20',
+      hover: 'hover:border-cyan-400/50',
+    },
+    {
+      value: 'ea',
+      label: 'Eşit Ağırlık',
+      description: 'Matematik, Edebiyat, Tarih, Coğrafya',
+      icon: Scale,
+      color: 'from-amber-500 to-orange-500',
+      border: 'border-amber-500/30',
+      shadow: 'shadow-amber-500/20',
+      hover: 'hover:border-amber-400/50',
+    },
+    {
+      value: 'sozel',
+      label: 'Sözel',
+      description: 'Edebiyat, Tarih, Coğrafya, Felsefe',
+      icon: BookText,
+      color: 'from-pink-500 to-rose-500',
+      border: 'border-pink-500/30',
+      shadow: 'shadow-pink-500/20',
+      hover: 'hover:border-pink-400/50',
+    },
+  ];
+
+  const handleSelect = async (track: string) => {
+    setSelecting(track);
+    try {
+      const res = await fetch('/api/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ examTrack: track }),
+      });
+      if (!res.ok) throw new Error();
+      onSelect(track);
+      toast.success(`Alan seçildi: ${getExamTrackLabel(track as ExamTrack)}`);
+    } catch {
+      toast.error('Alan seçilemedi. Lütfen tekrar deneyin.');
+    } finally {
+      setSelecting(null);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="w-full max-w-md bg-slate-950/95 backdrop-blur-xl border border-pink-500/15 rounded-2xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.5)]"
+      >
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-pink-500/20 to-amber-500/20 border border-white/10 flex items-center justify-center">
+            <Sparkles className="w-7 h-7 text-pink-400" />
+          </div>
+          <h2 className="text-xl font-bold text-white/90 mb-2">Hangi alandasın?</h2>
+          <p className="text-sm text-white/50">
+            Sana özel ders ve konu önerilerini gösterebilmemiz için alanını seç.
+          </p>
+        </div>
+
+        {/* Track Options */}
+        <div className="space-y-3">
+          {tracks.map((track) => {
+            const Icon = track.icon;
+            const isSelecting = selecting === track.value;
+            return (
+              <button
+                key={track.value}
+                onClick={() => handleSelect(track.value)}
+                disabled={selecting !== null}
+                className={`w-full flex items-center gap-4 p-4 rounded-xl border ${track.border} ${track.hover} bg-white/[0.03] hover:bg-white/[0.06] transition-all disabled:opacity-50 disabled:cursor-not-allowed group`}
+              >
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${track.color} flex items-center justify-center shadow-lg ${track.shadow} flex-shrink-0`}>
+                  <Icon className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-left flex-1">
+                  <p className="text-sm font-bold text-white/90 group-hover:text-white transition-colors">
+                    {track.label}
+                  </p>
+                  <p className="text-xs text-white/40">{track.description}</p>
+                </div>
+                {isSelecting && (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  >
+                    <Sparkles className="w-4 h-4 text-pink-400" />
+                  </motion.div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <p className="text-[10px] text-white/25 text-center mt-6">
+          Bu ayar daha sonra profilinden değiştirilebilir.
+        </p>
+      </motion.div>
+    </motion.div>
+  );
+}
 
 // ---------- Grouped Navigation ----------
 
@@ -54,16 +178,16 @@ const NAV_GROUPS: NavGroup[] = [
     icon: LayoutDashboard,
     defaultOpen: true,
     items: [
-      { path: '/', label: 'Genel Bakis', icon: LayoutDashboard },
+      { path: '/', label: 'Genel Bakış', icon: LayoutDashboard },
       { path: '/analytics', label: 'Analiz', icon: BarChart2 },
     ],
   },
   {
-    label: "Calisma",
+    label: "Çalışma",
     icon: BookOpenCheck,
     defaultOpen: true,
     items: [
-      { path: '/study', label: 'Gunluk Calisma', icon: BookOpenCheck },
+      { path: '/study', label: 'Günlük Çalışma', icon: BookOpenCheck },
       { path: '/exams', label: 'Denemeler', icon: GraduationCap },
       { path: '/tasks', label: 'Planlama', icon: CheckSquare },
     ],
@@ -73,7 +197,7 @@ const NAV_GROUPS: NavGroup[] = [
     icon: Dumbbell,
     defaultOpen: false,
     items: [
-      { path: '/speed-reading', label: 'Hizli Okuma', icon: Zap },
+      { path: '/speed-reading', label: 'Hızlı Okuma', icon: Zap },
       { path: '/training', label: 'Antrenman', icon: Dumbbell },
     ],
   },
@@ -86,7 +210,7 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Kisisel",
+    label: "Kişisel",
     icon: Heart,
     defaultOpen: false,
     items: [
@@ -177,10 +301,11 @@ function NavGroupSection({
 
 // ---------- Sidebar Content ----------
 
-function SidebarContent({ pathname, isAdmin, userName, onNavClick }: {
+function SidebarContent({ pathname, isAdmin, userName, examTrack, onNavClick }: {
   pathname: string;
   isAdmin: boolean;
   userName: string;
+  examTrack?: string | null;
   onNavClick?: () => void;
 }) {
   return (
@@ -242,9 +367,11 @@ function SidebarContent({ pathname, isAdmin, userName, onNavClick }: {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-white/90 truncate">{userName}</p>
-              {isAdmin && (
+              {isAdmin ? (
                 <span className="text-[10px] text-cyan-300 uppercase tracking-widest font-bold">Admin</span>
-              )}
+              ) : examTrack ? (
+                <span className="text-[10px] text-pink-300 uppercase tracking-widest font-bold">{getExamTrackLabel(examTrack as ExamTrack)}</span>
+              ) : null}
             </div>
           </div>
           <button
@@ -252,7 +379,7 @@ function SidebarContent({ pathname, isAdmin, userName, onNavClick }: {
             className="flex items-center justify-center gap-2 w-full px-4 py-2 mt-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-sm font-medium transition-colors border border-white/5"
           >
             <LogOut size={16} />
-            <span>Cikis Yap</span>
+            <span>Çıkış Yap</span>
           </button>
         </div>
       </div>
@@ -264,17 +391,31 @@ function SidebarContent({ pathname, isAdmin, userName, onNavClick }: {
 
 export function BinderLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const userName = session?.user?.name || 'Kullanici';
+  const userName = session?.user?.name || 'Kullanıcı';
   const isAdmin = (session?.user as any)?.role === 'admin';
+  const examTrack = (session?.user as any)?.examTrack as string | null | undefined;
+  const showExamTrackModal = session?.user && !examTrack;
+
+  const handleExamTrackSelect = useCallback(async (track: string) => {
+    // Update the JWT session with the new examTrack
+    await updateSession({ examTrack: track });
+  }, [updateSession]);
 
   return (
     <div className="min-h-screen w-full flex bg-background">
       {/* Glow Effect Orbs */}
       <div className="fixed top-[-10%] left-[-5%] w-[40vw] h-[40vw] rounded-full bg-pink-600/10 blur-[100px] pointer-events-none mix-blend-screen" />
       <div className="fixed bottom-[-10%] right-[-5%] w-[40vw] h-[40vw] rounded-full bg-cyan-500/10 blur-[100px] pointer-events-none mix-blend-screen" />
+
+      {/* Exam Track Selection Modal (shown on first login) */}
+      <AnimatePresence>
+        {showExamTrackModal && (
+          <ExamTrackModal onSelect={handleExamTrackSelect} />
+        )}
+      </AnimatePresence>
 
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex w-[280px] h-screen sticky top-0 flex-col relative z-20">
@@ -283,6 +424,7 @@ export function BinderLayout({ children }: { children: React.ReactNode }) {
              pathname={pathname}
              userName={userName}
              isAdmin={isAdmin}
+             examTrack={examTrack}
            />
         </div>
       </aside>
@@ -316,6 +458,7 @@ export function BinderLayout({ children }: { children: React.ReactNode }) {
                   pathname={pathname}
                   userName={userName}
                   isAdmin={isAdmin}
+                  examTrack={examTrack}
                   onNavClick={() => setMobileMenuOpen(false)}
                 />
               </div>
@@ -336,7 +479,7 @@ export function BinderLayout({ children }: { children: React.ReactNode }) {
               <Menu size={20} />
             </button>
             <div className="hidden lg:block text-white/50 text-sm font-medium tracking-wide">
-              Yasam Takibi App
+              Yaşam Takibi App
             </div>
           </div>
 

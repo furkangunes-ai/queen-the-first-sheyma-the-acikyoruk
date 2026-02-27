@@ -85,9 +85,9 @@ export default function MentalMath() {
         }),
       });
       if (!res.ok) throw new Error("Save failed");
-      toast.success("Sonuc kaydedildi!");
+      toast.success("Sonuç kaydedildi!");
     } catch {
-      toast.error("Kaydetme basarisiz");
+      toast.error("Kaydetme başarısız");
     } finally {
       setSaving(false);
     }
@@ -110,9 +110,9 @@ export default function MentalMath() {
                 <Brain size={20} className="text-cyan-400" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">Islem Hizi Antrenmanı</h3>
+                <h3 className="text-lg font-bold text-white">İşlem Hızı Antrenmanı</h3>
                 <p className="text-xs text-white/40">
-                  Zihinsel aritmetik hizini gelistir
+                  Zihinsel aritmetik hızını geliştir
                 </p>
               </div>
             </div>
@@ -141,7 +141,7 @@ export default function MentalMath() {
             {/* Question Count */}
             <div className="space-y-3">
               <label className="text-sm font-medium text-white/60">
-                Soru Sayisi
+                Soru Sayısı
               </label>
               <div className="flex gap-2">
                 {[10, 15, 20, 30].map((count) => (
@@ -163,11 +163,11 @@ export default function MentalMath() {
             {/* Time Limit */}
             <div className="space-y-3">
               <label className="text-sm font-medium text-white/60 flex items-center gap-2">
-                <Timer size={16} className="text-cyan-400" /> Sure Limiti
+                <Timer size={16} className="text-cyan-400" /> Süre Limiti
               </label>
               <div className="flex gap-2">
                 {[
-                  { value: 0, label: "Sinirsiz" },
+                  { value: 0, label: "Sınırsız" },
                   { value: 60, label: "1dk" },
                   { value: 120, label: "2dk" },
                   { value: 180, label: "3dk" },
@@ -189,8 +189,8 @@ export default function MentalMath() {
 
             {/* Description */}
             <div className="bg-white/[0.03] rounded-xl p-4 text-sm text-white/50 space-y-2">
-              <p>🧠 Ekranda gosterilen matematiksel ifadenin sonucunu hizlica hesapla.</p>
-              <p>⏱ Yanlis cevaplar ve sure kaybi puanini dusurur.</p>
+              <p>🧠 Ekranda gösterilen matematiksel ifadenin sonucunu hızlıca hesapla.</p>
+              <p>⏱ Yanlış cevaplar ve süre kaybı puanını düşürür.</p>
             </div>
           </div>
 
@@ -201,7 +201,7 @@ export default function MentalMath() {
             className="w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-bold text-lg shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all flex items-center justify-center gap-3"
           >
             <Play size={22} />
-            Baslat
+            Başlat
           </motion.button>
         </motion.div>
       )}
@@ -221,7 +221,7 @@ export default function MentalMath() {
             transition={{ duration: 0.5 }}
             className="text-4xl font-bold text-cyan-400"
           >
-            Hazirlan...
+            Hazırlan...
           </motion.span>
         </motion.div>
       )}
@@ -292,7 +292,7 @@ export default function MentalMath() {
                   }
                 }}
                 onKeyDown={handleKeyDown}
-                placeholder="Cevabini yaz..."
+                placeholder="Cevabını yaz..."
                 className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:border-cyan-500/30 focus:outline-none transition-colors text-lg font-mono text-center"
                 autoComplete="off"
                 autoCorrect="off"
@@ -317,7 +317,7 @@ export default function MentalMath() {
               </button>
             </div>
             <p className="text-xs text-white/30 text-center">
-              Enter ile gonder, sag ok ile atla
+              Enter ile gönder, sağ ok ile atla
             </p>
           </div>
         </motion.div>
@@ -343,7 +343,7 @@ export default function MentalMath() {
                 %{math.accuracy}
               </motion.span>
               <p className="text-sm text-white/40 uppercase tracking-widest">
-                Dogruluk
+                Doğruluk
               </p>
             </div>
 
@@ -353,7 +353,7 @@ export default function MentalMath() {
                   {math.correctCount}
                 </p>
                 <p className="text-[10px] text-white/40 uppercase tracking-wider">
-                  Dogru
+                  Doğru
                 </p>
               </div>
               <div className="text-center">
@@ -361,7 +361,7 @@ export default function MentalMath() {
                   {math.wrongCount}
                 </p>
                 <p className="text-[10px] text-white/40 uppercase tracking-wider">
-                  Yanlis
+                  Yanlış
                 </p>
               </div>
               <div className="text-center">
@@ -377,7 +377,7 @@ export default function MentalMath() {
                   {formatTime(math.elapsedSeconds)}
                 </p>
                 <p className="text-[10px] text-white/40 uppercase tracking-wider">
-                  Sure
+                  Süre
                 </p>
               </div>
             </div>

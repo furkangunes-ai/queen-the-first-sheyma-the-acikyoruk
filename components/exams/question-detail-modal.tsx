@@ -35,9 +35,9 @@ interface QuestionDetailModalProps {
 // --------------- Constants ---------------
 
 const UNDERSTANDING_OPTIONS = [
-  { value: 'anladim', label: 'Anladim', icon: CheckCircle, color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20', activeColor: 'bg-emerald-500 text-white border-emerald-600' },
-  { value: 'tekrar', label: 'Tekrar Etmem Lazim', icon: RefreshCw, color: 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20', activeColor: 'bg-amber-500 text-white border-amber-600' },
-  { value: 'anlamadim', label: 'Hala Anlayamadim', icon: AlertTriangle, color: 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20', activeColor: 'bg-rose-500 text-white border-rose-600' },
+  { value: 'anladim', label: 'Anladım', icon: CheckCircle, color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20', activeColor: 'bg-emerald-500 text-white border-emerald-600' },
+  { value: 'tekrar', label: 'Tekrar Etmem Lazım', icon: RefreshCw, color: 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20', activeColor: 'bg-amber-500 text-white border-amber-600' },
+  { value: 'anlamadim', label: 'Hala Anlayamadım', icon: AlertTriangle, color: 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20', activeColor: 'bg-rose-500 text-white border-rose-600' },
 ];
 
 const DIFFICULTY_MAP: Record<string, { label: string; color: string }> = {
@@ -72,11 +72,11 @@ export default function QuestionDetailModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ understandingStatus: status }),
       });
-      if (!res.ok) throw new Error('Guncelleme basarisiz');
+      if (!res.ok) throw new Error('Güncelleme başarısız');
       onUpdate(question.id, { understandingStatus: status });
-      toast.success('Durum guncellendi');
+      toast.success('Durum güncellendi');
     } catch {
-      toast.error('Durum guncellenirken hata olustu');
+      toast.error('Durum güncellenirken hata oluştu');
     } finally {
       setSaving(false);
     }
@@ -91,11 +91,11 @@ export default function QuestionDetailModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ difficulty }),
       });
-      if (!res.ok) throw new Error('Guncelleme basarisiz');
+      if (!res.ok) throw new Error('Güncelleme başarısız');
       onUpdate(question.id, { difficulty });
-      toast.success('Zorluk guncellendi');
+      toast.success('Zorluk güncellendi');
     } catch {
-      toast.error('Zorluk guncellenirken hata olustu');
+      toast.error('Zorluk güncellenirken hata oluştu');
     } finally {
       setSaving(false);
     }
@@ -182,11 +182,11 @@ export default function QuestionDetailModal({
               </div>
               <div className="bg-white/[0.04] rounded-lg p-3 border border-white/10">
                 <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1">Konu</p>
-                <p className="text-sm font-semibold text-white/90">{question.topic?.name ?? 'Belirtilmemis'}</p>
+                <p className="text-sm font-semibold text-white/90">{question.topic?.name ?? 'Belirtilmemiş'}</p>
               </div>
               <div className="bg-white/[0.04] rounded-lg p-3 border border-white/10">
                 <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1">Hata Nedeni</p>
-                <p className="text-sm font-semibold text-white/90">{question.errorReason?.label ?? 'Belirtilmemis'}</p>
+                <p className="text-sm font-semibold text-white/90">{question.errorReason?.label ?? 'Belirtilmemiş'}</p>
               </div>
               <div className="bg-white/[0.04] rounded-lg p-3 border border-white/10">
                 <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1">Not</p>

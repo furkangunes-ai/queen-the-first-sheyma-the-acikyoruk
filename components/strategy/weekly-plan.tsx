@@ -26,6 +26,8 @@ import { format, startOfWeek, addDays, addWeeks } from "date-fns";
 import { tr } from "date-fns/locale";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import { useSession } from "next-auth/react";
+import { filterSubjectsByTrack, type ExamTrack } from "@/lib/exam-track-filter";
 
 // ---------- Types ----------
 
@@ -110,6 +112,12 @@ interface WizardAnswer {
   customNote?: string;
 }
 
+// Fixed Wizard Answers
+interface FixedAnswers {
+  examScope: "tyt" | "ayt" | "both";
+  selectedSubjectIds: string[];
+}
+
 // DnD Types
 const PLAN_ITEM_TYPE = "PLAN_ITEM";
 
@@ -121,7 +129,7 @@ interface DragItem {
 
 // ---------- Constants ----------
 
-const DAY_LABELS = ["Pazartesi", "Sali", "Carsamba", "Persembe", "Cuma", "Cumartesi", "Pazar"];
+const DAY_LABELS = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
 
 // ---------- DnD Components ----------
 
@@ -131,12 +139,16 @@ function DraggablePlanItem({
   onToggle,
   planId,
   onDrop,
+  onEdit,
+  onDelete,
 }: {
   item: WeeklyPlanItem;
   toggling: boolean;
   onToggle: () => void;
   planId: string;
   onDrop: (itemId: string, newDay: number, newSort: number) => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -192,8 +204,8 @@ function DraggablePlanItem({
           ) : null}
         </button>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0">
+        {/* Content — click to edit */}
+        <div className="flex-1 min-w-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
           <p
             className={`text-xs font-semibold truncate ${
               item.completed
@@ -241,6 +253,15 @@ function DraggablePlanItem({
             </p>
           )}
         </div>
+
+        {/* Delete button on hover */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          className="absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-rose-500/0 group-hover:bg-rose-500/10 text-transparent group-hover:text-rose-400 transition-all"
+          title="Sil"
+        >
+          <X size={10} />
+        </button>
       </div>
     </div>
   );
@@ -255,6 +276,8 @@ function DroppableDayColumn({
   onToggle,
   onDrop,
   onAddClick,
+  onEdit,
+  onDelete,
 }: {
   dayIdx: number;
   dayDate: Date;
@@ -264,6 +287,8 @@ function DroppableDayColumn({
   onToggle: (item: WeeklyPlanItem) => void;
   onDrop: (itemId: string, newDay: number, newSort: number) => void;
   onAddClick: () => void;
+  onEdit: (item: WeeklyPlanItem) => void;
+  onDelete: (itemId: string) => void;
 }) {
   const dayName = format(dayDate, "EEEE", { locale: tr });
   const dayShort = format(dayDate, "d MMM", { locale: tr });
@@ -316,6 +341,8 @@ function DroppableDayColumn({
             onToggle={() => onToggle(item)}
             planId={planId}
             onDrop={onDrop}
+            onEdit={() => onEdit(item)}
+            onDelete={() => onDelete(item.id)}
           />
         ))}
       </div>
@@ -344,6 +371,9 @@ function DroppableDayColumn({
 // ---------- Component ----------
 
 export default function WeeklyPlan() {
+  const { data: session } = useSession();
+  const examTrack = (session?.user as any)?.examTrack as ExamTrack;
+
   // Week navigation
   const [weekStart, setWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
@@ -367,8 +397,12 @@ export default function WeeklyPlan() {
   const [showWizard, setShowWizard] = useState(false);
   const [wizardData, setWizardData] = useState<WizardData | null>(null);
   const [wizardLoading, setWizardLoading] = useState(false);
-  const [wizardStep, setWizardStep] = useState(0); // 0 = analysis, 1..N = questions
+  const [wizardStep, setWizardStep] = useState(0); // 0=analysis, 1=examScope, 2=subjects, 3..N=AI questions
   const [wizardAnswers, setWizardAnswers] = useState<Map<string, WizardAnswer>>(new Map());
+  const [fixedAnswers, setFixedAnswers] = useState<FixedAnswers>({
+    examScope: "both",
+    selectedSubjectIds: [],
+  });
 
   // Create plan form
   const [createTitle, setCreateTitle] = useState("");
@@ -378,6 +412,10 @@ export default function WeeklyPlan() {
   const [addSubjectId, setAddSubjectId] = useState("");
   const [addTopicId, setAddTopicId] = useState("");
   const [addDuration, setAddDuration] = useState("");
+
+  // Edit item
+  const [editingItem, setEditingItem] = useState<WeeklyPlanItem | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
 
   // ---------- Derived ----------
 
@@ -458,11 +496,16 @@ export default function WeeklyPlan() {
           }
         }
       }
-      setSubjects(allSubjects);
+      // Filter by exam track (e.g. sayısal students won't see AYT Edebiyat)
+      const filtered = filterSubjectsByTrack(
+        allSubjects.map((s) => ({ ...s, examType: { ...s.examType, slug: s.examType.name.toLowerCase() === "ayt" ? "ayt" : "tyt" } })),
+        examTrack
+      );
+      setSubjects(filtered);
     } catch (err) {
-      console.error("Dersler yuklenirken hata:", err);
+      console.error("Dersler yüklenirken hata:", err);
     }
-  }, []);
+  }, [examTrack]);
 
   const fetchPlan = useCallback(async () => {
     setLoading(true);
@@ -522,7 +565,7 @@ export default function WeeklyPlan() {
           };
         });
       } catch {
-        toast.error("Durum guncellenemedi");
+        toast.error("Durum güncellenemedi");
       } finally {
         setToggling((prev) => {
           const next = new Set(prev);
@@ -572,7 +615,7 @@ export default function WeeklyPlan() {
 
   const handleAddItem = useCallback(async () => {
     if (!plan || !addSubjectId) {
-      toast.error("Ders secimi zorunlu");
+      toast.error("Ders seçimi zorunlu");
       return;
     }
     setSaving(true);
@@ -668,11 +711,72 @@ export default function WeeklyPlan() {
     [plan, fetchPlan]
   );
 
+  // ---------- Edit/Delete Item ----------
+
+  const handleEditItem = useCallback(
+    async (itemId: string, data: { subjectId?: string; topicId?: string | null; duration?: number | null }) => {
+      if (!plan) return;
+      setEditSaving(true);
+      try {
+        const res = await fetch(`/api/weekly-plans/${plan.id}/items/${itemId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error();
+        const updated = await res.json();
+        // Update locally
+        setPlan((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            items: prev.items.map((i) =>
+              i.id === itemId ? { ...i, ...updated } : i
+            ),
+          };
+        });
+        toast.success("Madde güncellendi");
+        setEditingItem(null);
+      } catch {
+        toast.error("Madde güncellenemedi");
+      } finally {
+        setEditSaving(false);
+      }
+    },
+    [plan]
+  );
+
+  const handleDeleteItem = useCallback(
+    async (itemId: string) => {
+      if (!plan) return;
+      if (!window.confirm("Bu maddeyi silmek istediğine emin misin?")) return;
+      try {
+        const res = await fetch(`/api/weekly-plans/${plan.id}/items/${itemId}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) throw new Error();
+        // Remove locally
+        setPlan((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            items: prev.items.filter((i) => i.id !== itemId),
+          };
+        });
+        toast.success("Madde silindi");
+      } catch {
+        toast.error("Madde silinemedi");
+      }
+    },
+    [plan]
+  );
+
   // ---------- Dynamic Wizard ----------
 
   const openWizard = useCallback(async () => {
     setWizardStep(0);
     setWizardAnswers(new Map());
+    setFixedAnswers({ examScope: "both", selectedSubjectIds: [] });
     setWizardData(null);
     setShowWizard(true);
     setWizardLoading(true);
@@ -729,12 +833,19 @@ export default function WeeklyPlan() {
     try {
       const endDate = format(addDays(weekStart, 6), "yyyy-MM-dd");
 
-      // Build wizard context from dynamic answers
+      // Build wizard context from fixed + dynamic answers
       const wizardContext = {
         analysis: wizardData.analysis,
         weakAreas: wizardData.weakAreas,
         strongAreas: wizardData.strongAreas,
         questions: Array.from(wizardAnswers.values()),
+        fixedAnswers: {
+          examScope: fixedAnswers.examScope,
+          selectedSubjects: fixedAnswers.selectedSubjectIds
+            .map((id) => subjects.find((s) => s.id === id))
+            .filter(Boolean)
+            .map((s) => ({ id: s!.id, name: s!.name, examType: s!.examType.name })),
+        },
       };
 
       const res = await fetch("/api/ai/generate-plan", {
@@ -767,7 +878,7 @@ export default function WeeklyPlan() {
     } finally {
       setAiGenerating(false);
     }
-  }, [plan, weekStart, startDateStr, fetchPlan, wizardData, wizardAnswers]);
+  }, [plan, weekStart, startDateStr, fetchPlan, wizardData, wizardAnswers, fixedAnswers, subjects]);
 
   // ---------- Draft Item Helpers ----------
 
@@ -812,7 +923,7 @@ export default function WeeklyPlan() {
                 size={28}
                 className="text-pink-400 drop-shadow-[0_0_10px_rgba(255,42,133,0.4)]"
               />
-              <h2 className="text-xl font-bold text-white/90">Haftalik Plan</h2>
+              <h2 className="text-xl font-bold text-white/90">Haftalık Plan</h2>
             </div>
             <button
               onClick={goToCurrentWeek}
@@ -973,6 +1084,8 @@ export default function WeeklyPlan() {
                     setAddDuration("");
                     setShowAddItemDialog(true);
                   }}
+                  onEdit={(item) => setEditingItem(item)}
+                  onDelete={handleDeleteItem}
                 />
               ))}
             </div>
@@ -987,10 +1100,15 @@ export default function WeeklyPlan() {
               loading={wizardLoading}
               step={wizardStep}
               answers={wizardAnswers}
+              fixedAnswers={fixedAnswers}
+              subjects={subjects}
               onAnswer={handleWizardAnswer}
+              onFixedAnswersChange={setFixedAnswers}
               onNext={() => {
                 if (!wizardData) return;
-                setWizardStep((s) => Math.min(s + 1, wizardData.questions.length));
+                // totalSteps = 1(analysis) + 2(fixed) + N(AI questions)
+                const maxStep = wizardData.questions.length + 2;
+                setWizardStep((s) => Math.min(s + 1, maxStep));
               }}
               onBack={() => setWizardStep((s) => Math.max(s - 1, 0))}
               onComplete={handleAIGeneratePlan}
@@ -1018,6 +1136,23 @@ export default function WeeklyPlan() {
                 setShowCreateDialog(false);
                 setDraftItems([]);
               }}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* ---------- Edit Item Dialog ---------- */}
+        <AnimatePresence>
+          {editingItem && (
+            <EditItemDialog
+              item={editingItem}
+              subjects={subjects}
+              saving={editSaving}
+              onSave={(data) => handleEditItem(editingItem.id, data)}
+              onDelete={() => {
+                handleDeleteItem(editingItem.id);
+                setEditingItem(null);
+              }}
+              onClose={() => setEditingItem(null)}
             />
           )}
         </AnimatePresence>
@@ -1066,7 +1201,7 @@ export default function WeeklyPlan() {
                       }}
                       className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white/90 focus:outline-none focus:border-pink-500/30 transition-all appearance-none"
                     >
-                      <option value="">Ders secin...</option>
+                      <option value="">Ders seçin...</option>
                       {subjects.map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.examType.name} - {s.name}
@@ -1086,7 +1221,7 @@ export default function WeeklyPlan() {
                         onChange={(e) => setAddTopicId(e.target.value)}
                         className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white/90 focus:outline-none focus:border-pink-500/30 transition-all appearance-none"
                       >
-                        <option value="">Konu secin (istege bagli)...</option>
+                        <option value="">Konu seçin (isteğe bağlı)...</option>
                         {addTopics.map((t) => (
                           <option key={t.id} value={t.id}>
                             {t.name}
@@ -1099,14 +1234,14 @@ export default function WeeklyPlan() {
                   {/* Duration */}
                   <div>
                     <label className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-1.5">
-                      Sure (dakika)
+                      Süre (dakika)
                     </label>
                     <input
                       type="number"
                       min={0}
                       value={addDuration}
                       onChange={(e) => setAddDuration(e.target.value)}
-                      placeholder="Ornegin: 45"
+                      placeholder="Örneğin: 45"
                       className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white/90 placeholder:text-white/30 focus:outline-none focus:border-pink-500/30 transition-all"
                     />
                   </div>
@@ -1117,7 +1252,7 @@ export default function WeeklyPlan() {
                     onClick={() => setShowAddItemDialog(false)}
                     className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white/50 bg-white/[0.05] border border-white/10 hover:text-white/70 hover:bg-white/[0.08] transition-all"
                   >
-                    Iptal
+                    İptal
                   </button>
                   <button
                     onClick={handleAddItem}
@@ -1181,7 +1316,7 @@ function CreatePlanDialog({
 
   const handleAddToDraft = () => {
     if (!formSubjectId) {
-      toast.error("Ders secimi zorunlu");
+      toast.error("Ders seçimi zorunlu");
       return;
     }
     addDraftItem(
@@ -1238,13 +1373,13 @@ function CreatePlanDialog({
         {/* Title Input */}
         <div className="mb-5">
           <label className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-1.5">
-            Plan Basligi
+            Plan Başlığı
           </label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Haftalik plan basligi..."
+            placeholder="Haftalık plan başlığı..."
             className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white/90 placeholder:text-white/30 focus:outline-none focus:border-pink-500/30 transition-all"
           />
         </div>
@@ -1278,7 +1413,7 @@ function CreatePlanDialog({
         <div className="mb-4 space-y-2">
           {draftItemsForDay.length === 0 && (
             <p className="text-xs text-white/30 text-center py-3">
-              Bu gun icin henuz madde eklenmemis.
+              Bu gün için henüz madde eklenmemiş.
             </p>
           )}
           {draftItemsForDay.map((item) => (
@@ -1328,7 +1463,7 @@ function CreatePlanDialog({
               }}
               className="bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white/90 focus:outline-none focus:border-pink-500/30 transition-all appearance-none"
             >
-              <option value="">Ders secin...</option>
+              <option value="">Ders seçin...</option>
               {subjects.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.examType.name} - {s.name}
@@ -1342,7 +1477,7 @@ function CreatePlanDialog({
               disabled={formTopics.length === 0}
               className="bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white/90 focus:outline-none focus:border-pink-500/30 transition-all appearance-none disabled:opacity-40"
             >
-              <option value="">Konu (istege bagli)...</option>
+              <option value="">Konu (isteğe bağlı)...</option>
               {formTopics.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
@@ -1388,7 +1523,7 @@ function CreatePlanDialog({
             onClick={onClose}
             className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white/50 bg-white/[0.05] border border-white/10 hover:text-white/70 hover:bg-white/[0.08] transition-all"
           >
-            Iptal
+            İptal
           </button>
           <button
             onClick={onSave}
@@ -1396,7 +1531,158 @@ function CreatePlanDialog({
             className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-[0_4px_15px_rgba(255,42,133,0.3)] hover:shadow-[0_6px_20px_rgba(255,42,133,0.4)] disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
           >
             {saving && <Loader2 size={14} className="animate-spin" />}
-            Plani Kaydet
+            Planı Kaydet
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ---------- Edit Item Dialog Component ----------
+
+function EditItemDialog({
+  item,
+  subjects,
+  saving,
+  onSave,
+  onDelete,
+  onClose,
+}: {
+  item: WeeklyPlanItem;
+  subjects: Subject[];
+  saving: boolean;
+  onSave: (data: { subjectId?: string; topicId?: string | null; duration?: number | null }) => void;
+  onDelete: () => void;
+  onClose: () => void;
+}) {
+  const [editSubjectId, setEditSubjectId] = useState(item.subjectId);
+  const [editTopicId, setEditTopicId] = useState(item.topicId || "");
+  const [editDuration, setEditDuration] = useState(item.duration?.toString() || "");
+
+  const editTopics = useMemo(
+    () => subjects.find((s) => s.id === editSubjectId)?.topics ?? [],
+    [subjects, editSubjectId]
+  );
+
+  const handleSave = () => {
+    onSave({
+      subjectId: editSubjectId,
+      topicId: editTopicId || null,
+      duration: editDuration ? parseInt(editDuration) : null,
+    });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md bg-slate-950/95 backdrop-blur-xl border border-pink-500/15 rounded-2xl p-6 shadow-[0_20px_60px_rgba(0,0,0,0.5)]"
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold text-white/90">
+            Madde Düzenle
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {/* Subject */}
+          <div>
+            <label className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-1.5">
+              Ders
+            </label>
+            <select
+              value={editSubjectId}
+              onChange={(e) => {
+                setEditSubjectId(e.target.value);
+                setEditTopicId("");
+              }}
+              className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white/90 focus:outline-none focus:border-pink-500/30 transition-all appearance-none"
+            >
+              <option value="">Ders seçin...</option>
+              {subjects.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.examType.name} - {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Topic */}
+          {editTopics.length > 0 && (
+            <div>
+              <label className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-1.5">
+                Konu
+              </label>
+              <select
+                value={editTopicId}
+                onChange={(e) => setEditTopicId(e.target.value)}
+                className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white/90 focus:outline-none focus:border-pink-500/30 transition-all appearance-none"
+              >
+                <option value="">Konu seçin (isteğe bağlı)...</option>
+                {editTopics.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Duration */}
+          <div>
+            <label className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-1.5">
+              Süre (dakika)
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={editDuration}
+              onChange={(e) => setEditDuration(e.target.value)}
+              placeholder="Örneğin: 45"
+              className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white/90 placeholder:text-white/30 focus:outline-none focus:border-pink-500/30 transition-all"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={onDelete}
+            className="px-4 py-2.5 rounded-xl text-sm font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 transition-all flex items-center gap-1.5"
+          >
+            <Trash2 size={14} />
+            Sil
+          </button>
+          <div className="flex-1" />
+          <button
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl text-sm font-bold text-white/50 bg-white/[0.05] border border-white/10 hover:text-white/70 hover:bg-white/[0.08] transition-all"
+          >
+            İptal
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || !editSubjectId}
+            className="px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-[0_4px_15px_rgba(255,42,133,0.3)] hover:shadow-[0_6px_20px_rgba(255,42,133,0.4)] disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+          >
+            {saving && <Loader2 size={14} className="animate-spin" />}
+            Kaydet
           </button>
         </div>
       </motion.div>
@@ -1411,7 +1697,10 @@ function DynamicWizardModal({
   loading,
   step,
   answers,
+  fixedAnswers,
+  subjects,
   onAnswer,
+  onFixedAnswersChange,
   onNext,
   onBack,
   onComplete,
@@ -1422,20 +1711,39 @@ function DynamicWizardModal({
   loading: boolean;
   step: number;
   answers: Map<string, WizardAnswer>;
+  fixedAnswers: FixedAnswers;
+  subjects: Subject[];
   onAnswer: (questionId: string, question: string, selectedOption: string, customNote?: string) => void;
+  onFixedAnswersChange: (fa: FixedAnswers) => void;
   onNext: () => void;
   onBack: () => void;
   onComplete: () => void;
   onClose: () => void;
   generating: boolean;
 }) {
-  const totalSteps = data ? data.questions.length + 1 : 1; // +1 for analysis step
+  // Steps: 0=analysis, 1=examScope(fixed), 2=subjects(fixed), 3..N=AI questions
+  const FIXED_STEP_COUNT = 2; // examScope + subjects
+  const totalSteps = data ? data.questions.length + 1 + FIXED_STEP_COUNT : 1;
   const isAnalysisStep = step === 0;
-  const questionIndex = step - 1;
-  const isLastStep = data ? step === data.questions.length : false;
-  const currentQuestion = data && questionIndex >= 0 ? data.questions[questionIndex] : null;
+  const isExamScopeStep = step === 1;
+  const isSubjectSelectStep = step === 2;
+  const aiQuestionIndex = step - 1 - FIXED_STEP_COUNT; // AI questions start after fixed
+  const isAIQuestionStep = data && aiQuestionIndex >= 0 && aiQuestionIndex < data.questions.length;
+  const isLastStep = data ? step === data.questions.length + FIXED_STEP_COUNT : false;
+  const currentQuestion = isAIQuestionStep ? data!.questions[aiQuestionIndex] : null;
   const currentAnswer = currentQuestion ? answers.get(currentQuestion.id) : null;
   const [customNote, setCustomNote] = useState("");
+
+  // Subjects filtered by exam scope
+  const scopeFilteredSubjects = useMemo(() => {
+    if (fixedAnswers.examScope === "tyt") {
+      return subjects.filter((s) => s.examType.name === "TYT");
+    }
+    if (fixedAnswers.examScope === "ayt") {
+      return subjects.filter((s) => s.examType.name === "AYT");
+    }
+    return subjects; // both
+  }, [subjects, fixedAnswers.examScope]);
 
   // Reset custom note on step change
   useEffect(() => {
@@ -1445,6 +1753,15 @@ function DynamicWizardModal({
       setCustomNote("");
     }
   }, [step, currentQuestion, currentAnswer?.customNote]);
+
+  // Can proceed from current step?
+  const canProceed = useMemo(() => {
+    if (isAnalysisStep) return true;
+    if (isExamScopeStep) return true; // always has a default
+    if (isSubjectSelectStep) return fixedAnswers.selectedSubjectIds.length > 0;
+    if (isAIQuestionStep) return !!currentAnswer;
+    return false;
+  }, [isAnalysisStep, isExamScopeStep, isSubjectSelectStep, isAIQuestionStep, fixedAnswers.selectedSubjectIds.length, currentAnswer]);
 
   return (
     <motion.div
@@ -1530,7 +1847,7 @@ function DynamicWizardModal({
             </div>
 
             <AnimatePresence mode="wait">
-              {/* Analysis Step (Step 0) */}
+              {/* Step 0: Analysis */}
               {isAnalysisStep && (
                 <motion.div
                   key="analysis"
@@ -1540,18 +1857,13 @@ function DynamicWizardModal({
                   transition={{ duration: 0.2 }}
                   className="space-y-4"
                 >
-                  {/* Analysis Summary */}
                   <div className="bg-gradient-to-br from-amber-500/10 to-pink-500/5 border border-amber-500/20 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <Brain size={16} className="text-amber-400" />
                       <span className="text-sm font-bold text-amber-300">Analiz Özeti</span>
                     </div>
-                    <p className="text-sm text-white/80 leading-relaxed">
-                      {data.analysis}
-                    </p>
+                    <p className="text-sm text-white/80 leading-relaxed">{data.analysis}</p>
                   </div>
-
-                  {/* Stats Cards */}
                   {data.stats && (
                     <div className="grid grid-cols-2 gap-2">
                       {data.stats.avgDailyHours !== undefined && (
@@ -1568,20 +1880,13 @@ function DynamicWizardModal({
                       )}
                     </div>
                   )}
-
-                  {/* Weak & Strong Areas */}
                   <div className="space-y-2">
                     {data.weakAreas.length > 0 && (
                       <div className="flex items-start gap-2">
                         <TrendingDown size={14} className="text-red-400 mt-0.5 flex-shrink-0" />
                         <div className="flex flex-wrap gap-1.5">
                           {data.weakAreas.slice(0, 5).map((area, idx) => (
-                            <span
-                              key={idx}
-                              className="px-2 py-0.5 rounded-lg bg-red-500/10 border border-red-500/20 text-[10px] text-red-300 font-medium"
-                            >
-                              {area}
-                            </span>
+                            <span key={idx} className="px-2 py-0.5 rounded-lg bg-red-500/10 border border-red-500/20 text-[10px] text-red-300 font-medium">{area}</span>
                           ))}
                         </div>
                       </div>
@@ -1591,26 +1896,114 @@ function DynamicWizardModal({
                         <TrendingUp size={14} className="text-emerald-400 mt-0.5 flex-shrink-0" />
                         <div className="flex flex-wrap gap-1.5">
                           {data.strongAreas.slice(0, 5).map((area, idx) => (
-                            <span
-                              key={idx}
-                              className="px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-300 font-medium"
-                            >
-                              {area}
-                            </span>
+                            <span key={idx} className="px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-300 font-medium">{area}</span>
                           ))}
                         </div>
                       </div>
                     )}
                   </div>
-
                   <p className="text-[10px] text-white/30 text-center pt-2">
                     Bu analiz senin verilerine göre hazırlandı. Devam ederek sana özel sorulara geçebilirsin.
                   </p>
                 </motion.div>
               )}
 
-              {/* Dynamic Question Steps */}
-              {!isAnalysisStep && currentQuestion && (
+              {/* Step 1: FIXED — Exam Scope (TYT / AYT / İkisi) */}
+              {isExamScopeStep && (
+                <motion.div
+                  key="exam-scope"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <p className="text-base font-semibold text-white/90 mb-4">
+                    Bu hafta neye çalışmak istiyorsun?
+                  </p>
+                  <div className="space-y-2">
+                    {([
+                      { value: "tyt" as const, label: "Sadece TYT", desc: "Temel Yeterlilik Testi dersleri" },
+                      { value: "ayt" as const, label: "Sadece AYT", desc: "Alan Yeterlilik Testi dersleri" },
+                      { value: "both" as const, label: "İkisi birden", desc: "Hem TYT hem AYT dersleri" },
+                    ]).map((opt) => (
+                      <label
+                        key={opt.value}
+                        onClick={() => onFixedAnswersChange({ ...fixedAnswers, examScope: opt.value, selectedSubjectIds: [] })}
+                        className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+                          fixedAnswers.examScope === opt.value
+                            ? "bg-pink-500/10 border-pink-500/30"
+                            : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.06] hover:border-white/15"
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                          fixedAnswers.examScope === opt.value ? "border-pink-400 bg-pink-500" : "border-white/30"
+                        }`}>
+                          {fixedAnswers.examScope === opt.value && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                        <div>
+                          <span className={`text-sm block ${fixedAnswers.examScope === opt.value ? "text-white" : "text-white/70"}`}>{opt.label}</span>
+                          <span className="text-[10px] text-white/40">{opt.desc}</span>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 2: FIXED — Subject Selection (multi-select checkboxes) */}
+              {isSubjectSelectStep && (
+                <motion.div
+                  key="subject-select"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <p className="text-base font-semibold text-white/90 mb-2">
+                    Hangi derslere çalışmak istiyorsun?
+                  </p>
+                  <p className="text-xs text-white/40 mb-4">Birden fazla seçebilirsin</p>
+                  <div className="space-y-1.5 max-h-[40vh] overflow-y-auto pr-1">
+                    {scopeFilteredSubjects.map((s) => {
+                      const isSelected = fixedAnswers.selectedSubjectIds.includes(s.id);
+                      return (
+                        <label
+                          key={s.id}
+                          onClick={() => {
+                            const next = isSelected
+                              ? fixedAnswers.selectedSubjectIds.filter((id) => id !== s.id)
+                              : [...fixedAnswers.selectedSubjectIds, s.id];
+                            onFixedAnswersChange({ ...fixedAnswers, selectedSubjectIds: next });
+                          }}
+                          className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                            isSelected
+                              ? "bg-pink-500/10 border-pink-500/30"
+                              : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.06]"
+                          }`}
+                        >
+                          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                            isSelected ? "bg-pink-500 border-pink-500 text-white" : "border-white/20"
+                          }`}>
+                            {isSelected && <Check size={12} strokeWidth={3} />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-sm ${isSelected ? "text-white" : "text-white/70"}`}>{s.name}</span>
+                            <span className="text-[10px] text-white/30 ml-2">{s.examType.name}</span>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {fixedAnswers.selectedSubjectIds.length > 0 && (
+                    <p className="text-xs text-pink-300/60 mt-3 text-center">
+                      {fixedAnswers.selectedSubjectIds.length} ders seçildi
+                    </p>
+                  )}
+                </motion.div>
+              )}
+
+              {/* AI Dynamic Question Steps */}
+              {isAIQuestionStep && currentQuestion && (
                 <motion.div
                   key={`q-${currentQuestion.id}`}
                   initial={{ opacity: 0, x: 20 }}
@@ -1618,55 +2011,33 @@ function DynamicWizardModal({
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {/* Question context hint */}
                   {currentQuestion.context && (
                     <div className="flex items-start gap-2 mb-3 text-[11px] text-white/40 bg-white/[0.03] rounded-lg p-2.5 border border-white/[0.05]">
                       <AlertCircle size={12} className="text-amber-400/50 mt-0.5 flex-shrink-0" />
                       <span>{currentQuestion.context}</span>
                     </div>
                   )}
-
-                  <p className="text-base font-semibold text-white/90 mb-4">
-                    {currentQuestion.question}
-                  </p>
-
-                  {/* Options */}
+                  <p className="text-base font-semibold text-white/90 mb-4">{currentQuestion.question}</p>
                   <div className="space-y-2 mb-4">
                     {currentQuestion.options.map((opt, optIdx) => (
                       <label
                         key={optIdx}
-                        onClick={() => {
-                          onAnswer(currentQuestion.id, currentQuestion.question, opt, customNote || undefined);
-                        }}
+                        onClick={() => onAnswer(currentQuestion.id, currentQuestion.question, opt, customNote || undefined)}
                         className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
                           currentAnswer?.selectedOption === opt
                             ? "bg-pink-500/10 border-pink-500/30"
                             : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.06] hover:border-white/15"
                         }`}
                       >
-                        <div
-                          className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                            currentAnswer?.selectedOption === opt
-                              ? "border-pink-400 bg-pink-500"
-                              : "border-white/30"
-                          }`}
-                        >
-                          {currentAnswer?.selectedOption === opt && (
-                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                          )}
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                          currentAnswer?.selectedOption === opt ? "border-pink-400 bg-pink-500" : "border-white/30"
+                        }`}>
+                          {currentAnswer?.selectedOption === opt && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                         </div>
-                        <span
-                          className={`text-sm ${
-                            currentAnswer?.selectedOption === opt ? "text-white" : "text-white/70"
-                          }`}
-                        >
-                          {opt}
-                        </span>
+                        <span className={`text-sm ${currentAnswer?.selectedOption === opt ? "text-white" : "text-white/70"}`}>{opt}</span>
                       </label>
                     ))}
                   </div>
-
-                  {/* Optional Note Textarea */}
                   <div>
                     <label className="flex items-center gap-1.5 text-xs font-medium text-white/40 mb-1.5">
                       <MessageSquare size={11} />
@@ -1707,7 +2078,7 @@ function DynamicWizardModal({
               {isLastStep ? (
                 <button
                   onClick={onComplete}
-                  disabled={generating || !!(currentQuestion && !currentAnswer)}
+                  disabled={generating || !canProceed}
                   className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-amber-500 to-pink-500 text-white shadow-[0_4px_15px_rgba(255,42,133,0.4)] hover:shadow-[0_6px_20px_rgba(255,42,133,0.5)] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
                   {generating ? (
@@ -1720,7 +2091,7 @@ function DynamicWizardModal({
               ) : (
                 <button
                   onClick={onNext}
-                  disabled={isAnalysisStep ? false : !currentAnswer}
+                  disabled={!canProceed}
                   className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30 hover:bg-pink-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
                   {isAnalysisStep ? "Sorulara Geç" : "Devam"}

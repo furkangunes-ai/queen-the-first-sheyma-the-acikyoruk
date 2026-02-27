@@ -16,6 +16,7 @@ model User {
   role          String    @default("user") // "admin" | "user"
   passwordHash  String
   createdAt     DateTime  @default(now())
+  examTrack     String?  // "sayisal" | "ea" | "sozel" — null = henüz seçilmemiş
 
   folders        Folder[]
   tasks          Task[]

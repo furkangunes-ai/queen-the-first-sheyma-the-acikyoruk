@@ -10,19 +10,18 @@ const SYSTEM_PROMPT_ANALYZE = `Sen bir YKS stratejistisin. Öğrencinin verileri
 Görevin:
 1. Öğrencinin son 2-4 haftalık çalışma verilerini, deneme sonuçlarını ve konu haritasını analiz et.
 2. Kısa ve samimi bir analiz özeti yaz (4-6 cümle). Somut sayılarla destekle.
-3. Analiz sonucuna göre 3-5 KİŞİSEL soru üret. Bu sorular:
+3. Analiz sonucuna göre **TAM OLARAK 2 veya 3 KİŞİSEL soru** üret (ASLA daha fazla olmasın). Bu sorular:
    - Öğrencinin gerçek durumuna özel olmalı (genel şablon DEĞİL)
    - Verilerden çıkan tespitlere dayanmalı
    - Her biri 2-4 şık içermeli
    - Strateji belirlemeye yönelik olmalı
    - "Bu hafta..." veya "Önümüzdeki hafta..." gibi başlamalı
 
-Soruları oluştururken dikkat et:
-- Zayıf konuları tespit edip öğrenciye sor (odaklanmak ister misin?)
-- Hiç çalışılmamış dersleri belirle (zaman ayıralım mı?)
+ÖNEMLİ: TYT/AYT tercihi ve ders seçimi gibi sorular SORMA — bunlar ayrıca sorulacak. Sen sadece çalışma düzeni ve strateji soruları sor:
 - Çalışma düzenini sor (kaç saat, hangi günler)
-- Mola/dinlenme tercihini sor
 - Müsait olmayan günleri sor
+- Mola/dinlenme tercihini sor
+- Zayıf konulara odaklanma stratejisi sor
 - Varsa deneme performansına göre strateji sor
 
 JSON formatında yanıt ver, başka bir şey yazma:
@@ -51,6 +50,10 @@ export async function POST() {
     const guard = await checkAIAccess();
     if (isAIGuardError(guard)) return guard;
     const { userId } = guard;
+
+    // Fetch user's exam track for subject filtering
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { examTrack: true } });
+    const examTrack = user?.examTrack;
 
     const now = new Date();
     const fourWeeksAgo = subDays(now, 28);
@@ -135,9 +138,22 @@ export async function POST() {
       }),
     ]);
 
+    // Filter subjects by exam track
+    // TYT subjects always shown; AYT subjects filtered by track
+    const filteredSubjects = examTrack ? allSubjects.filter(s => {
+      const isAYT = s.examType.slug === "ayt" || s.examType.name === "AYT";
+      if (!isAYT) return true;
+      const excluded: Record<string, string[]> = {
+        sayisal: ["Edebiyat", "Tarih", "Coğrafya"],
+        ea: ["Fizik", "Kimya", "Biyoloji"],
+        sozel: ["Fizik", "Kimya", "Biyoloji", "Matematik"],
+      };
+      return !(excluded[examTrack] || []).includes(s.name);
+    }) : allSubjects;
+
     // Build subject ID → name map
     const subjectIdToName = new Map<string, string>();
-    for (const subject of allSubjects) {
+    for (const subject of filteredSubjects) {
       subjectIdToName.set(subject.id, subject.name);
     }
 
@@ -201,7 +217,7 @@ export async function POST() {
 
     // Subjects NOT studied at all
     const studiedSubjectIds = new Set(studyDistribution.map((s) => s.subjectId));
-    const unstudiedSubjects = allSubjects
+    const unstudiedSubjects = filteredSubjects
       .filter((s) => !studiedSubjectIds.has(s.id))
       .map((s) => `${s.examType.name}-${s.name}`)
       .join(", ");
@@ -212,7 +228,9 @@ export async function POST() {
       .join(" | ");
 
     // Build the context message
+    const examTrackLabel = examTrack === "sayisal" ? "Sayısal" : examTrack === "ea" ? "Eşit Ağırlık" : examTrack === "sozel" ? "Sözel" : "Belirlenmedi";
     const contextMessage = `Tarih: ${format(now, "d MMMM yyyy", { locale: tr })}
+Alan: ${examTrackLabel}
 
 === ÇALIŞMA VERİLERİ (Son 4 Hafta) ===
 Ders bazlı dağılım:
@@ -275,7 +293,7 @@ ${insightsStr ? `=== GEÇMİŞ AI ÖNERİLERİ ===\n${insightsStr}` : ""}`.trim(
       weakAreas: parsed.weakAreas || [],
       strongAreas: parsed.strongAreas || [],
       stats: parsed.stats || {},
-      questions: parsed.questions.map((q: any, idx: number) => ({
+      questions: parsed.questions.slice(0, 3).map((q: any, idx: number) => ({
         id: q.id || `q${idx + 1}`,
         question: q.question,
         options: q.options || [],

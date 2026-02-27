@@ -90,7 +90,7 @@ export default function SpacedRepetition() {
         setShowAnswer(false);
         setCurrentIndex((i) => i + 1);
       } catch {
-        toast.error("Guncelleme basarisiz");
+        toast.error("Güncelleme başarısız");
       } finally {
         setSubmitting(false);
       }
@@ -130,7 +130,7 @@ export default function SpacedRepetition() {
           <Trophy size={48} className="mx-auto text-white/20 mb-4" />
           <p className="text-white/50 mb-2">Bugun icin tekrar yapilacak soru yok!</p>
           <p className="text-xs text-white/30">
-            Deneme sinavi yanlislarini "Hata Tekrar" kuyruğuna ekleyerek burada tekrar edebilirsin.
+            Deneme sınavı yanlışlarını "Hata Tekrar" kuyruğuna ekleyerek burada tekrar edebilirsin.
           </p>
         </div>
       )}

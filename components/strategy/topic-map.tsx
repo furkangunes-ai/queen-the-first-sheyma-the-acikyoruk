@@ -10,6 +10,8 @@ import {
   Clock,
   BookOpen,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { filterExamTypesByTrack, type ExamTrack } from "@/lib/exam-track-filter";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -88,7 +90,7 @@ const LEVEL_BORDER_COLORS: Record<number, string> = {
   5: "border-cyan-400/50 text-cyan-300",
 };
 
-const LEVEL_LABELS = ["Bilmiyorum", "Tanidik", "Anliyorum", "Uyguluyorum", "Analiz", "Uzman"];
+const LEVEL_LABELS = ["Bilmiyorum", "Tanıdık", "Anlıyorum", "Uyguluyorum", "Analiz", "Uzman"];
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -99,18 +101,18 @@ function daysSinceBadge(daysSince: number | null): {
   colorClass: string;
 } {
   if (daysSince === null || daysSince === undefined) {
-    return { text: "Hic", colorClass: "text-white/30" };
+    return { text: "Hiç", colorClass: "text-white/30" };
   }
   if (daysSince < 3) {
-    return { text: `${daysSince} gun once`, colorClass: "text-emerald-400" };
+    return { text: `${daysSince} gün önce`, colorClass: "text-emerald-400" };
   }
   if (daysSince < 7) {
-    return { text: `${daysSince} gun once`, colorClass: "text-amber-400" };
+    return { text: `${daysSince} gün önce`, colorClass: "text-amber-400" };
   }
   if (daysSince < 14) {
-    return { text: `${daysSince} gun once`, colorClass: "text-orange-500" };
+    return { text: `${daysSince} gün önce`, colorClass: "text-orange-500" };
   }
-  return { text: `${daysSince} gun once`, colorClass: "text-rose-400" };
+  return { text: `${daysSince} gün önce`, colorClass: "text-rose-400" };
 }
 
 function knowledgeDot(level: number) {
@@ -128,6 +130,9 @@ function knowledgeDot(level: number) {
 // ---------------------------------------------------------------------------
 
 export default function TopicMap() {
+  const { data: session } = useSession();
+  const examTrack = (session?.user as any)?.examTrack as ExamTrack;
+
   // Data state
   const [examTypes, setExamTypes] = useState<ExamType[]>([]);
   const [knowledgeMap, setKnowledgeMap] = useState<Map<string, number>>(
@@ -160,7 +165,7 @@ export default function TopicMap() {
         await Promise.all([
           fetch("/api/topic-knowledge"),
           fetch("/api/strategy/last-studied"),
-          fetch("/api/strategy/recommendations?limit=10"),
+          fetch("/api/strategy/recommendations?limit=3"),
           fetch("/api/exam-types"),
         ]);
 
@@ -198,11 +203,16 @@ export default function TopicMap() {
       }
       setLastStudiedMap(lsMap);
 
-      // Recommendations
-      setRecommendations(Array.isArray(recommendationsData) ? recommendationsData : []);
+      // Recommendations (max 3)
+      setRecommendations(Array.isArray(recommendationsData) ? recommendationsData.slice(0, 3) : []);
 
-      // Exam types already include subjects with topics from the /api/exam-types endpoint
-      setExamTypes(Array.isArray(examTypesData) ? examTypesData : []);
+      // Exam types — filter by student's exam track (e.g. sayısal hides AYT Edebiyat)
+      const rawExamTypes = Array.isArray(examTypesData) ? examTypesData : [];
+      const filteredET = filterExamTypesByTrack(
+        rawExamTypes.map((et: ExamType) => ({ ...et, slug: et.name.toLowerCase() === "ayt" ? "ayt" : "tyt" })),
+        examTrack
+      );
+      setExamTypes(filteredET);
 
       // Auto-expand all exam types on first load
       if (Array.isArray(examTypesData)) {
@@ -213,7 +223,7 @@ export default function TopicMap() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [examTrack]);
 
   useEffect(() => {
     fetchData();
@@ -296,7 +306,7 @@ export default function TopicMap() {
     return (
       <div className="flex items-center justify-center py-24">
         <Loader2 className="w-8 h-8 text-pink-400 animate-spin" />
-        <span className="ml-3 text-white/50 text-sm">Konu haritasi yukleniyor...</span>
+        <span className="ml-3 text-white/50 text-sm">Konu haritası yükleniyor...</span>
       </div>
     );
   }
@@ -316,7 +326,7 @@ export default function TopicMap() {
           className="bg-white/5 border border-pink-500/15 rounded-xl px-4 py-2 text-sm text-white/90 backdrop-blur-sm focus:outline-none focus:border-pink-400/40 transition-colors"
         >
           <option value="all" className="bg-slate-950 text-white">
-            Tum Sinav Turleri
+            Tüm Sınav Türleri
           </option>
           {examTypes.map((et) => (
             <option key={et.id} value={et.id} className="bg-slate-950 text-white">
@@ -337,10 +347,10 @@ export default function TopicMap() {
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-5 h-5 text-amber-400" />
             <h2 className="text-lg font-semibold text-white/90">
-              Onerilen Konular
+              Önerilen Konular
             </h2>
             <span className="ml-auto text-xs text-white/30">
-              Oncelik sirasina gore
+              Öncelik sırasına göre
             </span>
           </div>
 
@@ -613,7 +623,7 @@ export default function TopicMap() {
       {filteredExamTypes.length === 0 && !loading && (
         <div className="text-center py-16 text-white/30">
           <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-50" />
-          <p className="text-sm">Henuz sinav turu bulunamadi.</p>
+          <p className="text-sm">Henüz sınav türü bulunamadı.</p>
         </div>
       )}
     </div>
