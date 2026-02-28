@@ -10,10 +10,12 @@ import {
   Clock,
   BookOpen,
   Tag,
+  ClipboardList,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { filterExamTypesByTrack, type ExamTrack } from "@/lib/exam-track-filter";
 import { LEVEL_COLORS, LEVEL_BORDER_COLORS, LEVEL_LABELS } from "@/lib/constants";
+import KazanimDrawer from "./kazanim-drawer";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -141,6 +143,11 @@ export default function TopicMap() {
   const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(
     new Set()
   );
+
+  // Kazanım drawer state
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerTopicId, setDrawerTopicId] = useState<string>("");
+  const [drawerTopicName, setDrawerTopicName] = useState<string>("");
 
   // ---------------------------------------------------------------------------
   // Data fetching
@@ -273,6 +280,21 @@ export default function TopicMap() {
     },
     []
   );
+
+  const openKazanimDrawer = useCallback((topicId: string, topicName: string) => {
+    setDrawerTopicId(topicId);
+    setDrawerTopicName(topicName);
+    setDrawerOpen(true);
+  }, []);
+
+  const handleKazanimLevelChange = useCallback((topicId: string, level: number) => {
+    // Update knowledgeMap when kazanım auto-level changes
+    setKnowledgeMap((prev) => {
+      const next = new Map(prev);
+      next.set(topicId, level);
+      return next;
+    });
+  }, []);
 
   const toggleExamType = useCallback((id: string) => {
     setExpandedExamTypes((prev) => {
@@ -593,40 +615,32 @@ export default function TopicMap() {
                                               </span>
                                             </div>
 
-                                            {/* Level buttons */}
-                                            <div className="flex items-center gap-1 shrink-0">
-                                              {[0, 1, 2, 3, 4, 5].map(
-                                                (lvl) => {
-                                                  const isSelected =
-                                                    level === lvl;
-
-                                                  return (
-                                                    <button
-                                                      key={lvl}
-                                                      disabled={isSaving}
-                                                      onClick={() =>
-                                                        updateKnowledgeLevel(
-                                                          topic.id,
-                                                          lvl
-                                                        )
-                                                      }
-                                                      title={LEVEL_LABELS[lvl]}
-                                                      className={`w-7 h-7 rounded-lg text-[11px] font-semibold transition-all duration-150 ${
-                                                        isSelected
-                                                          ? `${LEVEL_COLORS[lvl]} text-slate-950 shadow-md`
-                                                          : `border ${LEVEL_BORDER_COLORS[lvl]} bg-transparent hover:bg-white/5`
-                                                      } ${
-                                                        isSaving
-                                                          ? "opacity-50 cursor-not-allowed"
-                                                          : "cursor-pointer"
-                                                      }`}
-                                                    >
-                                                      {lvl}
-                                                    </button>
-                                                  );
-                                                }
-                                              )}
+                                            {/* Auto-calculated level badge (read-only) */}
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                              <span
+                                                className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${
+                                                  level > 0
+                                                    ? `${LEVEL_COLORS[level]} text-slate-950`
+                                                    : "bg-white/10 text-white/40"
+                                                }`}
+                                                title={LEVEL_LABELS[level]}
+                                              >
+                                                {level}/5
+                                              </span>
                                             </div>
+
+                                            {/* Kazanımlar button */}
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                openKazanimDrawer(topic.id, topic.name);
+                                              }}
+                                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium bg-pink-500/10 text-pink-400 border border-pink-500/20 hover:bg-pink-500/20 transition-colors shrink-0"
+                                              title="Kazanımları görüntüle"
+                                            >
+                                              <ClipboardList className="w-3 h-3" />
+                                              <span className="hidden sm:inline">Kazanımlar</span>
+                                            </button>
                                           </motion.div>
                                         );
                                       }
@@ -654,6 +668,15 @@ export default function TopicMap() {
           <p className="text-sm">Henüz sınav türü bulunamadı.</p>
         </div>
       )}
+
+      {/* Kazanım Drawer */}
+      <KazanimDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        topicId={drawerTopicId}
+        topicName={drawerTopicName}
+        onLevelChange={handleKazanimLevelChange}
+      />
     </div>
   );
 }

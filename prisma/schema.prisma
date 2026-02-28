@@ -46,6 +46,7 @@ model User {
   badges         UserBadge[]
   questionBanks  QuestionBank[]
   studentProfile StudentProfile?
+  kazanimProgress KazanimProgress[]
 }
 
 // ==================== KLASÖRLER & GÖREVLER ====================
@@ -164,6 +165,7 @@ model Topic {
   prerequisites    TopicPrerequisite[] @relation("TopicPrereqs")
   prerequisiteOf   TopicPrerequisite[] @relation("PrereqOf")
   concepts         TopicConcept[]
+  kazanimlar       TopicKazanim[]
   sortOrder       Int      @default(0)
 
   @@index([subjectId])
@@ -660,6 +662,40 @@ model TopicPrerequisite {
   @@unique([topicId, prerequisiteId])
   @@index([topicId])
   @@index([prerequisiteId])
+}
+
+// ==================== KAZANIM SİSTEMİ ====================
+
+model TopicKazanim {
+  id            String   @id @default(cuid())
+  topicId       String
+  topic         Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  code          String   // "9.1.1.1", "10.2.3.1"
+  subTopicName  String?  // Konu başlığı: "Önermeler ve Bileşik Önermeler"
+  description   String   // Kazanım metni
+  details       String?  // Alt açıklamalar (a, b, c) — multiline text
+  isKeyKazanim  Boolean  @default(false) // Anahtar kazanım işareti
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  progress      KazanimProgress[]
+
+  @@index([topicId])
+}
+
+model KazanimProgress {
+  id         String       @id @default(cuid())
+  userId     String
+  user       User         @relation(fields: [userId], references: [id])
+  kazanimId  String
+  kazanim    TopicKazanim @relation(fields: [kazanimId], references: [id], onDelete: Cascade)
+  checked    Boolean      @default(false)
+  notes      String?
+  updatedAt  DateTime     @updatedAt
+  createdAt  DateTime     @default(now())
+
+  @@unique([userId, kazanimId])
+  @@index([userId])
+  @@index([kazanimId])
 }
 
 // ==================== ANAHTAR KAVRAMLAR ====================

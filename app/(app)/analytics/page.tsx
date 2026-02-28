@@ -49,10 +49,17 @@ interface ErrorData {
   }>;
 }
 
+interface SubjectOption {
+  id: string;
+  name: string;
+}
+
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('trends');
   const [filterType, setFilterType] = useState<string>('all');
-  const [examTypes, setExamTypes] = useState<Array<{ id: string; name: string }>>([]);
+  const [filterSubject, setFilterSubject] = useState<string>('all');
+  const [examTypes, setExamTypes] = useState<Array<{ id: string; name: string; subjects?: SubjectOption[] }>>([]);
+  const [availableSubjects, setAvailableSubjects] = useState<SubjectOption[]>([]);
 
   const [trends, setTrends] = useState<TrendData[]>([]);
   const [topics, setTopics] = useState<TopicData[]>([]);
@@ -77,9 +84,33 @@ export default function AnalyticsPage() {
     fetchExamTypes();
   }, []);
 
+  // Update available subjects when exam type filter changes
+  useEffect(() => {
+    if (filterType === 'all') {
+      // Show all subjects from all exam types
+      const allSubjects: SubjectOption[] = [];
+      const seenIds = new Set<string>();
+      examTypes.forEach(et => {
+        (et.subjects || []).forEach((s: SubjectOption) => {
+          if (!seenIds.has(s.id)) {
+            seenIds.add(s.id);
+            allSubjects.push(s);
+          }
+        });
+      });
+      setAvailableSubjects(allSubjects);
+    } else {
+      const selectedET = examTypes.find(et => et.id === filterType);
+      setAvailableSubjects(selectedET?.subjects || []);
+    }
+    setFilterSubject('all');
+  }, [filterType, examTypes]);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     const typeParam = filterType !== 'all' ? `examTypeId=${filterType}` : '';
+    const subjectParam = filterSubject !== 'all' ? `&subjectId=${filterSubject}` : '';
+    const params = `${typeParam}${subjectParam}`;
 
     try {
       if (activeTab === 'topic-progress' || activeTab === 'targets') {
@@ -87,19 +118,19 @@ export default function AnalyticsPage() {
         setLoading(false);
         return;
       } else if (activeTab === 'trends') {
-        const res = await fetch(`/api/analytics/trends?${typeParam}&limit=50`);
+        const res = await fetch(`/api/analytics/trends?${params}&limit=50`);
         if (!res.ok) throw new Error();
         setTrends(await res.json());
       } else if (activeTab === 'topics') {
-        const res = await fetch(`/api/analytics/topics?${typeParam}`);
+        const res = await fetch(`/api/analytics/topics?${params}`);
         if (!res.ok) throw new Error();
         setTopics(await res.json());
       } else if (activeTab === 'errors') {
-        const res = await fetch(`/api/analytics/errors?${typeParam}`);
+        const res = await fetch(`/api/analytics/errors?${params}`);
         if (!res.ok) throw new Error();
         setErrors(await res.json());
       } else if (activeTab === 'regression') {
-        const res = await fetch(`/api/analytics/regression?${typeParam}&targets=70,80,90,100`);
+        const res = await fetch(`/api/analytics/regression?${params}&targets=70,80,90,100`);
         if (!res.ok) throw new Error();
         setRegression(await res.json());
       }
@@ -109,7 +140,7 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, filterType]);
+  }, [activeTab, filterType, filterSubject]);
 
   useEffect(() => {
     fetchData();
@@ -218,6 +249,25 @@ export default function AnalyticsPage() {
               {et.name}
             </button>
           ))}
+
+          {/* Subject filter — shown when subjects are available */}
+          {availableSubjects.length > 0 && (
+            <>
+              <div className="w-px h-6 bg-white/10 self-center mx-1" />
+              <select
+                value={filterSubject}
+                onChange={(e) => setFilterSubject(e.target.value)}
+                className="px-3 py-2 rounded-xl text-xs font-bold bg-white/[0.04] text-white/70 border border-white/10 outline-none focus:border-pink-400/40 transition-colors appearance-none cursor-pointer"
+              >
+                <option value="all" className="bg-slate-950 text-white">Tüm Dersler</option>
+                {availableSubjects.map(s => (
+                  <option key={s.id} value={s.id} className="bg-slate-950 text-white">
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
         </div>
       </div>
 

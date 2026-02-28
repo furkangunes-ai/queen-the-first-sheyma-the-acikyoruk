@@ -12,12 +12,19 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const examTypeId = searchParams.get("examTypeId");
+    const subjectId = searchParams.get("subjectId");
     const limit = parseInt(searchParams.get("limit") || "20", 10);
 
     const exams = await prisma.exam.findMany({
       where: {
         userId,
         ...(examTypeId && { examTypeId }),
+        // If subjectId is provided, only fetch exams that have results for that subject
+        ...(subjectId && {
+          subjectResults: {
+            some: { subjectId },
+          },
+        }),
       },
       include: {
         examType: true,
@@ -25,6 +32,9 @@ export async function GET(request: NextRequest) {
           include: {
             subject: true,
           },
+          ...(subjectId && {
+            where: { subjectId },
+          }),
         },
       },
       orderBy: { date: "asc" },

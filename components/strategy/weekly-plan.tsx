@@ -40,6 +40,7 @@ interface StudentProfileData {
   breakPreference: string | null;
   examDate: string | null;
   targetRank: number | null;
+  examTrack: string | null;
 }
 
 // ---------- Types ----------
@@ -842,6 +843,7 @@ export default function WeeklyPlan() {
               breakPreference: p.breakPreference,
               examDate: p.examDate ? (typeof p.examDate === "string" ? p.examDate : new Date(p.examDate).toISOString()) : null,
               targetRank: p.targetRank,
+              examTrack: p.examTrack ?? null,
             };
           } else {
             needsProfile = true;

@@ -54,6 +54,14 @@ KONU ÖN-KOŞUL KURALLARI:
 - Eğer ön-koşul bu hafta yeni öğreniliyorsa (seviye 0-1), bağımlı konuyu EN ERKEN 2 gün sonraya planla
 - "hard" ön-koşullar kesinlikle uyulmalı, "soft" önerilir ama esnetilebilir
 
+MÜFREDAT SIRASI KURALI (ÇOK ÖNEMLİ):
+- Konular ÖSYM müfredat sırasına göre verilmiştir (en temelden en ileri seviyeye).
+- Öğrencinin kazanım tamamlama oranı %70'in üzerindeki konuları "tamamlanmış" say.
+- Tamamlanmış konulardan sonraki ilk "tamamlanmamış" konudan başlayarak plan yap.
+- Sırayı atlamadan ilerle: Türev'i bitirmeden İntegral'e geçme, Kümeler'i bitirmeden Fonksiyonlar'a geçme.
+- Eğer öğrenci müfredatın ortasındaysa, gerideki eksik konuları da plana al ama ağırlık ileriye olsun.
+- Her ders için ayrı müfredat sırası takip et (Matematik sırası, Fizik sırası, vb.)
+
 KONU AĞIRLIK KURALLARI:
 - Zorluk 5 konulara tek oturumda en fazla 90dk ver, birden fazla güne yay
 - Zorluk 1-2 konular tek oturumda tamamlanabilir (30-60dk)
@@ -191,7 +199,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Gather context data in parallel (token-efficient)
-    const [weakTopics, allTopicKnowledge, recentExam, studyDistribution, recentInsights, allSubjects, prerequisites] =
+    const [weakTopics, allTopicKnowledge, recentExam, studyDistribution, recentInsights, allSubjects, prerequisites, kazanimCounts] =
       await Promise.all([
         // Weak topics (knowledge level 0-3)
         prisma.topicKnowledge.findMany({
@@ -235,12 +243,21 @@ export async function POST(request: NextRequest) {
         }),
         // All subjects for ID matching (include topics with difficulty/estimatedHours for available topic list)
         prisma.subject.findMany({
-          include: { topics: true, examType: true },
+          include: { topics: { orderBy: { sortOrder: "asc" } }, examType: true },
         }),
         // Topic prerequisites (Faz 4C)
         prisma.topicPrerequisite.findMany({
           include: { topic: true, prerequisite: true },
         }),
+        // Kazanım completion counts per topic (for "kaldığı yerden devam" logic)
+        prisma.$queryRaw<Array<{ topicId: string; total: bigint; checked: bigint }>>`
+          SELECT tk."topicId",
+                 COUNT(tk.id) as total,
+                 COUNT(CASE WHEN kp.checked = true THEN 1 END) as checked
+          FROM "TopicKazanim" tk
+          LEFT JOIN "KazanimProgress" kp ON kp."kazanimId" = tk.id AND kp."userId" = ${userId}
+          GROUP BY tk."topicId"
+        `,
       ]);
 
     // Filter subjects by exam track
@@ -307,9 +324,28 @@ export async function POST(request: NextRequest) {
       .map((i) => i.content.split(" ").slice(0, 50).join(" "))
       .join(" | ");
 
-    // Build available topics list for AI reference (with difficulty & estimated hours — Faz 4D)
+    // Build kazanım completion map: topicId → { total, checked, pct }
+    const kazanimCompletionMap = new Map<string, { total: number; checked: number; pct: number }>();
+    for (const row of kazanimCounts) {
+      const total = Number(row.total);
+      const checked = Number(row.checked);
+      const pct = total > 0 ? Math.round((checked / total) * 100) : 0;
+      kazanimCompletionMap.set(row.topicId, { total, checked, pct });
+    }
+
+    // Build available topics list for AI reference (with difficulty, hours, and curriculum ordering)
+    // Topics are already sorted by sortOrder from the query
     const availableTopicsStr = filteredSubjects
-      .map((s) => `${s.name}: ${s.topics.map((t) => `${t.name} [zorluk:${t.difficulty}, ~${t.estimatedHours}sa]`).join(", ")}`)
+      .map((s) => {
+        const topicsStr = s.topics.map((t, idx) => {
+          const completion = kazanimCompletionMap.get(t.id);
+          const completionTag = completion
+            ? ` (kazanım: ${completion.checked}/${completion.total}, %${completion.pct}${completion.pct >= 70 ? " ✓TAMAMLANDI" : ""})`
+            : "";
+          return `${idx + 1}. ${t.name} [zorluk:${t.difficulty}, ~${t.estimatedHours}sa]${completionTag}`;
+        }).join(", ");
+        return `${s.examType.name} ${s.name}: ${topicsStr}`;
+      })
       .join("\n");
 
     // Categorize topic knowledge by level for balanced planning (Faz 4B)
@@ -399,7 +435,9 @@ Son 2 hafta çalışma dağılımı: ${studyStr || "Veri yok"}
 
 ${insightsStr ? `Geçmiş AI önerileri: ${insightsStr}` : ""}
 
-=== MEVCUT KONU LİSTESİ (SADECE BUNLARI KULLAN) ===
+=== MEVCUT KONU LİSTESİ — MÜFREDAT SIRASINA GÖRE (SADECE BUNLARI KULLAN) ===
+Aşağıdaki konular ÖSYM müfredat sırasıyla numaralandırılmıştır. "✓TAMAMLANDI" işaretli konular %70+ kazanım tamamlamış demektir.
+Tamamlanmamış ilk konudan başlayarak plan yap. Sırayı atlama!
 ${availableTopicsStr}
 ${prerequisitesStr ? `\n${prerequisitesStr}` : ""}
 ${difficultyStr ? `\n${difficultyStr}` : ""}

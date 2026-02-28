@@ -16,6 +16,7 @@ interface StudentProfileData {
   breakPreference: string | null;
   examDate: string | null;
   targetRank: number | null;
+  examTrack: string | null; // "sayisal" | "ea" | "sozel"
 }
 
 // ---------------------------------------------------------------------------
@@ -31,8 +32,14 @@ const BREAK_OPTIONS = [
 ];
 
 const REGULARITY_OPTIONS = [
-  { value: "duzenli", label: "D\u00fczenli" },
-  { value: "duzensiz", label: "D\u00fczensiz" },
+  { value: "duzenli", label: "Düzenli" },
+  { value: "duzensiz", label: "Düzensiz" },
+];
+
+const EXAM_TRACK_OPTIONS = [
+  { value: "sayisal", label: "Sayısal", desc: "TYT + AYT (Mat, Fiz, Kim, Bio)" },
+  { value: "ea", label: "Eşit Ağırlık", desc: "TYT + AYT (Mat, Edebiyat, Tarih, Coğ)" },
+  { value: "sozel", label: "Sözel", desc: "TYT + AYT (Edebiyat, Tarih, Coğ, Felsefe grubu)" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -47,6 +54,7 @@ function parseInitialData(data: StudentProfileData | null | undefined): StudentP
     breakPreference: data?.breakPreference ?? null,
     examDate: data?.examDate ?? null,
     targetRank: data?.targetRank ?? null,
+    examTrack: data?.examTrack ?? null,
   };
 }
 
@@ -126,7 +134,41 @@ export default function StudentProfileForm({
         </div>
       </div>
 
-      {/* ---- 1. G\u00fcnl\u00fck \u00c7al\u0131\u015fma Saati ---- */}
+      {/* ---- 0. Alan Seçimi ---- */}
+      <div className={sectionClass}>
+        <div className="flex items-center gap-2 text-pink-400">
+          <Target className="w-4 h-4" />
+          <span className="text-sm font-semibold">Alan Seçimi</span>
+        </div>
+        <label className={labelClass}>
+          Hangi alanda hazırlanıyorsun?
+        </label>
+        <div className="space-y-2">
+          {EXAM_TRACK_OPTIONS.map((opt) => {
+            const active = form.examTrack === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setForm((p) => ({ ...p, examTrack: opt.value }))}
+                className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-200 ${
+                  active
+                    ? "bg-pink-500/20 border-pink-400/60 text-pink-300"
+                    : "bg-white/5 border-white/10 text-white/40 hover:border-white/30 hover:text-white/60"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {active && <Check className="w-3.5 h-3.5 shrink-0" />}
+                  <span className="font-medium text-sm">{opt.label}</span>
+                </div>
+                <p className="text-[11px] text-white/30 mt-0.5 ml-5">{opt.desc}</p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ---- 1. Günlük Çalışma Saati ---- */}
       <div className={sectionClass}>
         <div className="flex items-center gap-2 text-amber-400">
           <Clock className="w-4 h-4" />

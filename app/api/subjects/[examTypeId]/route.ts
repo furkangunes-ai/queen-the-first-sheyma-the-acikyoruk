@@ -17,10 +17,10 @@ export async function GET(
       where: { examTypeId },
       include: {
         topics: {
-          orderBy: { name: "asc" },
+          orderBy: { sortOrder: "asc" },
         },
       },
-      orderBy: { name: "asc" },
+      orderBy: { sortOrder: "asc" },
     });
 
     return NextResponse.json(subjects);

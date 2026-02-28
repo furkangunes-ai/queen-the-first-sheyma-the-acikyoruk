@@ -14,10 +14,10 @@ export async function GET(request: NextRequest) {
         subjects: {
           include: {
             topics: {
-              orderBy: { name: "asc" },
+              orderBy: { sortOrder: "asc" },
             },
           },
-          orderBy: { name: "asc" },
+          orderBy: { sortOrder: "asc" },
         },
       },
       orderBy: { name: "asc" },

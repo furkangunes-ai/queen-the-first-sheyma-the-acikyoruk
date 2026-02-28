@@ -9,6 +9,7 @@
     "lint": "next lint",
     "db:migrate": "prisma migrate dev",
     "db:seed": "npx tsx prisma/seed.ts",
+    "db:seed-kazanimlar": "npx tsx prisma/seed-kazanimlar.ts",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate"

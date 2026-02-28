@@ -866,6 +866,27 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
     }
   };
 
+  const handleCategoryToggle = async () => {
+    if (!exam) return;
+    const newCategory = exam.examCategory === 'brans' ? null : 'brans';
+    setChangingExamType(true);
+    try {
+      const res = await fetch(`/api/exams/${examId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ examCategory: newCategory }),
+      });
+      if (!res.ok) throw new Error('Kategori güncellenemedi');
+      const updated = await res.json();
+      setExam(prev => prev ? { ...prev, examCategory: updated.examCategory } : prev);
+      toast.success(newCategory === 'brans' ? 'Branş denemesi olarak işaretlendi' : 'Genel deneme olarak işaretlendi');
+    } catch {
+      toast.error('Kategori güncellenirken hata oluştu');
+    } finally {
+      setChangingExamType(false);
+    }
+  };
+
   const handleDelete = async () => {
     setDeleting(true);
     try {
@@ -987,6 +1008,11 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
                   ) : (
                     <>
                       {exam.examType.name}
+                      {exam.examCategory === 'brans' && exam.subjectResults.length === 1 && (
+                        <span className="text-amber-400 ml-0.5">
+                          {exam.subjectResults[0].subject.name}
+                        </span>
+                      )}
                       <ChevronDown className="w-3 h-3" />
                     </>
                   )}
@@ -1000,6 +1026,19 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
                       transition={{ duration: 0.15 }}
                       className="absolute right-0 top-full mt-1 z-50 bg-[#1a1a2e] border border-white/10 rounded-lg shadow-xl overflow-hidden min-w-[120px]"
                     >
+                      {/* Branş / Genel Toggle */}
+                      <button
+                        onClick={handleCategoryToggle}
+                        className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors border-b border-white/5 ${
+                          exam.examCategory === 'brans'
+                            ? 'text-amber-400 bg-amber-500/10'
+                            : 'text-white/50 hover:text-white hover:bg-white/[0.06]'
+                        }`}
+                      >
+                        {exam.examCategory === 'brans' ? '✓ Branş Denemesi' : 'Branş Denemesi Yap'}
+                      </button>
+
+                      {/* Exam Type Options */}
                       {examTypes.map((et) => (
                         <button
                           key={et.id}

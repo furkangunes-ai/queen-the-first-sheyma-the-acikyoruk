@@ -124,6 +124,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const examTypeId = searchParams.get("examTypeId");
+    const subjectId = searchParams.get("subjectId");
     const targetsParam = searchParams.get("targets") || "70,80,90,100";
     const targets = targetsParam.split(",").map(Number).filter(n => !isNaN(n));
 
@@ -132,11 +133,19 @@ export async function GET(request: NextRequest) {
       where: {
         userId,
         ...(examTypeId && { examTypeId }),
+        ...(subjectId && {
+          subjectResults: {
+            some: { subjectId },
+          },
+        }),
       },
       include: {
         examType: true,
         subjectResults: {
           include: { subject: true },
+          ...(subjectId && {
+            where: { subjectId },
+          }),
         },
       },
       orderBy: { date: "asc" },

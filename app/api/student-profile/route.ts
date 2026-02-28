@@ -11,11 +11,12 @@ export async function GET(request: NextRequest) {
     }
     const userId = (session.user as any).id;
 
-    const profile = await prisma.studentProfile.findUnique({
-      where: { userId },
-    });
+    const [profile, user] = await Promise.all([
+      prisma.studentProfile.findUnique({ where: { userId } }),
+      prisma.user.findUnique({ where: { id: userId }, select: { examTrack: true } }),
+    ]);
 
-    return NextResponse.json(profile);
+    return NextResponse.json({ ...profile, examTrack: user?.examTrack ?? null });
   } catch (error) {
     console.error("Error fetching student profile:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -32,7 +33,15 @@ export async function PUT(request: NextRequest) {
     const userId = (session.user as any).id;
 
     const body = await request.json();
-    const { dailyStudyHours, availableDays, studyRegularity, breakPreference, examDate, targetRank } = body;
+    const { dailyStudyHours, availableDays, studyRegularity, breakPreference, examDate, targetRank, examTrack } = body;
+
+    // examTrack is stored on User model, not StudentProfile
+    if (examTrack !== undefined) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { examTrack: examTrack || null },
+      });
+    }
 
     const profile = await prisma.studentProfile.upsert({
       where: { userId },
@@ -55,7 +64,13 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(profile);
+    // Return profile with examTrack from User
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { examTrack: true },
+    });
+
+    return NextResponse.json({ ...profile, examTrack: user?.examTrack ?? null });
   } catch (error) {
     console.error("Error updating student profile:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
