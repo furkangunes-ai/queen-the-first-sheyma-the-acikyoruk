@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Loader2,
@@ -10,12 +10,14 @@ import {
   Clock,
   BookOpen,
   Tag,
-  ClipboardList,
+  Check,
+  StickyNote,
+  Star,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import { filterExamTypesByTrack, type ExamTrack } from "@/lib/exam-track-filter";
 import { LEVEL_COLORS, LEVEL_BORDER_COLORS, LEVEL_LABELS } from "@/lib/constants";
-import KazanimDrawer from "./kazanim-drawer";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -81,6 +83,23 @@ interface TopicConcept {
   sortOrder: number;
 }
 
+interface KazanimProgress {
+  checked: boolean;
+  notes: string | null;
+}
+
+interface Kazanim {
+  id: string;
+  topicId: string;
+  code: string;
+  subTopicName: string | null;
+  description: string;
+  details: string | null;
+  isKeyKazanim: boolean;
+  sortOrder: number;
+  progress: KazanimProgress | null;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -144,10 +163,14 @@ export default function TopicMap() {
     new Set()
   );
 
-  // Kazanım drawer state
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerTopicId, setDrawerTopicId] = useState<string>("");
-  const [drawerTopicName, setDrawerTopicName] = useState<string>("");
+  // Inline kazanım state
+  const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
+  const [topicKazanimlar, setTopicKazanimlar] = useState<Map<string, Kazanim[]>>(new Map());
+  const [loadingKazanimTopicId, setLoadingKazanimTopicId] = useState<string | null>(null);
+  const [savingKazanimIds, setSavingKazanimIds] = useState<Set<string>>(new Set());
+  const [localNotes, setLocalNotes] = useState<Map<string, string>>(new Map());
+  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
+  const noteTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   // ---------------------------------------------------------------------------
   // Data fetching
@@ -281,20 +304,144 @@ export default function TopicMap() {
     []
   );
 
-  const openKazanimDrawer = useCallback((topicId: string, topicName: string) => {
-    setDrawerTopicId(topicId);
-    setDrawerTopicName(topicName);
-    setDrawerOpen(true);
-  }, []);
+  // ---- Inline kazanım handlers ----
 
-  const handleKazanimLevelChange = useCallback((topicId: string, level: number) => {
-    // Update knowledgeMap when kazanım auto-level changes
-    setKnowledgeMap((prev) => {
-      const next = new Map(prev);
-      next.set(topicId, level);
+  const toggleTopicExpand = useCallback(async (topicId: string) => {
+    setExpandedTopics((prev) => {
+      const next = new Set(prev);
+      if (next.has(topicId)) {
+        next.delete(topicId);
+        return next;
+      }
+      next.add(topicId);
       return next;
     });
+
+    // Fetch kazanımlar if not loaded yet
+    if (!topicKazanimlar.has(topicId)) {
+      setLoadingKazanimTopicId(topicId);
+      try {
+        const res = await fetch(`/api/topic-kazanims?topicId=${topicId}`);
+        if (res.ok) {
+          const data: Kazanim[] = await res.json();
+          setTopicKazanimlar((prev) => {
+            const next = new Map(prev);
+            next.set(topicId, data);
+            return next;
+          });
+          // Init local notes
+          for (const k of data) {
+            if (k.progress?.notes) {
+              setLocalNotes((prev) => {
+                const next = new Map(prev);
+                next.set(k.id, k.progress!.notes!);
+                return next;
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch kazanımlar", err);
+      } finally {
+        setLoadingKazanimTopicId(null);
+      }
+    }
+  }, [topicKazanimlar]);
+
+  const toggleKazanimCheck = useCallback(async (kazanimId: string, topicId: string) => {
+    const kazList = topicKazanimlar.get(topicId);
+    if (!kazList) return;
+
+    const kazanim = kazList.find((k) => k.id === kazanimId);
+    if (!kazanim) return;
+
+    const newChecked = !(kazanim.progress?.checked ?? false);
+
+    // Optimistic update
+    setTopicKazanimlar((prev) => {
+      const next = new Map(prev);
+      const list = [...(next.get(topicId) || [])];
+      const idx = list.findIndex((k) => k.id === kazanimId);
+      if (idx >= 0) {
+        list[idx] = {
+          ...list[idx],
+          progress: { checked: newChecked, notes: list[idx].progress?.notes ?? null },
+        };
+        next.set(topicId, list);
+      }
+      return next;
+    });
+
+    setSavingKazanimIds((prev) => new Set(prev).add(kazanimId));
+
+    try {
+      const res = await fetch("/api/kazanim-progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kazanimId, checked: newChecked }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.autoLevel !== undefined) {
+          setKnowledgeMap((prev) => {
+            const next = new Map(prev);
+            next.set(topicId, data.autoLevel);
+            return next;
+          });
+        }
+      }
+    } catch (err) {
+      // Revert on failure
+      setTopicKazanimlar((prev) => {
+        const next = new Map(prev);
+        const list = [...(next.get(topicId) || [])];
+        const idx = list.findIndex((k) => k.id === kazanimId);
+        if (idx >= 0) {
+          list[idx] = {
+            ...list[idx],
+            progress: { checked: !newChecked, notes: list[idx].progress?.notes ?? null },
+          };
+          next.set(topicId, list);
+        }
+        return next;
+      });
+      toast.error("Kazanım kaydedilemedi");
+    } finally {
+      setSavingKazanimIds((prev) => {
+        const next = new Set(prev);
+        next.delete(kazanimId);
+        return next;
+      });
+    }
+  }, [topicKazanimlar]);
+
+  const saveKazanimNote = useCallback(async (kazanimId: string, notes: string) => {
+    try {
+      await fetch("/api/kazanim-progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kazanimId, notes }),
+      });
+    } catch {
+      // silent fail for notes
+    }
   }, []);
+
+  const handleNoteChange = useCallback((kazanimId: string, value: string) => {
+    setLocalNotes((prev) => {
+      const next = new Map(prev);
+      next.set(kazanimId, value);
+      return next;
+    });
+    // Debounce save
+    const existing = noteTimers.current.get(kazanimId);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(() => {
+      saveKazanimNote(kazanimId, value);
+      noteTimers.current.delete(kazanimId);
+    }, 800);
+    noteTimers.current.set(kazanimId, timer);
+  }, [saveKazanimNote]);
 
   const toggleExamType = useCallback((id: string) => {
     setExpandedExamTypes((prev) => {
@@ -567,58 +714,79 @@ export default function TopicMap() {
                                         const badge = daysSinceBadge(
                                           ls ? ls.daysSince : null
                                         );
-                                        const isSaving =
-                                          savingTopicId === topic.id;
+                                        const isTopicExpanded = expandedTopics.has(topic.id);
+                                        const kazList = topicKazanimlar.get(topic.id) || [];
+                                        const isLoadingKaz = loadingKazanimTopicId === topic.id;
+                                        const checkedCount = kazList.filter((k) => k.progress?.checked).length;
+                                        const totalKaz = kazList.length;
 
                                         return (
-                                          <motion.div
+                                          <div
                                             key={topic.id}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            transition={{
-                                              duration: 0.15,
-                                              delay: tIdx * 0.02,
-                                            }}
-                                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.02] transition-colors border-b border-white/[0.03] last:border-b-0"
+                                            className="border-b border-white/[0.03] last:border-b-0"
                                           >
-                                            {/* Topic name + concepts */}
-                                            <div className="flex-1 min-w-0">
-                                              <span className="text-sm text-white/80 truncate block">
-                                                {topic.name}
-                                              </span>
-                                              {/* Concept tags */}
-                                              {conceptsMap.get(topic.id)?.length ? (
-                                                <div className="flex flex-wrap gap-1 mt-1">
-                                                  {conceptsMap.get(topic.id)!.sort((a, b) => a.sortOrder - b.sortOrder).map((concept) => (
-                                                    <span
-                                                      key={concept.id}
-                                                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 text-white/40 border border-white/[0.06] hover:bg-white/10 hover:text-white/60 transition-colors cursor-default"
-                                                      title={
-                                                        (concept.description ? concept.description : "") +
-                                                        (concept.formula ? `\nFormül: ${concept.formula}` : "")
-                                                      }
-                                                    >
-                                                      {concept.name}
-                                                    </span>
-                                                  ))}
-                                                </div>
-                                              ) : null}
-                                            </div>
-
-                                            {/* Last studied badge */}
-                                            <div className="flex items-center gap-1 shrink-0">
-                                              <Clock className="w-3 h-3 text-white/20" />
-                                              <span
-                                                className={`text-xs ${badge.colorClass}`}
+                                            {/* Topic Header Row — clickable to expand */}
+                                            <motion.button
+                                              initial={{ opacity: 0 }}
+                                              animate={{ opacity: 1 }}
+                                              transition={{
+                                                duration: 0.15,
+                                                delay: tIdx * 0.02,
+                                              }}
+                                              onClick={() => toggleTopicExpand(topic.id)}
+                                              className="flex items-center gap-3 px-4 py-2.5 w-full text-left hover:bg-white/[0.02] transition-colors"
+                                            >
+                                              {/* Expand chevron */}
+                                              <motion.div
+                                                animate={{ rotate: isTopicExpanded ? 90 : 0 }}
+                                                transition={{ duration: 0.15 }}
+                                                className="shrink-0"
                                               >
-                                                {badge.text}
-                                              </span>
-                                            </div>
+                                                <ChevronRight className="w-3.5 h-3.5 text-pink-400/60" />
+                                              </motion.div>
 
-                                            {/* Auto-calculated level badge (read-only) */}
-                                            <div className="flex items-center gap-1.5 shrink-0">
+                                              {/* Topic name */}
+                                              <div className="flex-1 min-w-0">
+                                                <span className="text-sm text-white/80 truncate block">
+                                                  {topic.name}
+                                                </span>
+                                                {/* Concept tags */}
+                                                {conceptsMap.get(topic.id)?.length ? (
+                                                  <div className="flex flex-wrap gap-1 mt-1">
+                                                    {conceptsMap.get(topic.id)!.sort((a, b) => a.sortOrder - b.sortOrder).map((concept) => (
+                                                      <span
+                                                        key={concept.id}
+                                                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/5 text-white/40 border border-white/[0.06]"
+                                                        title={
+                                                          (concept.description ? concept.description : "") +
+                                                          (concept.formula ? `\nFormül: ${concept.formula}` : "")
+                                                        }
+                                                      >
+                                                        {concept.name}
+                                                      </span>
+                                                    ))}
+                                                  </div>
+                                                ) : null}
+                                              </div>
+
+                                              {/* Last studied badge */}
+                                              <div className="flex items-center gap-1 shrink-0">
+                                                <Clock className="w-3 h-3 text-white/20" />
+                                                <span className={`text-xs ${badge.colorClass}`}>
+                                                  {badge.text}
+                                                </span>
+                                              </div>
+
+                                              {/* Kazanım progress mini badge */}
+                                              {isTopicExpanded && totalKaz > 0 && (
+                                                <span className="text-[10px] text-white/40 shrink-0">
+                                                  {checkedCount}/{totalKaz}
+                                                </span>
+                                              )}
+
+                                              {/* Auto-calculated level badge */}
                                               <span
-                                                className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${
+                                                className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold shrink-0 ${
                                                   level > 0
                                                     ? `${LEVEL_COLORS[level]} text-slate-950`
                                                     : "bg-white/10 text-white/40"
@@ -627,21 +795,135 @@ export default function TopicMap() {
                                               >
                                                 {level}/5
                                               </span>
-                                            </div>
+                                            </motion.button>
 
-                                            {/* Kazanımlar button */}
-                                            <button
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                openKazanimDrawer(topic.id, topic.name);
-                                              }}
-                                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium bg-pink-500/10 text-pink-400 border border-pink-500/20 hover:bg-pink-500/20 transition-colors shrink-0"
-                                              title="Kazanımları görüntüle"
-                                            >
-                                              <ClipboardList className="w-3 h-3" />
-                                              <span className="hidden sm:inline">Kazanımlar</span>
-                                            </button>
-                                          </motion.div>
+                                            {/* Inline Kazanım Section */}
+                                            <AnimatePresence initial={false}>
+                                              {isTopicExpanded && (
+                                                <motion.div
+                                                  initial={{ height: 0, opacity: 0 }}
+                                                  animate={{ height: "auto", opacity: 1 }}
+                                                  exit={{ height: 0, opacity: 0 }}
+                                                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                                                  className="overflow-hidden"
+                                                >
+                                                  <div className="px-4 pb-3 pt-1 ml-6 border-l-2 border-pink-500/20">
+                                                    {/* Loading */}
+                                                    {isLoadingKaz && (
+                                                      <div className="flex items-center gap-2 py-3">
+                                                        <Loader2 className="w-4 h-4 text-pink-400 animate-spin" />
+                                                        <span className="text-xs text-white/40">Kazanımlar yükleniyor...</span>
+                                                      </div>
+                                                    )}
+
+                                                    {/* Empty state */}
+                                                    {!isLoadingKaz && kazList.length === 0 && (
+                                                      <p className="text-xs text-white/30 py-2">
+                                                        Bu konu için kazanım bulunamadı.
+                                                      </p>
+                                                    )}
+
+                                                    {/* Kazanım list */}
+                                                    {!isLoadingKaz && kazList.length > 0 && (
+                                                      <div className="space-y-1.5">
+                                                        {kazList.map((kaz) => {
+                                                          const isChecked = kaz.progress?.checked ?? false;
+                                                          const isSavingK = savingKazanimIds.has(kaz.id);
+                                                          const noteValue = localNotes.get(kaz.id) ?? kaz.progress?.notes ?? "";
+                                                          const isNoteOpen = expandedNotes.has(kaz.id);
+
+                                                          return (
+                                                            <div key={kaz.id} className="rounded-lg bg-white/[0.02] border border-white/[0.05] overflow-hidden">
+                                                              <div className="flex items-start gap-2.5 px-3 py-2">
+                                                                {/* Checkbox */}
+                                                                <button
+                                                                  onClick={() => toggleKazanimCheck(kaz.id, topic.id)}
+                                                                  disabled={isSavingK}
+                                                                  className={`mt-0.5 w-4.5 h-4.5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all duration-150 ${
+                                                                    isChecked
+                                                                      ? "bg-pink-500 border-pink-500 text-white"
+                                                                      : "border-white/20 bg-transparent hover:border-pink-400/50"
+                                                                  } ${isSavingK ? "opacity-50" : "cursor-pointer"}`}
+                                                                >
+                                                                  {isChecked && <Check className="w-2.5 h-2.5" />}
+                                                                </button>
+
+                                                                {/* Content */}
+                                                                <div className="flex-1 min-w-0">
+                                                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                                                    <span className="text-[10px] font-mono font-bold text-pink-400/70">{kaz.code}</span>
+                                                                    {kaz.isKeyKazanim && (
+                                                                      <Star className="w-3 h-3 text-amber-400 fill-amber-400/40" />
+                                                                    )}
+                                                                  </div>
+                                                                  <p className={`text-xs leading-relaxed ${isChecked ? "text-white/40 line-through" : "text-white/70"}`}>
+                                                                    {kaz.description}
+                                                                  </p>
+                                                                </div>
+
+                                                                {/* Note toggle */}
+                                                                <button
+                                                                  onClick={() => {
+                                                                    setExpandedNotes((prev) => {
+                                                                      const next = new Set(prev);
+                                                                      if (next.has(kaz.id)) next.delete(kaz.id);
+                                                                      else next.add(kaz.id);
+                                                                      return next;
+                                                                    });
+                                                                  }}
+                                                                  className={`shrink-0 p-1 rounded transition-colors ${
+                                                                    noteValue ? "text-amber-400/60" : "text-white/20 hover:text-white/40"
+                                                                  }`}
+                                                                  title="Not ekle"
+                                                                >
+                                                                  <StickyNote className="w-3 h-3" />
+                                                                </button>
+                                                              </div>
+
+                                                              {/* Notes area */}
+                                                              <AnimatePresence>
+                                                                {isNoteOpen && (
+                                                                  <motion.div
+                                                                    initial={{ height: 0 }}
+                                                                    animate={{ height: "auto" }}
+                                                                    exit={{ height: 0 }}
+                                                                    className="overflow-hidden"
+                                                                  >
+                                                                    <div className="px-3 pb-2">
+                                                                      <textarea
+                                                                        value={noteValue}
+                                                                        onChange={(e) => handleNoteChange(kaz.id, e.target.value)}
+                                                                        placeholder="Not ekle..."
+                                                                        rows={2}
+                                                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white/70 placeholder-white/20 resize-none focus:outline-none focus:border-pink-400/30"
+                                                                      />
+                                                                    </div>
+                                                                  </motion.div>
+                                                                )}
+                                                              </AnimatePresence>
+                                                            </div>
+                                                          );
+                                                        })}
+
+                                                        {/* Progress footer */}
+                                                        <div className="flex items-center gap-2 pt-1">
+                                                          <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                                                            <div
+                                                              className="h-full bg-pink-500 rounded-full transition-all duration-300"
+                                                              style={{ width: `${totalKaz > 0 ? (checkedCount / totalKaz) * 100 : 0}%` }}
+                                                            />
+                                                          </div>
+                                                          <span className="text-[10px] text-white/40">
+                                                            {checkedCount}/{totalKaz}
+                                                          </span>
+                                                        </div>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </motion.div>
+                                              )}
+                                            </AnimatePresence>
+                                          </div>
                                         );
                                       }
                                     )}
@@ -669,14 +951,6 @@ export default function TopicMap() {
         </div>
       )}
 
-      {/* Kazanım Drawer */}
-      <KazanimDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        topicId={drawerTopicId}
-        topicName={drawerTopicName}
-        onLevelChange={handleKazanimLevelChange}
-      />
     </div>
   );
 }
