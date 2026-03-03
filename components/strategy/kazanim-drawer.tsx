@@ -469,8 +469,11 @@ export default function KazanimDrawer({
                       <div key={groupName}>
                         {/* SubTopic header */}
                         {groupName !== "__none__" && (
-                          <div className="text-xs font-semibold text-white/60 uppercase tracking-wide pb-2 mb-3 border-b border-white/10">
-                            {groupName}
+                          <div className="flex items-center gap-2 pb-2 mb-3">
+                            <span className="text-xs font-semibold text-amber-400/70 uppercase tracking-wide shrink-0">
+                              {groupName}
+                            </span>
+                            <div className="flex-1 h-px bg-white/10" />
                           </div>
                         )}
 
@@ -605,8 +608,12 @@ export default function KazanimDrawer({
                                       className="overflow-hidden"
                                     >
                                       <div className="px-3.5 pb-3 pl-12">
-                                        <div className="text-xs text-white/50 leading-relaxed whitespace-pre-line bg-white/[0.02] rounded-lg px-3 py-2 border border-white/[0.04]">
-                                          {kazanim.details}
+                                        <div className="space-y-1 pl-2 border-l-2 border-pink-500/20">
+                                          {kazanim.details!.split("\n").filter(Boolean).map((line, lIdx) => (
+                                            <p key={lIdx} className="text-xs text-white/50 leading-relaxed pl-2">
+                                              {line}
+                                            </p>
+                                          ))}
                                         </div>
                                       </div>
                                     </motion.div>

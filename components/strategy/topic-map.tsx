@@ -26,6 +26,9 @@ import { LEVEL_COLORS, LEVEL_BORDER_COLORS, LEVEL_LABELS } from "@/lib/constants
 interface Topic {
   id: string;
   name: string;
+  sortOrder: number;
+  gradeLevel: number | null;
+  learningArea: string | null;
 }
 
 interface Subject {
@@ -170,6 +173,7 @@ export default function TopicMap() {
   const [savingKazanimIds, setSavingKazanimIds] = useState<Set<string>>(new Set());
   const [localNotes, setLocalNotes] = useState<Map<string, string>>(new Map());
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
+  const [expandedDetails, setExpandedDetails] = useState<Set<string>>(new Set());
   const noteTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   // ---------------------------------------------------------------------------
@@ -690,7 +694,7 @@ export default function TopicMap() {
                               </span>
                             </button>
 
-                            {/* Subject Body — Topic Rows */}
+                            {/* Subject Body — Topic Rows (grouped by learningArea) */}
                             <AnimatePresence initial={false}>
                               {isSubjectExpanded && (
                                 <motion.div
@@ -704,8 +708,31 @@ export default function TopicMap() {
                                   className="overflow-hidden"
                                 >
                                   <div className="border-t border-white/5">
-                                    {(subject.topics ?? []).map(
-                                      (topic, tIdx) => {
+                                    {/* Group topics by learningArea */}
+                                    {(() => {
+                                      const sortedTopics = [...(subject.topics ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+                                      const groups: { area: string; topics: typeof sortedTopics }[] = [];
+                                      let currentArea = "";
+                                      for (const topic of sortedTopics) {
+                                        const area = topic.learningArea || "";
+                                        if (area !== currentArea || groups.length === 0) {
+                                          groups.push({ area, topics: [] });
+                                          currentArea = area;
+                                        }
+                                        groups[groups.length - 1].topics.push(topic);
+                                      }
+                                      return groups.map((group, gIdx) => (
+                                        <div key={`group-${gIdx}`}>
+                                          {/* Learning Area header (only if non-empty) */}
+                                          {group.area && (
+                                            <div className="flex items-center gap-2 px-4 py-1.5 bg-white/[0.02]">
+                                              <Tag className="w-3 h-3 text-pink-400/50" />
+                                              <span className="text-[10px] font-semibold text-pink-400/60 uppercase tracking-wider">
+                                                {group.area}
+                                              </span>
+                                            </div>
+                                          )}
+                                          {group.topics.map((topic, tIdx) => {
                                         const level =
                                           knowledgeMap.get(topic.id) ?? 0;
                                         const ls = lastStudiedMap.get(
@@ -823,14 +850,39 @@ export default function TopicMap() {
                                                       </p>
                                                     )}
 
-                                                    {/* Kazanım list */}
+                                                    {/* Kazanım list — grouped by subTopicName */}
                                                     {!isLoadingKaz && kazList.length > 0 && (
                                                       <div className="space-y-1.5">
-                                                        {kazList.map((kaz) => {
+                                                        {(() => {
+                                                          // Group kazanımlar by subTopicName
+                                                          const subGroups: { name: string; items: Kazanim[] }[] = [];
+                                                          let currentSub = "";
+                                                          for (const kaz of kazList) {
+                                                            const sub = kaz.subTopicName || "";
+                                                            if (sub !== currentSub || subGroups.length === 0) {
+                                                              subGroups.push({ name: sub, items: [] });
+                                                              currentSub = sub;
+                                                            }
+                                                            subGroups[subGroups.length - 1].items.push(kaz);
+                                                          }
+                                                          return subGroups.map((sg, sgIdx) => (
+                                                            <div key={`sg-${sgIdx}`}>
+                                                              {/* Sub-topic header */}
+                                                              {sg.name && subGroups.length > 1 && (
+                                                                <div className="flex items-center gap-1.5 py-1 px-1 mt-1">
+                                                                  <span className="text-[10px] font-semibold text-amber-400/60 uppercase tracking-wide">
+                                                                    {sg.name}
+                                                                  </span>
+                                                                  <div className="flex-1 h-px bg-white/5" />
+                                                                </div>
+                                                              )}
+                                                              {sg.items.map((kaz) => {
                                                           const isChecked = kaz.progress?.checked ?? false;
                                                           const isSavingK = savingKazanimIds.has(kaz.id);
                                                           const noteValue = localNotes.get(kaz.id) ?? kaz.progress?.notes ?? "";
                                                           const isNoteOpen = expandedNotes.has(kaz.id);
+                                                          const hasDetails = kaz.details && kaz.details.trim().length > 0;
+                                                          const isDetailOpen = expandedDetails.has(kaz.id);
 
                                                           return (
                                                             <div key={kaz.id} className="rounded-lg bg-white/[0.02] border border-white/[0.05] overflow-hidden">
@@ -855,10 +907,54 @@ export default function TopicMap() {
                                                                     {kaz.isKeyKazanim && (
                                                                       <Star className="w-3 h-3 text-amber-400 fill-amber-400/40" />
                                                                     )}
+                                                                    {/* Expand details button */}
+                                                                    {hasDetails && (
+                                                                      <button
+                                                                        onClick={(e) => {
+                                                                          e.stopPropagation();
+                                                                          setExpandedDetails((prev) => {
+                                                                            const next = new Set(prev);
+                                                                            if (next.has(kaz.id)) next.delete(kaz.id);
+                                                                            else next.add(kaz.id);
+                                                                            return next;
+                                                                          });
+                                                                        }}
+                                                                        className="text-white/25 hover:text-white/50 transition-colors"
+                                                                        title="Detayları göster"
+                                                                      >
+                                                                        <motion.div
+                                                                          animate={{ rotate: isDetailOpen ? 180 : 0 }}
+                                                                          transition={{ duration: 0.15 }}
+                                                                        >
+                                                                          <ChevronDown className="w-3 h-3" />
+                                                                        </motion.div>
+                                                                      </button>
+                                                                    )}
                                                                   </div>
                                                                   <p className={`text-xs leading-relaxed ${isChecked ? "text-white/40 line-through" : "text-white/70"}`}>
                                                                     {kaz.description}
                                                                   </p>
+
+                                                                  {/* Expandable details */}
+                                                                  <AnimatePresence>
+                                                                    {isDetailOpen && hasDetails && (
+                                                                      <motion.div
+                                                                        initial={{ height: 0, opacity: 0 }}
+                                                                        animate={{ height: "auto", opacity: 1 }}
+                                                                        exit={{ height: 0, opacity: 0 }}
+                                                                        transition={{ duration: 0.2 }}
+                                                                        className="overflow-hidden"
+                                                                      >
+                                                                        <div className="mt-1.5 pl-2 border-l border-pink-500/20 space-y-0.5">
+                                                                          {kaz.details!.split("\n").map((line, lIdx) => (
+                                                                            <p key={lIdx} className="text-[10px] text-white/45 leading-relaxed">
+                                                                              {line}
+                                                                            </p>
+                                                                          ))}
+                                                                        </div>
+                                                                      </motion.div>
+                                                                    )}
+                                                                  </AnimatePresence>
                                                                 </div>
 
                                                                 {/* Note toggle */}
@@ -903,7 +999,10 @@ export default function TopicMap() {
                                                               </AnimatePresence>
                                                             </div>
                                                           );
-                                                        })}
+                                                              })}
+                                                            </div>
+                                                          ));
+                                                        })()}
 
                                                         {/* Progress footer */}
                                                         <div className="flex items-center gap-2 pt-1">
@@ -925,8 +1024,10 @@ export default function TopicMap() {
                                             </AnimatePresence>
                                           </div>
                                         );
-                                      }
-                                    )}
+                                      })}
+                                        </div>
+                                      ));
+                                    })()}
                                   </div>
                                 </motion.div>
                               )}

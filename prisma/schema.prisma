@@ -155,6 +155,8 @@ model Topic {
   subject       Subject  @relation(fields: [subjectId], references: [id])
   difficulty    Int      @default(3)  // 1-5 zorluk seviyesi
   estimatedHours Float   @default(2)  // Tahmini toplam çalışma saati
+  gradeLevel    Int?     // 9, 10, 11, 12 — ÖSYM sınıf seviyesi
+  learningArea  String?  // "SAYILAR VE CEBİR", "GEOMETRİ" vb. — ÖSYM alt öğrenme alanı
   wrongQuestions ExamWrongQuestion[]
   emptyQuestions ExamEmptyQuestion[]
   dailyStudies    DailyStudy[]
