@@ -11,6 +11,7 @@ import {
   Sparkles, Star, FileText
 } from 'lucide-react';
 import QuestionUpload from '@/components/admin/question-upload';
+import MufredatManager from '@/components/admin/mufredat-manager';
 
 // ---------- types ----------
 
@@ -618,6 +619,9 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+
+      {/* ====== Müfredat Yönetimi ====== */}
+      <MufredatManager />
     </div>
   );
 }
