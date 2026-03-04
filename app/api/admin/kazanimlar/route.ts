@@ -227,13 +227,6 @@ export async function POST(request: NextRequest) {
           return norm(stripped) === entryNorm;
         });
       }
-      // Fallback 2: partial containment (JSON short name inside longer DB name)
-      if (!topic) {
-        topic = candidateTopics.find(
-          (t) => norm(t.name).includes(entryNorm) || entryNorm.includes(norm(t.name))
-        );
-      }
-
       if (!topic) {
         notFound.push(`${entry.exam} > ${dbSubject} > ${entry.topic}`);
         continue;
