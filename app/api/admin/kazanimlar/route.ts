@@ -14,6 +14,62 @@ function adminGuard(session: any) {
 }
 
 // ---------------------------------------------------------------------------
+// Subject name mapping: ÖSYM names → DB names
+// ---------------------------------------------------------------------------
+
+const SUBJECT_MAP: Record<string, Record<string, string>> = {
+  TYT: {
+    "Matematik": "Matematik",
+    "Fizik": "Fen Bilimleri",
+    "Kimya": "Fen Bilimleri",
+    "Biyoloji": "Fen Bilimleri",
+    "Türk Dili ve Edebiyatı": "Türkçe",
+    "Tarih": "Sosyal Bilimler",
+    "Coğrafya": "Sosyal Bilimler",
+    "Felsefe": "Sosyal Bilimler",
+    "Din Kültürü ve Ahlak Bilgisi": "Sosyal Bilimler",
+  },
+  AYT: {
+    "Matematik": "Matematik",
+    "Fizik": "Fizik",
+    "Kimya": "Kimya",
+    "Biyoloji": "Biyoloji",
+    "Türk Dili ve Edebiyatı": "Edebiyat",
+    "Edebiyat": "Edebiyat",
+    "Tarih": "Tarih",
+    "T.C. İnkılap Tarihi ve Atatürkçülük": "Tarih",
+    "Coğrafya": "Coğrafya",
+    "Felsefe": "Felsefe",
+    "Mantık": "Felsefe",
+    "Sosyoloji": "Felsefe",
+    "Psikoloji": "Felsefe",
+    "Din Kültürü ve Ahlak Bilgisi": "Felsefe",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Normalized string comparison (handles Turkish chars, encoding quirks)
+// ---------------------------------------------------------------------------
+
+function norm(s: string): string {
+  return s
+    .replace(/İ/g, "i").replace(/I/g, "i").replace(/ı/g, "i")
+    .replace(/i̇/g, "i")
+    .replace(/Ö/g, "o").replace(/ö/g, "o")
+    .replace(/Ü/g, "u").replace(/ü/g, "u")
+    .replace(/Ç/g, "c").replace(/ç/g, "c")
+    .replace(/Ş/g, "s").replace(/ş/g, "s")
+    .replace(/Ğ/g, "g").replace(/ğ/g, "g")
+    .replace(/д/g, "d")
+    .replace(/Â/g, "a").replace(/â/g, "a")
+    .replace(/î/g, "i").replace(/û/g, "u")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// ---------------------------------------------------------------------------
 // GET — Topic listesi kazanım sayılarıyla
 // Query: ?exam=AYT&subject=Matematik (opsiyonel filtre)
 // ---------------------------------------------------------------------------
@@ -139,20 +195,47 @@ export async function POST(request: NextRequest) {
     const notFound: string[] = [];
 
     for (const entry of body) {
-      // Find topic by exam + subject + topic name
-      const topic = await prisma.topic.findFirst({
+      // Map ÖSYM subject name → DB subject name (with Unicode normalization)
+      const examMap = SUBJECT_MAP[entry.exam];
+      let dbSubject = entry.subject;
+      if (examMap) {
+        // Try exact match first, then normalized match
+        dbSubject = examMap[entry.subject]
+          ?? Object.entries(examMap).find(
+            ([k]) => k.normalize("NFC") === entry.subject.normalize("NFC")
+          )?.[1]
+          ?? entry.subject;
+      }
+
+      // Find topic using normalized matching (handles CAPS, Turkish chars, encoding)
+      const candidateTopics = await prisma.topic.findMany({
         where: {
-          name: entry.topic,
           subject: {
-            name: entry.subject,
+            name: dbSubject,
             examType: { name: entry.exam },
           },
         },
-        select: { id: true },
+        select: { id: true, name: true },
       });
 
+      const entryNorm = norm(entry.topic);
+      let topic = candidateTopics.find((t) => norm(t.name) === entryNorm);
+      // Fallback 1: strip subject prefix from DB names (e.g. "Biyoloji - Hücre" → "Hücre")
       if (!topic) {
-        notFound.push(`${entry.exam} > ${entry.subject} > ${entry.topic}`);
+        topic = candidateTopics.find((t) => {
+          const stripped = t.name.replace(/^[^-]+-\s*/, "");
+          return norm(stripped) === entryNorm;
+        });
+      }
+      // Fallback 2: partial containment (JSON short name inside longer DB name)
+      if (!topic) {
+        topic = candidateTopics.find(
+          (t) => norm(t.name).includes(entryNorm) || entryNorm.includes(norm(t.name))
+        );
+      }
+
+      if (!topic) {
+        notFound.push(`${entry.exam} > ${dbSubject} > ${entry.topic}`);
         continue;
       }
 
