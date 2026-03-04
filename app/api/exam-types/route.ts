@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
         subjects: {
           include: {
             topics: {
+              where: { kazanimlar: { some: {} } },
               orderBy: { sortOrder: "asc" },
             },
           },
