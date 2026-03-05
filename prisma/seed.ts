@@ -160,11 +160,11 @@ async function main() {
       "Milli Mücadeleye Hazırlık Dönemi", "Kurtuluş Savaşında Cepheler", "Türk İnkılabı",
       "Atatürkçülük ve Atatürk İlkeleri", "Türk Dış Politikası",
     ]},
-    { name: "Felsefe", questionCount: 3, topics: [
+    { name: "Felsefe", questionCount: 5, topics: [
       "Felsefe'nin Konusu-Alanı", "Bilgi Felsefesi", "Varlık Felsefesi", "Ahlak Felsefesi",
       "Sanat Felsefesi", "Din Felsefesi", "Siyaset Felsefesi", "Bilim Felsefesi",
     ]},
-    { name: "Din Kültürü ve Ahlak Bilgisi", questionCount: 2, topics: [
+    { name: "Din Kültürü ve Ahlak Bilgisi", questionCount: 5, topics: [
       "Kuran ve Yorumu", "Zekât", "Hz. Muhammed'in Hayatı", "İslam Düşüncesinde Yorumlar",
       "İslam Dinine Göre Kötü Alışkanlıklar", "Hazreti Muhammed", "İslam Düşüncesinde Tasavvuf",
       "Vahiy ve Akıl Kur'an Yorumları", "Yaşayan Dinler ve Benzer Özellikler", "İnanç",
@@ -250,21 +250,21 @@ async function main() {
       "Türklerde Devlet Teşkilatı", "Türklerde Toplum Yapısı", "Türklerde Hukuk",
       "Türklerde Ekonomi", "Türklerde Eğitim", "Türklerde Sanat",
     ]},
-    { name: "Felsefe", questionCount: 4, topics: [
+    { name: "Felsefe", questionCount: 8, topics: [
       "Felsefenin Alanı", "Bilgi Felsefesi", "Bilim Felsefesi", "Varlık Felsefesi",
       "Ahlak Felsefesi", "Siyaset Felsefesi", "Sanat Felsefesi", "Din Felsefesi",
     ]},
-    { name: "Mantık", questionCount: 2, topics: [
+    { name: "Mantık", questionCount: 4, topics: [
       "Mantığa Giriş", "Klasik Mantık", "Mantık ve Dil", "Sembolik Mantık",
     ]},
-    { name: "Psikoloji", questionCount: 2, topics: [
+    { name: "Psikoloji", questionCount: 4, topics: [
       "Psikolojinin Temel Süreçleri", "Öğrenme Bellek Düşünme", "Ruh Sağlığının Temelleri",
     ]},
-    { name: "Sosyoloji", questionCount: 2, topics: [
+    { name: "Sosyoloji", questionCount: 4, topics: [
       "Birey ve Toplum", "Toplumsal Yapı", "Toplumsal Değişme ve Gelişme",
       "Toplum ve Kültür", "Toplumsal Kurumlar",
     ]},
-    { name: "Din Kültürü ve Ahlak Bilgisi", questionCount: 2, topics: [
+    { name: "Din Kültürü ve Ahlak Bilgisi", questionCount: 4, topics: [
       "Kur'an-ı Kerim'in Anlaşılması ve Kavranması", "İnsan ve Din", "İslam ve İbadetler",
       "İslam Düşüncesinde Yorumlar, Mezhepler",
       "Muhammed'in Hayatı, Örnekliği ve Onu Anlama",

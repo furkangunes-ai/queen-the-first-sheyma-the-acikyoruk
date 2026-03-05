@@ -1,20 +1,32 @@
 /**
  * Öğrencinin sınav alanına (sayısal/ea/sözel) göre ders filtreleme.
  *
- * TYT dersleri herkes için gösterilir.
+ * TYT dersleri herkes için gösterilir (10 ders).
  * AYT dersleri öğrenci alanına göre filtrelenir:
- *   - Sayısal: Edebiyat, Tarih, Coğrafya GİZLENİR
- *   - EA:      Fizik, Kimya, Biyoloji GİZLENİR
- *   - Sözel:   Fizik, Kimya, Biyoloji, Matematik GİZLENİR
+ *
+ *   Sayısal → AYT Matematik + AYT Fen (Fizik, Kimya, Biyoloji)
+ *   EA      → AYT Matematik + AYT Edebiyat-Sosyal1 (Edebiyat, Tarih, Coğrafya)
+ *   Sözel   → AYT Edebiyat-Sosyal1 + AYT Sosyal2 (Tarih, Coğrafya, Felsefe, Mantık, Psikoloji, Sosyoloji, Din K.)
  */
 
 export type ExamTrack = "sayisal" | "ea" | "sozel" | null | undefined;
 
 // AYT'de gösterilmeyecek dersler (alan bazlı)
 const EXCLUDED_AYT_SUBJECTS: Record<string, string[]> = {
-  sayisal: ["Edebiyat", "Tarih", "Coğrafya"],
-  ea: ["Fizik", "Kimya", "Biyoloji"],
-  sozel: ["Fizik", "Kimya", "Biyoloji", "Matematik"],
+  // Sayısal: Sadece AYT Mat + Fen (Fizik, Kimya, Biyoloji) çözer
+  sayisal: [
+    "Edebiyat", "Tarih", "Coğrafya",
+    "Felsefe", "Mantık", "Psikoloji", "Sosyoloji", "Din Kültürü ve Ahlak Bilgisi",
+  ],
+  // EA: AYT Mat + Edebiyat-Sosyal1 (Edebiyat, Tarih, Coğrafya) çözer
+  ea: [
+    "Fizik", "Kimya", "Biyoloji",
+    "Felsefe", "Mantık", "Psikoloji", "Sosyoloji", "Din Kültürü ve Ahlak Bilgisi",
+  ],
+  // Sözel: Edebiyat-Sosyal1 + Sosyal2 çözer (Mat ve Fen yok)
+  sozel: [
+    "Fizik", "Kimya", "Biyoloji", "Matematik",
+  ],
 };
 
 /**

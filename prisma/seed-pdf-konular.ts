@@ -275,7 +275,7 @@ const TYT_SUBJECTS: SubjectDef[] = [
   },
   {
     name: "Felsefe",
-    questionCount: 3,
+    questionCount: 5,
     topics: [
       "Felsefe'nin Konusu-Alanı",
       "Bilgi Felsefesi",
@@ -289,7 +289,7 @@ const TYT_SUBJECTS: SubjectDef[] = [
   },
   {
     name: "Din Kültürü ve Ahlak Bilgisi",
-    questionCount: 2,
+    questionCount: 5,
     topics: [
       "Kuran ve Yorumu",
       "Zekât",
@@ -536,7 +536,7 @@ const AYT_SUBJECTS: SubjectDef[] = [
   },
   {
     name: "Felsefe",
-    questionCount: 4,
+    questionCount: 8,
     topics: [
       "Felsefenin Alanı",
       "Bilgi Felsefesi",
@@ -550,7 +550,7 @@ const AYT_SUBJECTS: SubjectDef[] = [
   },
   {
     name: "Mantık",
-    questionCount: 2,
+    questionCount: 4,
     topics: [
       "Mantığa Giriş",
       "Klasik Mantık",
@@ -560,7 +560,7 @@ const AYT_SUBJECTS: SubjectDef[] = [
   },
   {
     name: "Psikoloji",
-    questionCount: 2,
+    questionCount: 4,
     topics: [
       "Psikolojinin Temel Süreçleri",
       "Öğrenme Bellek Düşünme",
@@ -569,7 +569,7 @@ const AYT_SUBJECTS: SubjectDef[] = [
   },
   {
     name: "Sosyoloji",
-    questionCount: 2,
+    questionCount: 4,
     topics: [
       "Birey ve Toplum",
       "Toplumsal Yapı",
@@ -580,7 +580,7 @@ const AYT_SUBJECTS: SubjectDef[] = [
   },
   {
     name: "Din Kültürü ve Ahlak Bilgisi",
-    questionCount: 2,
+    questionCount: 4,
     topics: [
       "Kur'an-ı Kerim'in Anlaşılması ve Kavranması",
       "İnsan ve Din",
