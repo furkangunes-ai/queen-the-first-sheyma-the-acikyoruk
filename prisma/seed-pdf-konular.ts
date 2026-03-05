@@ -421,6 +421,27 @@ const AYT_SUBJECTS: SubjectDef[] = [
     ],
   },
   {
+    name: "Biyoloji",
+    questionCount: 13,
+    topics: [
+      // BİYOLOJİ AYT KONULARI (TYT ile ortak + derinleştirilmiş)
+      "Hücre Bölünmeleri",
+      "Eşeysiz-Eşeyli Üreme",
+      "İnsanda Üreme ve Gelişme",
+      "Mendel Genetiği",
+      "Kan Grupları",
+      "Cinsiyete Bağlı Kalıtım",
+      "Biyoteknoloji ve Evrim",
+      "Solunum",
+      "Fotosentez",
+      "Kemosentez",
+      "Bitki Biyolojisi",
+      "Sistemler",
+      "Duyu Organları",
+      "Komünite ve Popülasyon Ekolojisi",
+    ],
+  },
+  {
     name: "Edebiyat",
     questionCount: 24,
     topics: [

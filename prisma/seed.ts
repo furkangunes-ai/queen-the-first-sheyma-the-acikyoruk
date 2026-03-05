@@ -211,6 +211,12 @@ async function main() {
       "Kimya ve Enerji", "Tepkimelerde Hız", "Kimyasal Denge", "Sıvı Çözeltilerde Denge",
       "Kimya ve Elektrik", "Karbon Kimyasına Giriş", "Organik Bileşikler", "Hayatımızdaki Kimya",
     ]},
+    { name: "Biyoloji", questionCount: 13, topics: [
+      "Hücre Bölünmeleri", "Eşeysiz-Eşeyli Üreme", "İnsanda Üreme ve Gelişme", "Mendel Genetiği",
+      "Kan Grupları", "Cinsiyete Bağlı Kalıtım", "Biyoteknoloji ve Evrim", "Solunum",
+      "Fotosentez", "Kemosentez", "Bitki Biyolojisi", "Sistemler", "Duyu Organları",
+      "Komünite ve Popülasyon Ekolojisi",
+    ]},
     { name: "Edebiyat", questionCount: 24, topics: [
       "Sözcükte Anlam", "Cümlede Anlam",
       "Paragrafta Anlatım, Anlatım Biçimleri, Düşünceyi Geliştirme Yolları",

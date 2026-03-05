@@ -137,6 +137,59 @@ function knowledgeDot(level: number) {
 }
 
 // ---------------------------------------------------------------------------
+// Subject Grouping — dersleri alt başlıklar altında göster
+// ---------------------------------------------------------------------------
+
+interface SubjectGroup {
+  label: string; // boşsa standalone, header gösterilmez
+  subjectNames: string[];
+}
+
+const SUBJECT_GROUPS: Record<string, SubjectGroup[]> = {
+  TYT: [
+    { label: "", subjectNames: ["Türkçe"] },
+    { label: "Temel Matematik", subjectNames: ["Matematik", "Geometri"] },
+    { label: "Fen Bilimleri", subjectNames: ["Fizik", "Kimya", "Biyoloji"] },
+    { label: "Sosyal Bilimler", subjectNames: ["Tarih", "Coğrafya", "Felsefe", "Din Kültürü ve Ahlak Bilgisi"] },
+  ],
+  AYT: [
+    { label: "", subjectNames: ["Matematik"] },
+    { label: "Fen Bilimleri", subjectNames: ["Fizik", "Kimya", "Biyoloji"] },
+    { label: "Edebiyat – Sosyal 1", subjectNames: ["Edebiyat", "Tarih", "Coğrafya"] },
+    { label: "Sosyal 2", subjectNames: ["Felsefe", "Mantık", "Psikoloji", "Sosyoloji", "Din Kültürü ve Ahlak Bilgisi"] },
+  ],
+};
+
+function groupSubjects(examTypeName: string, subjects: Subject[]): { label: string; subjects: Subject[] }[] {
+  const groups = SUBJECT_GROUPS[examTypeName];
+  if (!groups) {
+    // Bilinmeyen sınav tipi — flat göster
+    return [{ label: "", subjects }];
+  }
+
+  const result: { label: string; subjects: Subject[] }[] = [];
+  const usedIds = new Set<string>();
+
+  for (const g of groups) {
+    const matched = g.subjectNames
+      .map((name) => subjects.find((s) => s.name === name))
+      .filter((s): s is Subject => !!s);
+    if (matched.length > 0) {
+      result.push({ label: g.label, subjects: matched });
+      matched.forEach((s) => usedIds.add(s.id));
+    }
+  }
+
+  // Gruplanmamış dersler varsa en sona ekle
+  const remaining = subjects.filter((s) => !usedIds.has(s.id));
+  if (remaining.length > 0) {
+    result.push({ label: "Diğer", subjects: remaining });
+  }
+
+  return result;
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -632,7 +685,19 @@ export default function TopicMap() {
                     className="overflow-hidden"
                   >
                     <div className="px-3 pb-3 space-y-2">
-                      {examType.subjects?.map((subject) => {
+                      {groupSubjects(examType.name, examType.subjects ?? []).map((group, gIdx) => (
+                        <div key={`group-${gIdx}`} className="space-y-2">
+                          {/* Grup başlığı */}
+                          {group.label && (
+                            <div className="flex items-center gap-2 px-2 pt-2 pb-0.5">
+                              <div className="h-px flex-1 bg-white/10" />
+                              <span className="text-[11px] font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
+                                {group.label}
+                              </span>
+                              <div className="h-px flex-1 bg-white/10" />
+                            </div>
+                          )}
+                      {group.subjects.map((subject) => {
                         const isSubjectExpanded = expandedSubjects.has(
                           subject.id
                         );
@@ -1035,6 +1100,8 @@ export default function TopicMap() {
                           </div>
                         );
                       })}
+                        </div>
+                      ))}
                     </div>
                   </motion.div>
                 )}
