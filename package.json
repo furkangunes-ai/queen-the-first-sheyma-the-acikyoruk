@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "start": "prisma db push --accept-data-loss && npx tsx prisma/enable-ai.ts && npx tsx prisma/update-question-counts.ts && next start",
+    "start": "prisma db push --accept-data-loss && npx tsx prisma/enable-ai.ts && npx tsx prisma/update-question-counts.ts && npx tsx prisma/seed-ayt-mat-kazanim.ts && next start",
     "lint": "next lint",
     "db:migrate": "prisma migrate dev",
     "db:seed": "npx tsx prisma/seed.ts",
