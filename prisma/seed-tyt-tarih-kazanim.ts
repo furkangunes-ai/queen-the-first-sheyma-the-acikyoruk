@@ -1,11 +1,11 @@
 /**
- * TYT Tarih kazanimlarini MEB PDF'den sisteme ekler.
- * Kaynak: MEB Ortaogretim Tarih Dersi (9,10,11. sinif) + T.C. Inkilap Tarihi Ogretim Programi
+ * TYT Tarih kazanımlarını MEB PDF'den sisteme ekler.
+ * Kaynak: MEB Ortaöğretim Tarih Dersi (9,10,11. sınıf) + T.C. İnkılap Tarihi Öğretim Programı
  *
- * Bu script mevcut konulara kazanim ekler. Mevcut mufredati BOZMAZ.
- * Zaten kazanimi olan topic'leri atlar (idempotent).
+ * Bu script mevcut konulara kazanım ekler. Mevcut müfredatı BOZMAZ.
+ * Zaten kazanımı olan topic'leri atlar (idempotent).
  *
- * Calistirmak icin: npx tsx prisma/seed-tyt-tarih-kazanim.ts
+ * Çalıştırmak için: npx tsx prisma/seed-tyt-tarih-kazanim.ts
  */
 
 import { PrismaClient } from "@prisma/client";
@@ -21,7 +21,7 @@ interface KazanimDef {
 }
 
 // =====================================================================
-// PDF'DEN CIKARILMIS KAZANIMLAR — TOPIC ADI -> KAZANIM LISTESI
+// PDF'DEN ÇIKARILMIŞ KAZANIMLAR — TOPIC ADI -> KAZANIM LİSTESİ
 // =====================================================================
 
 const KAZANIMLAR: Record<string, KazanimDef[]> = {
@@ -32,20 +32,20 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
       code: "9.1.1",
       subTopicName: "Tarih ve Zaman",
       description:
-        "Bir arastirma alani ve bilim dali olarak tarihin konusunu, kapsamini ve diger bilim dallariyla iliskisini aciklar.",
+        "Bir araştırma alanı ve bilim dalı olarak tarihin konusunu, kapsamını ve diğer bilim dallarıyla ilişkisini açıklar.",
       details: [
-        "a) Tarihin konusunun zaman icindeki insan faaliyetleri ve bu faaliyetler sonucunda ortaya cikan eserler ve degisimler oldugu belirtilir.",
-        "b) Tarih biliminin diger beseri ve sosyal bilimler ile fen bilimlerinden farkliliklarina deginilir.",
+        "a) Tarihin konusunun zaman içindeki insan faaliyetleri ve bu faaliyetler sonucunda ortaya çıkan eserler ve değişimler olduğu belirtilir.",
+        "b) Tarih biliminin diğer beşeri ve sosyal bilimler ile fen bilimlerinden farklılıklarına değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "9.1.2",
       subTopicName: "Tarih ve Zaman",
-      description: "Tarih ogrenmenin amac ve yararlarini kavrar.",
+      description: "Tarih öğrenmenin amaç ve yararlarını kavrar.",
       details: [
-        "a) Ortak hafizanin kimlik olusturma ve toplumsallasmadaki rolu uzerinde durulur.",
-        "b) Gunumuzde olup bitenleri anlayabilmek ve gelecek hakkinda gercekci planlamalar yapabilmek icin tarih bilincine sahip olmak gerektigi vurgulanir.",
+        "a) Ortak hafızanın kimlik oluşturma ve toplumsallaşmadaki rolü üzerinde durulur.",
+        "b) Günümüzde olup bitenleri anlayabilmek ve gelecek hakkında gerçekçi planlamalar yapabilmek için tarih bilincine sahip olmak gerektiği vurgulanır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
@@ -53,11 +53,11 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
       code: "9.1.3",
       subTopicName: "Tarih ve Zaman",
       description:
-        "Zamani anlama ve anlamlandirmaya yonelik farkli yaklasimlari analiz eder.",
+        "Zamanı anlama ve anlamlandırmaya yönelik farklı yaklaşımları analiz eder.",
       details: [
-        "a) Farkli toplum ve kulturlerin gecmisin donemlendirilmesinde kendi tarihlerindeki onemli olaylari dikkate aldiklarina deginilir.",
-        "b) Farkli takvim sistemlerine (gunes yili ve ay yili esasli takvimler) ve Turklerin kullandigi takvimlere deginilir.",
-        "c) Miladi takvim ile hicri takvim arasindaki temel farklar vurgulanir.",
+        "a) Farklı toplum ve kültürlerin geçmişin dönemlendirilmesinde kendi tarihlerindeki önemli olayları dikkate aldıklarına değinilir.",
+        "b) Farklı takvim sistemlerine (güneş yılı ve ay yılı esaslı takvimler) ve Türklerin kullandığı takvimlere değinilir.",
+        "c) Miladi takvim ile hicri takvim arasındaki temel farklar vurgulanır.",
       ].join("\n"),
       isKeyKazanim: true,
     },
@@ -66,66 +66,66 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "Uygarlığın Doğuşu ve İlk Uygarlıklar": [
     {
       code: "9.2.1",
-      subTopicName: "Insanligin Ilk Donemleri",
+      subTopicName: "İnsanlığın İlk Dönemleri",
       description:
-        "Kanitlardan yola cikarak yazinin icadindan onceki zamanlarda yasayan insanlarin hayati hakkinda cikarimda bulunur.",
+        "Kanıtlardan yola çıkarak yazının icadından önceki zamanlarda yaşayan insanların hayatı hakkında çıkarımda bulunur.",
       details: [
-        "a) Gobeklitepe, Catalhoyuk ve Cayonu gibi yerlesik hayata ve medeniyete dair en eski yerlesim yerlerinden gunumuze kalan maddi kultur buluntulari incelenir.",
-        "b) Yazinin icadindan onceki donemde hakim olan sozlu kultur orneklerine (mitler, kurulus efsaneleri) kisaca deginilir.",
+        "a) Göbeklitepe, Çatalhöyük ve Çayönü gibi yerleşik hayata ve medeniyete dair en eski yerleşim yerlerinden günümüze kalan maddi kültür buluntuları incelenir.",
+        "b) Yazının icadından önceki dönemde hâkim olan sözlü kültür örneklerine (mitler, kuruluş efsaneleri) kısaca değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "9.2.2",
-      subTopicName: "Insanligin Ilk Donemleri",
+      subTopicName: "İnsanlığın İlk Dönemleri",
       description:
-        "Yazinin icadinin insanlik tarihinde meydana getirdigi degisimi fark eder.",
+        "Yazının icadının insanlık tarihinde meydana getirdiği değişimi fark eder.",
       details: [
-        "a) Yazinin kullanilmasinin yonetim isleri ile vergi ve muhasebe kayitlari uzerindeki etkilerine deginilir.",
-        "b) Kadim tip, astronomi ve cografya bilimlerinin amac, konu ve yontem acilarindan modern zamandaki bilimlerden ne tur farkliliklara sahip olduguna deginilir.",
+        "a) Yazının kullanılmasının yönetim işleri ile vergi ve muhasebe kayıtları üzerindeki etkilerine değinilir.",
+        "b) Kadim tıp, astronomi ve coğrafya bilimlerinin amaç, konu ve yöntem açılarından modern zamandaki bilimlerden ne tür farklılıklara sahip olduğuna değinilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "9.2.3",
-      subTopicName: "Insanligin Ilk Donemleri",
+      subTopicName: "İnsanlığın İlk Dönemleri",
       description:
-        "Ilk Cag'da yeryuzundeki belli basi medeniyet havzalarini tanir.",
+        "İlk Çağ'da yeryüzündeki belli başlı medeniyet havzalarını tanır.",
       details: [
-        "a) Ilk Cag medeniyetleriyle ilgili baslica olay ve olgular tarih seridi uzerinde gosterilir.",
-        "b) Ilk Cag'in onemli medeniyet havzalari (Cin, Hint, Iran, Anadolu, Mezopotamya, Misir, Dogu Akdeniz, Ege Yunan) ve bunlarin insanliga en onemli katkilari harita uzerinde gosterilir.",
+        "a) İlk Çağ medeniyetleriyle ilgili başlıca olay ve olgular tarih şeridi üzerinde gösterilir.",
+        "b) İlk Çağ'ın önemli medeniyet havzaları (Çin, Hint, İran, Anadolu, Mezopotamya, Mısır, Doğu Akdeniz, Ege Yunan) ve bunların insanlığa en önemli katkıları harita üzerinde gösterilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "9.2.4",
-      subTopicName: "Insanligin Ilk Donemleri",
+      subTopicName: "İnsanlığın İlk Dönemleri",
       description:
-        "Ilk Cag'da cografya ve iklimin insanlarin hayat ve gecim tarzlari uzerindeki belirleyici etkisini analiz eder.",
+        "İlk Çağ'da coğrafya ve iklimin insanların hayat ve geçim tarzları üzerindeki belirleyici etkisini analiz eder.",
       details: [
-        "a) Konar-gocer ve yerlesik hayat tarzlarinin Ilk Cag'dan itibaren birbirlerini tamamlayan ve cografi sartlara bagli olarak tercih edilen hayat tarzlari oldugu vurgulanir.",
-        "b) Ilk Cag'da insan topluluklarinin kitlesel goclerinin sebepleri (gecim imkanini kaybetme, iklim degisikligi, politik degisiklikler, inanc nedeniyle baski altina alinma) belli basli tarihi orneklerle ele alinir.",
+        "a) Konar-göçer ve yerleşik hayat tarzlarının İlk Çağ'dan itibaren birbirlerini tamamlayan ve coğrafi şartlara bağlı olarak tercih edilen hayat tarzları olduğu vurgulanır.",
+        "b) İlk Çağ'da insan topluluklarının kitlesel göçlerinin sebepleri (geçim imkânını kaybetme, iklim değişikliği, politik değişiklikler, inanç nedeniyle baskı altına alınma) belli başlı tarihî örneklerle ele alınır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "9.2.5",
-      subTopicName: "Insanligin Ilk Donemleri",
+      subTopicName: "İnsanlığın İlk Dönemleri",
       description:
-        "Ilk Cag'da siyasi gucun kaynaklarini siyasi organizasyon turleriyle iliskilendirir.",
+        "İlk Çağ'da siyasi gücün kaynaklarını siyasi organizasyon türleriyle ilişkilendirir.",
       details: [
-        "a) Ilk Cag'da Asya ve Avrupa'da varligini surduran siyasi organizasyon turleri olarak tiranlik, aristokrasi, monarsi, demokrasi, cumhuriyet ve imparatorluga deginilir.",
-        "b) Siyasi gucun mesruiyet kaynaklari ve maddi kaynaklari (cografi yapi, hayat ve gecim tarzi, soy dayanismasi, silahli guc) uzerinde durulur.",
+        "a) İlk Çağ'da Asya ve Avrupa'da varlığını sürdüren siyasi organizasyon türleri olarak tiranlık, aristokrasi, monarşi, demokrasi, cumhuriyet ve imparatorluğa değinilir.",
+        "b) Siyasi gücün meşruiyet kaynakları ve maddi kaynakları (coğrafi yapı, hayat ve geçim tarzı, soy dayanışması, silahlı güç) üzerinde durulur.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "9.2.6",
-      subTopicName: "Insanligin Ilk Donemleri",
+      subTopicName: "İnsanlığın İlk Dönemleri",
       description:
-        "Ilk Cag'da hukuk sistemlerinin olusturulmasinda etkili olan dini ve beseri kaynaklari kavrar.",
+        "İlk Çağ'da hukuk sistemlerinin oluşturulmasında etkili olan dini ve beşeri kaynakları kavrar.",
       details: [
-        "Sozlu ve yazili hukuk kaynaklarina (akil, gelenek ve kutsal kitaplar) iliskin tarihi ornekler (Urkagina ve Hammurabi Kanunlari, Hitit Hukuku ve Tevrat) ele alinir.",
+        "Sözlü ve yazılı hukuk kaynaklarına (akıl, gelenek ve kutsal kitaplar) ilişkin tarihî örnekler (Urkagina ve Hammurabi Kanunları, Hitit Hukuku ve Tevrat) ele alınır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
@@ -134,56 +134,56 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "Eski Türk Tarihi": [
     {
       code: "9.4.1",
-      subTopicName: "Ilk ve Orta Caglarda Turk Dunyasi",
+      subTopicName: "İlk ve Orta Çağlarda Türk Dünyası",
       description:
-        "Turklerin Asya'da tarih sahnesine ciktiklari ve yasadiklari alanlar ile baslica kultur cevrelerini tanir.",
+        "Türklerin Asya'da tarih sahnesine çıktıkları ve yaşadıkları alanlar ile başlıca kültür çevrelerini tanır.",
       details: [
-        "a) Turk adinin anlami aciklanarak ilk Turk devletlerinin hakim olduklari alanlar harita uzerinde gosterilir.",
-        "b) Ilk Turk devletleriyle ilgili baslica siyasi gelismeler tarih seridi uzerinde gosterilir (Asya Hun, Avrupa Hun, I. ve II. Kok Turk, Uygur devletleri).",
+        "a) Türk adının anlamı açıklanarak ilk Türk devletlerinin hâkim oldukları alanlar harita üzerinde gösterilir.",
+        "b) İlk Türk devletleriyle ilgili başlıca siyasi gelişmeler tarih şeridi üzerinde gösterilir (Asya Hun, Avrupa Hun, I. ve II. Kök Türk, Uygur devletleri).",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "9.4.2",
-      subTopicName: "Ilk ve Orta Caglarda Turk Dunyasi",
+      subTopicName: "İlk ve Orta Çağlarda Türk Dünyası",
       description:
-        "Ilk ve Orta Caglarda Ic Asya'daki Turk siyasi tesekkullerinin guc ve yonetim yapisini kavrar.",
+        "İlk ve Orta Çağlarda İç Asya'daki Türk siyasi teşekküllerinin güç ve yönetim yapısını kavrar.",
       details: [
-        "a) Asya Hun, Kok Turk ve Uygur Devletleri, gucun mesruiyet kaynagi (Gok Tengri ve Kut inanclari); gucun maddi kaynaklari (cografi yapi, konargocor hayat tarzi, soy dayanismasi ve silahli guc); guc paylasimi ve yonetim organizasyonu (kurultay, ikili teskilat yapisi ve ulus ilkesi) temalari cercevesinde ele alinir.",
-        "b) 'Tore'nin Turk toplum yapisi ve hukuk sistemindeki yeri ve onemi vurgulanir. Orhun Kitabelerinden ornekler verilir.",
+        "a) Asya Hun, Kök Türk ve Uygur Devletleri, gücün meşruiyet kaynağı (Gök Tengri ve Kut inançları); gücün maddi kaynakları (coğrafi yapı, konargöçer hayat tarzı, soy dayanışması ve silahlı güç); güç paylaşımı ve yönetim organizasyonu (kurultay, ikili teşkilat yapısı ve ulus ilkesi) temaları çerçevesinde ele alınır.",
+        "b) 'Töre'nin Türk toplum yapısı ve hukuk sistemindeki yeri ve önemi vurgulanır. Orhun Kitabelerinden örnekler verilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "9.4.3",
-      subTopicName: "Ilk ve Orta Caglarda Turk Dunyasi",
+      subTopicName: "İlk ve Orta Çağlarda Türk Dünyası",
       description:
-        "Islamiyet oncesi donemde Turklerin yasadigi cografyalar ile hayat tarzlari arasindaki iliskiyi analiz eder.",
+        "İslamiyet öncesi dönemde Türklerin yaşadığı coğrafyalar ile hayat tarzları arasındaki ilişkiyi analiz eder.",
       details: [
-        "a) Tarima uygun olmayan bozkirf cografyasinin Turk topluluklarini konar-gocer hayat tarzina yonelttigi vurgulanir.",
-        "b) Askeri kulturun Turk hayat tarzindaki yeri ve dunya askeri tarihine mal olmus teskilat, techizat ve taktikler (suvarilik, onlu teskilat, ok ve yay, uzengi, Turan taktigi) vurgulanir.",
+        "a) Tarıma uygun olmayan bozkır coğrafyasının Türk topluluklarını konar-göçer hayat tarzına yönelttiği vurgulanır.",
+        "b) Askerî kültürün Türk hayat tarzındaki yeri ve dünya askerî tarihine mal olmuş teşkilat, teçhizat ve taktikler (süvarilik, onlu teşkilat, ok ve yay, üzengi, Turan taktiği) vurgulanır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "9.4.4",
-      subTopicName: "Ilk ve Orta Caglarda Turk Dunyasi",
+      subTopicName: "İlk ve Orta Çağlarda Türk Dünyası",
       description:
-        "Kavimler Gocu'nun sebep ve sonuclarini siyasi ve sosyal acilardan analiz eder.",
+        "Kavimler Göçü'nün sebep ve sonuçlarını siyasi ve sosyal açılardan analiz eder.",
       details: [
-        "a) Kavimler Gocu ile Asya ve Avrupa'daki siyasi yapilarda meydana gelen degisim harita uzerinde gosterilir.",
-        "b) Avrupa Hun Devleti'nin kurulusuna ve bu devletin Avrupa'ya etkilerine deginilir.",
+        "a) Kavimler Göçü ile Asya ve Avrupa'daki siyasi yapılarda meydana gelen değişim harita üzerinde gösterilir.",
+        "b) Avrupa Hun Devleti'nin kuruluşuna ve bu devletin Avrupa'ya etkilerine değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "9.4.5",
-      subTopicName: "Ilk ve Orta Caglarda Turk Dunyasi",
+      subTopicName: "İlk ve Orta Çağlarda Türk Dünyası",
       description:
-        "Asya merkezli Turk Devletlerinin cevrelerindeki devletlerle iliskilerinin cok boyutlu yapisini analiz eder.",
+        "Asya merkezli Türk Devletlerinin çevrelerindeki devletlerle ilişkilerinin çok boyutlu yapısını analiz eder.",
       details: [
-        "a) Hun, Kok Turk, Uygur ve Hazar siyasi tesekkullerinin Cin, Sasani ve Bizans Devletleri ile iliskilerinden hareketle konar-gocer ve yerlesik topluluklar arasindaki iliskilerin catisma ve uzlasma eksenli olarak askeri ve ekonomik boyutlarda gerceklestigi vurgulanir.",
-        "b) Hun, Kok Turk, Uygur ve Hazar siyasi tesekkullerinin hakimiyetleri altindaki topraklarda ticareti canlandirmaya yonelik politikalari ile bu politikalarin gerekceleri uzerinde durulur.",
+        "a) Hun, Kök Türk, Uygur ve Hazar siyasi teşekküllerinin Çin, Sasani ve Bizans Devletleri ile ilişkilerinden hareketle konar-göçer ve yerleşik topluluklar arasındaki ilişkilerin çatışma ve uzlaşma eksenli olarak askerî ve ekonomik boyutlarda gerçekleştiği vurgulanır.",
+        "b) Hun, Kök Türk, Uygur ve Hazar siyasi teşekküllerinin hâkimiyetleri altındaki topraklarda ticareti canlandırmaya yönelik politikaları ile bu politikaların gerekçeleri üzerinde durulur.",
       ].join("\n"),
       isKeyKazanim: false,
     },
@@ -192,61 +192,61 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "İslam Tarihi": [
     {
       code: "9.5.1",
-      subTopicName: "Islam Medeniyetinin Dogusu",
+      subTopicName: "İslam Medeniyetinin Doğuşu",
       description:
-        "Islamiyet'in ortaya ciktigi ve yayildigi donemlerdeki baslica siyasi ve sosyal gelismeleri aciklar.",
+        "İslamiyet'in ortaya çıktığı ve yayıldığı dönemlerdeki başlıca siyasi ve sosyal gelişmeleri açıklar.",
       details: [
-        "a) Islamiyet'in ortaya ciktigi ve yayildigi donemlerdeki baslica siyasi ve sosyal gelismeler tarih seridi ve haritalar uzerinde gosterilir.",
-        "b) Hz. Muhammed'in peygamberliginin oncesinde Mekke'deki ve Arap Yarimadasi'nin geri kalan kismindaki siyasi durum ve toplumsal duzen ana hatlariyla ele alinir. 'Cahiliye Donemi' kavrami toplum duzeni acisindan aciklanir.",
+        "a) İslamiyet'in ortaya çıktığı ve yayıldığı dönemlerdeki başlıca siyasi ve sosyal gelişmeler tarih şeridi ve haritalar üzerinde gösterilir.",
+        "b) Hz. Muhammed'in peygamberliğinin öncesinde Mekke'deki ve Arap Yarımadası'nın geri kalan kısmındaki siyasi durum ve toplumsal düzen ana hatlarıyla ele alınır. 'Cahiliye Dönemi' kavramı toplum düzeni açısından açıklanır.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "9.5.2",
-      subTopicName: "Islam Medeniyetinin Dogusu",
+      subTopicName: "İslam Medeniyetinin Doğuşu",
       description:
-        "Hz. Muhammed ve Dort Halife Donemi'nde Muslumanlarin Arap Yarimadasi ve cevresinde siyasi hakimiyet kurmaya yonelik faaliyetlerini kavrar.",
+        "Hz. Muhammed ve Dört Halife Dönemi'nde Müslümanların Arap Yarımadası ve çevresinde siyasi hâkimiyet kurmaya yönelik faaliyetlerini kavrar.",
       details: [
-        "a) Hz. Muhammed Donemi'nde Muslumanlarin kendilerini korumak ve Islam'i yaymak uzere gerceklestirdikleri muharebelere deginilir.",
-        "b) Medine Sozlesmesi'nin ongordudu toplum duzeni ve ilk kurumsal yapilanmalar (egitim, idare, guvenlik ve yargi) ele alinir.",
-        "c) Dort Halife Donemi'nde Islam toplumunun idaresi, sinirlarin genislemesi ve ihtidalar uzerinde durulur.",
+        "a) Hz. Muhammed Dönemi'nde Müslümanların kendilerini korumak ve İslam'ı yaymak üzere gerçekleştirdikleri muharebelere değinilir.",
+        "b) Medine Sözleşmesi'nin öngördüğü toplum düzeni ve ilk kurumsal yapılanmalar (eğitim, idare, güvenlik ve yargı) ele alınır.",
+        "c) Dört Halife Dönemi'nde İslam toplumunun idaresi, sınırların genişlemesi ve ihtidalar üzerinde durulur.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "9.5.3",
-      subTopicName: "Islam Medeniyetinin Dogusu",
+      subTopicName: "İslam Medeniyetinin Doğuşu",
       description:
-        "Emeviler ile birlikte Islam Devleti'nin yapisinda meydana gelen degisimi analiz eder.",
+        "Emeviler ile birlikte İslam Devleti'nin yapısında meydana gelen değişimi analiz eder.",
       details: [
-        "a) Emeviler Donemi'nde hilafetin saltanata donustugu ve Arap olmayan unsurlarin (mevali) devlet idaresi ve sosyal yasamda bazi haklardan mahrum birakildiklari vurgulanir.",
-        "b) Emeviler Donemi'nde inanc ve siyaset iliskisi ile keskinlesmeye baslayan mezhebi yonelimler ele alinir.",
-        "c) Emeviler Donemi'nde Islamiyet'in Kuzey Afrika ve Avrupa'daki yayilisina ve Islam kulturunun Avrupa'ya etkilerine deginilir. Endulus'teki dusunce ve kultur dunyasi ozellikle vurgulanir.",
+        "a) Emeviler Dönemi'nde hilafetin saltanata dönüştüğü ve Arap olmayan unsurların (mevali) devlet idaresi ve sosyal yaşamda bazı haklardan mahrum bırakıldıkları vurgulanır.",
+        "b) Emeviler Dönemi'nde inanç ve siyaset ilişkisi ile keskinleşmeye başlayan mezhebî yönelimler ele alınır.",
+        "c) Emeviler Dönemi'nde İslamiyet'in Kuzey Afrika ve Avrupa'daki yayılışına ve İslam kültürünün Avrupa'ya etkilerine değinilir. Endülüs'teki düşünce ve kültür dünyası özellikle vurgulanır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "9.5.4",
-      subTopicName: "Islam Medeniyetinin Dogusu",
+      subTopicName: "İslam Medeniyetinin Doğuşu",
       description:
-        "Turklerin Abbasi Devleti'ndeki askeri ve siyasi gelismelerde oynadiklari rolleri kavrar.",
+        "Türklerin Abbasi Devleti'ndeki askerî ve siyasi gelişmelerde oynadıkları rolleri kavrar.",
       details: [
-        "a) Abbasiler Donemi'ndeki baslica siyasi ve sosyal gelismelere kisaca deginilir.",
-        "b) Halife Me'mun ve Mu'tasim Donemlerinde Turk asker ve devlet gorevlilerinin Abbasi devlet yonetiminde artan etkisi ve bu durumun sonuclari aciklanir.",
-        "c) Islam hakimiyetinin Afrika'daki genislemesinden hareketle Tolunogullari (868-905), Ihsidiler (935-969), Eyyubiler (1174-1250) ve Memluk Devleti (1250-1517) one cikan ozellikleryle kisaca ele alinir.",
+        "a) Abbasiler Dönemi'ndeki başlıca siyasi ve sosyal gelişmelere kısaca değinilir.",
+        "b) Halife Me'mun ve Mu'tasım Dönemlerinde Türk asker ve devlet görevlilerinin Abbasi devlet yönetiminde artan etkisi ve bu durumun sonuçları açıklanır.",
+        "c) İslam hâkimiyetinin Afrika'daki genişlemesinden hareketle Tolunoğulları (868-905), İhşidiler (935-969), Eyyubiler (1174-1250) ve Memluk Devleti (1250-1517) öne çıkan özellikleriyle kısaca ele alınır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "9.5.5",
-      subTopicName: "Islam Medeniyetinin Dogusu",
+      subTopicName: "İslam Medeniyetinin Doğuşu",
       description:
-        "Sekizinci ve on ikinci yuzyillar arasinda Islam medeniyeti cercevesindeki ilmi faaliyetleri degerlendirir.",
+        "Sekizinci ve on ikinci yüzyıllar arasında İslam medeniyeti çerçevesindeki ilmî faaliyetleri değerlendirir.",
       details: [
-        "a) Islam medeniyetinin ilim ve egitim kurumlari (Beytu'l-hikme, medreseler, camiler ve kutuphaneler) kisaca tanitilir.",
-        "b) Islam medeniyetinde kabul gormus dini (nakli) ve akli ilimler ayrimi uzerinde durulur.",
-        "c) Islam alimlerinin nazari (teorik) ve butuncul bir perspektifle kisinin kendini, alemi ve Allah'i tanimasi maksadi guden bir ilim anlayisina sahip olduklari vurgulanir.",
-        "d) Islam dunyasinda ortaya cikan bilimsel gelismelere ve bu gelismelerin Avrupa'ya etkilerine kisaca deginilir.",
+        "a) İslam medeniyetinin ilim ve eğitim kurumları (Beytu'l-hikme, medreseler, camiler ve kütüphaneler) kısaca tanıtılır.",
+        "b) İslam medeniyetinde kabul görmüş dini (nakli) ve aklî ilimler ayrımı üzerinde durulur.",
+        "c) İslam âlimlerinin nazari (teorik) ve bütüncül bir perspektifle kişinin kendini, âlemi ve Allah'ı tanıması maksadı güden bir ilim anlayışına sahip oldukları vurgulanır.",
+        "d) İslam dünyasında ortaya çıkan bilimsel gelişmelere ve bu gelişmelerin Avrupa'ya etkilerine kısaca değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
@@ -255,56 +255,56 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "Türk-İslam Devletleri (10-13. yüzyıllar)": [
     {
       code: "9.6.1",
-      subTopicName: "Turklerin Islamiyet'i Kabulu",
+      subTopicName: "Türklerin İslamiyet'i Kabulü",
       description:
-        "Turklerin Islamiyet'i kabul etmeye baslamalari ile Turkiye Selcuklu Devleti'nin kurulusu arasindaki surecter meydana gelen baslica siyasi gelismeleri gosterir.",
+        "Türklerin İslamiyet'i kabul etmeye başlamaları ile Türkiye Selçuklu Devleti'nin kuruluşu arasındaki süreçte meydana gelen başlıca siyasi gelişmeleri gösterir.",
       details: [
-        "Baslica siyasi gelismeler olarak Talas Savasi (751), Karahanli Devleti'nin kurulmasi (840), Gazneli Devleti'nin kurulmasi (963), Buyuk Selcuklu Devleti'nin kurulmasi (1040), Dandakan Savasi, Pasinler ve Malazgirt Muharebeleri, Turkiye Selcuklu Devleti'nin kurulmasi (1077) tarih seridi uzerinde verilir.",
+        "Başlıca siyasi gelişmeler olarak Talas Savaşı (751), Karahanlı Devleti'nin kurulması (840), Gazneli Devleti'nin kurulması (963), Büyük Selçuklu Devleti'nin kurulması (1040), Dandanakan Savaşı, Pasinler ve Malazgirt Muharebeleri, Türkiye Selçuklu Devleti'nin kurulması (1077) tarih şeridi üzerinde verilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "9.6.2",
-      subTopicName: "Turklerin Islamiyet'i Kabulu",
+      subTopicName: "Türklerin İslamiyet'i Kabulü",
       description:
-        "Turklerin Islamiyet'i kabul etme surecine etki eden faktorleri aciklar.",
+        "Türklerin İslamiyet'i kabul etme sürecine etki eden faktörleri açıklar.",
       details: [
-        "a) Turk topluluklarinin Islamiyet'i kabullerinin bir anda ve toplu olarak degil asamali olarak ve farkli tarihlerde gerceklestigi vurgulanir.",
-        "b) Acemler, Berberiler ve Kurtlerin Islam dinini kabul etme sureclerine kisaca deginilir.",
+        "a) Türk topluluklarının İslamiyet'i kabullerinin bir anda ve toplu olarak değil aşamalı olarak ve farklı tarihlerde gerçekleştiği vurgulanır.",
+        "b) Acemlerin, Berberilerin ve Kürtlerin İslam dinini kabul etme süreçlerine kısaca değinilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "9.6.3",
-      subTopicName: "Turklerin Islamiyet'i Kabulu",
+      subTopicName: "Türklerin İslamiyet'i Kabulü",
       description:
-        "Karahanli ve Gazneli orneklerinden hareketle Islamiyet'in kabulunun Turk devlet yapisi ve toplumsal hayatta meydana getirdigi degisimleri analiz eder.",
+        "Karahanlı ve Gazneli örneklerinden hareketle İslamiyet'in kabulünün Türk devlet yapısı ve toplumsal hayatta meydana getirdiği değişimleri analiz eder.",
       details: [
-        "Donemin yazili eserleri 'Kutadgu Bilig', 'Divanu Lugati't-Turk', 'Atabetu'l-Hakayik' ve 'Divan-i Hikmet'e kisaca deginilir.",
+        "Dönemin yazılı eserleri 'Kutadgu Bilig', 'Divanu Lugati't-Türk', 'Atabetü'l-Hakayık' ve 'Divan-ı Hikmet'e kısaca değinilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "9.6.4",
-      subTopicName: "Turklerin Islamiyet'i Kabulu",
+      subTopicName: "Türklerin İslamiyet'i Kabulü",
       description:
-        "Buyuk Selcuklu Devleti Donemi'ndeki baslica siyasi gelismeleri Turk tarihi icerisindeki onemi baglaminda aciklar.",
+        "Büyük Selçuklu Devleti Dönemi'ndeki başlıca siyasi gelişmeleri Türk tarihi içerisindeki önemi bağlamında açıklar.",
       details: [
-        "a) Oguz Turklerinin Islamiyet'i kabul etmelerinin Turk ve Islam tarihinde meydana getirdigi siyasi, sosyal ve kulturel etkilere deginilir.",
-        "b) Dandanakan, Pasinler ve Malazgirt Muharebelerinin sebep ve sonuclari kisaca ele alinir.",
-        "c) Buyuk Selcuklu Devleti'nin Tugrul Bey Donemi'nde Islam dunyasinda koruyucu rol ustlendigine deginilir.",
+        "a) Oğuz Türklerinin İslamiyet'i kabul etmelerinin Türk ve İslam tarihinde meydana getirdiği siyasi, sosyal ve kültürel etkilere değinilir.",
+        "b) Dandanakan, Pasinler ve Malazgirt Muharebelerinin sebep ve sonuçları kısaca ele alınır.",
+        "c) Büyük Selçuklu Devleti'nin Tuğrul Bey Dönemi'nde İslam dünyasında koruyucu rol üstlendiğine değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "9.6.5",
-      subTopicName: "Turklerin Islamiyet'i Kabulu",
+      subTopicName: "Türklerin İslamiyet'i Kabulü",
       description:
-        "Buyuk Selcuklu Devleti'nin yonetim ve toplum yapisini kavrar.",
+        "Büyük Selçuklu Devleti'nin yönetim ve toplum yapısını kavrar.",
       details: [
-        "a) Buyuk Selcuklu Devleti'nin guc ve yonetim yapisi; gucun mesruiyet kaynagi, gucun maddi kaynaklari, guc paylasimi ve yonetim organizasyonu temalari cercevesinde ele alinir.",
-        "b) Iran ve Turk devlet geleneklerine ait unsurlarin Buyuk Selcuklu devlet teskilatinda birlikte yer aldigi vurgulanir.",
-        "c) Nizamulmulk'un 'Siyasetname' adli eseri incelenir. Nizamiye Medreseleri yapilanmasi ve Gazali'nin bu medreselere etkisine deginilir.",
+        "a) Büyük Selçuklu Devleti'nin güç ve yönetim yapısı; gücün meşruiyet kaynağı, gücün maddi kaynakları, güç paylaşımı ve yönetim organizasyonu temaları çerçevesinde ele alınır.",
+        "b) İran ve Türk devlet geleneklerine ait unsurların Büyük Selçuklu devlet teşkilatında birlikte yer aldığı vurgulanır.",
+        "c) Nizamülmülk'ün 'Siyasetname' adlı eseri incelenir. Nizamiye Medreseleri yapılanması ve Gazali'nin bu medreselere etkisine değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
@@ -315,57 +315,57 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "Türkiye Tarihi (11-13. yüzyıllar)": [
     {
       code: "10.1.1",
-      subTopicName: "Yerlesme ve Devletlesme",
+      subTopicName: "Yerleşme ve Devletleşme",
       description:
-        "Turklerin Anadolu'ya yerlesmeye baslamasi ile Turkiye Selcuklu Devleti'nin yikilisi arasindaki surecter meydana gelen baslica siyasi gelismeleri gosterir.",
+        "Türklerin Anadolu'ya yerleşmeye başlaması ile Türkiye Selçuklu Devleti'nin yıkılışı arasındaki süreçte meydana gelen başlıca siyasi gelişmeleri gösterir.",
       details: [
-        "Saltuklular, Danismentliler, Mengucekliler, Caka Beyligi, Turkiye Selcuklu Devleti, Artuklu Beyligi'nin kuruluslari, Hacli Seferleri, Mogol Istilasi, Kosedap Muharebesi, Memluklu Devleti'nin kurulmasi, Turkceyi resmi dil ilan etme gibi gelismeler tarih seridi uzerinde verilir.",
+        "Saltuklular, Danişmentliler, Mengücekliler, Çaka Beyliği, Türkiye Selçuklu Devleti, Artuklu Beyliği'nin kuruluşları, Haçlı Seferleri, Moğol İstilası, Kösedağ Muharebesi, Memlüklü Devleti'nin kurulması, Türkçeyi resmi dil ilan etme gibi gelişmeler tarih şeridi üzerinde verilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "10.1.2",
-      subTopicName: "Yerlesme ve Devletlesme",
+      subTopicName: "Yerleşme ve Devletleşme",
       description:
-        "Anadolu'ya yapilan Turk goclerinin sosyokulturel etkilerini analiz eder.",
+        "Anadolu'ya yapılan Türk göçlerinin sosyokültürel etkilerini analiz eder.",
       details: [
-        "a) Oguz goclerinin Anadolu'da yerlesmeyi kolaylastiran nedenler kisaca aciklanir.",
-        "b) Turkiye isminin dogusu aciklanir. Ogrencilerin Anadolu'nun Turkiye olarak adlandirilmasinin nedenleri ile ilgili cikarimda bulunmalari saglanir.",
-        "c) Ogrencilerin Anadolu ile birlikte Irak ve Suriye bolgesine yapilan goclerin bu bolgelerde gunumuze kadar devam eden Turkmen varligina etkilerini analiz etmeleri saglanir.",
+        "a) Oğuz göçlerinin Anadolu'da yerleşmeyi kolaylaştıran nedenler kısaca açıklanır.",
+        "b) Türkiye isminin doğuşu açıklanır. Öğrencilerin Anadolu'nun Türkiye olarak adlandırılmasının nedenleri ile ilgili çıkarımda bulunmaları sağlanır.",
+        "c) Öğrencilerin Anadolu ile birlikte Irak ve Suriye bölgesine yapılan göçlerin bu bölgelerde günümüze kadar devam eden Türkmen varlığına etkilerini analiz etmeleri sağlanır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "10.1.3",
-      subTopicName: "Yerlesme ve Devletlesme",
+      subTopicName: "Yerleşme ve Devletleşme",
       description:
-        "Anadolu'daki ilk Turk siyasi tesekkullerinin birbirleriyle ve cevre devletlerle olan iliskilerini uzlasma ve catisma baglaminda degerlendirir.",
+        "Anadolu'daki ilk Türk siyasi teşekküllerinin birbirleriyle ve çevre devletlerle olan ilişkilerini uzlaşma ve çatışma bağlamında değerlendirir.",
       details: [
-        "a) Anadolu'da kurulan ilk Turk beyliklerinin birbirleriyle ve cevre devletlerle olan iliskilerine deginilir.",
-        "b) Turkiye Selcuklu Devleti'nin teskilat yapisi ile sosyokulturel ozelliklerine ana hatlariyla deginilir.",
-        "c) Turkiye Selcuklu Devleti'nin Bizans ile mucadeleleri cercevesinde Miryokefalon Muharebesi'ne deginilir.",
+        "a) Anadolu'da kurulan ilk Türk beyliklerinin birbirleriyle ve çevre devletlerle olan ilişkilerine değinilir.",
+        "b) Türkiye Selçuklu Devleti'nin teşkilat yapısı ile sosyokültürel özelliklerine ana hatlarıyla değinilir.",
+        "c) Türkiye Selçuklu Devleti'nin Bizans ile mücadeleleri çerçevesinde Miryokefalon Muharebesi'ne değinilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "10.1.4",
-      subTopicName: "Yerlesme ve Devletlesme",
+      subTopicName: "Yerleşme ve Devletleşme",
       description:
-        "Islam dunyasinin korunmasi baglaminda Turkiye Selcuklu Devleti ve Eyyubi Devleti'nin Haclilarla yaptiklari mucadelelerin sosyokulturel etkilerini analiz eder.",
+        "İslam dünyasının korunması bağlamında Türkiye Selçuklu Devleti ve Eyyubi Devleti'nin Haçlılarla yaptıkları mücadelelerin sosyokültürel etkilerini analiz eder.",
       details: [
-        "a) Hacli Seferleri'nin guzergahi harita/haritalar uzerinde gosterilir.",
-        "b) Hacli Seferleri'nin sebeplerine, taraflarina, katilanlarina deginilir.",
-        "c) Ogrencilerin Hacli Seferleri'nin Avrupa'daki siyasi, sosyal ve ekonomik acidan donusturucu etkisini analiz etmeleri saglanir.",
+        "a) Haçlı Seferleri'nin güzergâhı harita/haritalar üzerinde gösterilir.",
+        "b) Haçlı Seferleri'nin sebeplerine, taraflarına, katılanlarına değinilir.",
+        "c) Öğrencilerin Haçlı Seferleri'nin Avrupa'daki siyasi, sosyal ve ekonomik açıdan dönüştürücü etkisini analiz etmeleri sağlanır.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "10.1.5",
-      subTopicName: "Yerlesme ve Devletlesme",
+      subTopicName: "Yerleşme ve Devletleşme",
       description:
-        "Mogol Istilasi'nin Anadolu'da meydana getirdigi siyasi ve sosyal degisimi analiz eder.",
+        "Moğol İstilası'nın Anadolu'da meydana getirdiği siyasi ve sosyal değişimi analiz eder.",
       details: [
-        "Babailer Isyani'na, Mogol Istilasi'nin onunu acmasi baglaminda deginilerek Kosedap Muharebesi'nden sonra Anadolu'da Ikinci Beylikler Donemi'nin ortaya cikmasi kisaca aciklanir.",
+        "Babailer İsyanı'na, Moğol İstilası'nın önünü açması bağlamında değinilerek Kösedağ Muharebesi'nden sonra Anadolu'da İkinci Beylikler Dönemi'nin ortaya çıkması kısaca açıklanır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
@@ -374,46 +374,46 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "Beylikten Devlete (1300-1453)": [
     {
       code: "10.2.1",
-      subTopicName: "Beylikten Devlete Osmanli Siyaseti",
+      subTopicName: "Beylikten Devlete Osmanlı Siyaseti",
       description:
-        "1302-1453 yillari arasindaki surecte meydana gelen baslica siyasi gelismeleri tarih seridi ve haritalar uzerinde gosterir.",
+        "1302-1453 yılları arasındaki süreçte meydana gelen başlıca siyasi gelişmeleri tarih şeridi ve haritalar üzerinde gösterir.",
       details: [
-        "Koyunhisar Muharebesi (1302), Bursa'nin Fethi (1326), Iznik'in Fethi (1331), Izmit'in Fethi (1337), I. Kosova Muharebesi (1389), Nigbolu Muharebesi (1396), Ankara Savasi (1402), Fetret Devri (1402-1413), Varna Muharebesi (1444), II. Kosova Muharebesi (1448) gibi gelismeler tarih seridi uzerinde verilir.",
+        "Koyunhisar Muharebesi (1302), Bursa'nın Fethi (1326), İznik'in Fethi (1331), İzmit'in Fethi (1337), I. Kosova Muharebesi (1389), Niğbolu Muharebesi (1396), Ankara Savaşı (1402), Fetret Devri (1402-1413), Varna Muharebesi (1444), II. Kosova Muharebesi (1448) gibi gelişmeler tarih şeridi üzerinde verilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "10.2.2",
-      subTopicName: "Beylikten Devlete Osmanli Siyaseti",
+      subTopicName: "Beylikten Devlete Osmanlı Siyaseti",
       description:
-        "Osmanli Beyligi'nin devletlesme surecini Bizans'la olan iliskileri cercevesinde analiz eder.",
+        "Osmanlı Beyliği'nin devletleşme sürecini Bizans'la olan ilişkileri çerçevesinde analiz eder.",
       details: [
-        "a) XIII. yuzyilin sonlarinda Anadolu cevresindeki jeopolitik durum aciklanarak Osmanli Beyligi'nin kurulusuna deginilir.",
-        "b) Ogrencilerin Osmanli Beyligi'nin sinirlarinin genislemesinin farkli fetih yontemleri ve politikalar (Turkmen gocleri ve gaza siyaseti) izlenerek uzun surede nasil gerceklestigini analiz etmeleri saglanir.",
+        "a) XIII. yüzyılın sonlarında Anadolu çevresindeki jeopolitik durum açıklanarak Osmanlı Beyliği'nin kuruluşuna değinilir.",
+        "b) Öğrencilerin Osmanlı Beyliği'nin sınırlarının genişlemesinin farklı fetih yöntemleri ve politikalar (Türkmen göçleri ve gaza siyaseti) izlenerek uzun sürede nasıl gerçekleştiğini analiz etmeleri sağlanır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "10.2.3",
-      subTopicName: "Beylikten Devlete Osmanli Siyaseti",
+      subTopicName: "Beylikten Devlete Osmanlı Siyaseti",
       description:
-        "Rumeli'deki fetihler ile iskan (senlendirme) ve istimalet politikalarinin amaclarini ve etkilerini analiz eder.",
+        "Rumeli'deki fetihler ile iskân (şenlendirme) ve istimalet politikalarının amaçlarını ve etkilerini analiz eder.",
       details: [
-        "a) Osmanli'nin Anadolu'ya nispeten Rumeli'de daha hizli hakimiyet kurmasinda Balkanlar'daki topluluklarin yasadigi ic cekismelerin etkisi ile Osmanli idaresinin gayrimuslimlere sundugu imkanlara deginilir.",
-        "b) Rumeli'deki fetihlerin kalici olmasinda rol oynayan demografik guclerin (dervisler, asiretler, akinci uc beyleri) ve iskan politikasinin onemine deginilir.",
+        "a) Osmanlı'nın Anadolu'ya nispeten Rumeli'de daha hızlı hâkimiyet kurmasında Balkanlar'daki toplulukların yaşadığı iç çekişmelerin etkisi ile Osmanlı idaresinin gayrimüslimlere sunduğu imkânlara değinilir.",
+        "b) Rumeli'deki fetihlerin kalıcı olmasında rol oynayan demografik güçlerin (dervişler, aşiretler, akıncı uç beyleri) ve iskân politikasının önemine değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "10.2.4",
-      subTopicName: "Beylikten Devlete Osmanli Siyaseti",
+      subTopicName: "Beylikten Devlete Osmanlı Siyaseti",
       description:
-        "Osmanli Devleti'nin Anadolu'da Turk siyasi birligini saglamaya yonelik faaliyetlerini ve sonuclarini analiz eder.",
+        "Osmanlı Devleti'nin Anadolu'da Türk siyasi birliğini sağlamaya yönelik faaliyetlerini ve sonuçlarını analiz eder.",
       details: [
-        "a) Osmanli Devleti'nin beyliklere yonelik politikalarindaki degisime deginilir.",
-        "b) Turk dunyasindaki liderlik mucadelesini Yildirim Bayezid ve Timur ornegi uzerinden ele alarak bu mucadelenin Anadolu'daki yansimalarini sebep ve etki acisindan analiz etmeleri saglanir.",
-        "c) Fetret Devri'ne ve Osmanli siyasi birliginin yeniden saglanmasina deginilir.",
-        "d) Osmanli Devleti'nin ilk donemlerinden itibaren Turkceyi resmi yazisma dili olarak kullandigi ve bilim dili haline getirdigi vurgulanir.",
+        "a) Osmanlı Devleti'nin beyliklere yönelik politikalarındaki değişime değinilir.",
+        "b) Türk dünyasındaki liderlik mücadelesini Yıldırım Bayezid ve Timur örneği üzerinden ele alarak bu mücadelenin Anadolu'daki yansımalarını sebep ve etki açısından analiz etmeleri sağlanır.",
+        "c) Fetret Devri'ne ve Osmanlı siyasi birliğinin yeniden sağlanmasına değinilir.",
+        "d) Osmanlı Devleti'nin ilk dönemlerinden itibaren Türkçeyi resmi yazışma dili olarak kullandığı ve bilim dili hâline getirdiği vurgulanır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
@@ -422,79 +422,79 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "Dünya Gücü Osmanlı Devleti (1453-1600)": [
     {
       code: "10.5.1",
-      subTopicName: "Dunya Gucu Osmanli (1453-1595)",
+      subTopicName: "Dünya Gücü Osmanlı (1453-1595)",
       description:
-        "1453-1520 yillari arasindaki surecte meydana gelen baslica siyasi gelismeleri tarih seridi ve haritalar uzerinde gosterir.",
+        "1453-1520 yılları arasındaki süreçte meydana gelen başlıca siyasi gelişmeleri tarih şeridi ve haritalar üzerinde gösterir.",
       details: [
-        "Istanbul'un Fethi (1453), Sirbistan'in alinmasi (1454), Amasra'nin alinmasi (1459), Mora'nin alinmasi (1460), Sinop ve Trabzon'un alinmasi (1461), Eflak'in alinmasi (1462), Bosna ve Hersek'in alinmasi (1463), Venedik ile mucadele (1463-1479), Otlukbeli Muharebesi (1473), Karamanoglu Beyligi'ne son verilmesi (1474), Kirim'in Fethi (1475), Bogdan'in alinmasi (1476), Arnavutluk'un alinmasi (1479), Italya Seferi (1480), Cem Sultan Olayi (1481-1495), Ispanya'daki Muslumanlarin ve Yahudilerin kurtarilmasi (1492), Caldiran Muharebesi (1514), Mercidabik Muharebesi (1516) ve Ridaniye Muharebesi (1517) verilir.",
+        "İstanbul'un Fethi (1453), Sırbistan'ın alınması (1454), Amasra'nın alınması (1459), Mora'nın alınması (1460), Sinop ve Trabzon'un alınması (1461), Eflak'ın alınması (1462), Bosna ve Hersek'in alınması (1463), Venedik ile mücadele (1463-1479), Otlukbeli Muharebesi (1473), Karamanoğlu Beyliği'ne son verilmesi (1474), Kırım'ın Fethi (1475), Boğdan'ın alınması (1476), Arnavutluk'un alınması (1479), İtalya Seferi (1480), Cem Sultan Olayı (1481-1495), İspanya'daki Müslümanların ve Yahudilerin kurtarılması (1492), Çaldıran Muharebesi (1514), Mercidabık Muharebesi (1516) ve Ridaniye Muharebesi (1517) verilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "10.5.2",
-      subTopicName: "Dunya Gucu Osmanli (1453-1595)",
+      subTopicName: "Dünya Gücü Osmanlı (1453-1595)",
       description:
-        "Istanbul'un fetih surecini sebepleri ve stratejik sonuclari acisindan analiz eder.",
+        "İstanbul'un fetih sürecini sebepleri ve stratejik sonuçları açısından analiz eder.",
       details: [
-        "a) Osmanli Devleti'nin kurumsallasmasi (idari, kulturel ve demografik boyutlar) ve Istanbul'un Fethi'nin oynadigi role iliskin cikarimda bulunmalari saglanir.",
-        "b) Istanbul'un Fethi'nin bolgesel ve kuresel yansimalarina deginilir.",
-        "c) II. Mehmet'in kara ve denizlerdeki fetihlerinin stratejik onemine deginilir.",
-        "d) II. Mehmet'in karakteri, vizyonu, ilme verdigi onem vurgulanarak fethin gerceklesmesinde onun kisisel ozelliklerinin etkisine deginilir.",
+        "a) Osmanlı Devleti'nin kurumsallaşması (idari, kültürel ve demografik boyutlar) ve İstanbul'un Fethi'nin oynadığı role ilişkin çıkarımda bulunmaları sağlanır.",
+        "b) İstanbul'un Fethi'nin bölgesel ve küresel yansımalarına değinilir.",
+        "c) II. Mehmet'in kara ve denizlerdeki fetihlerinin stratejik önemine değinilir.",
+        "d) II. Mehmet'in karakteri, vizyonu, ilme verdiği önem vurgulanarak fethin gerçekleşmesinde onun kişisel özelliklerinin etkisine değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "10.5.3",
-      subTopicName: "Dunya Gucu Osmanli (1453-1595)",
+      subTopicName: "Dünya Gücü Osmanlı (1453-1595)",
       description:
-        "Osmanli Devleti'nin Islam cografyasinda hakimiyet kurmasinin Turk ve Islam dunyasi uzerindeki etkilerini analiz eder.",
+        "Osmanlı Devleti'nin İslam coğrafyasında hâkimiyet kurmasının Türk ve İslam dünyası üzerindeki etkilerini analiz eder.",
       details:
-        "I. Selim Donemi'nde Osmanli-Iran ve Osmanli-Memluk iliskilerine, Turk ve Islam dunyasinda liderlik mucadelesi baglaminda deginilir.",
+        "I. Selim Dönemi'nde Osmanlı-İran ve Osmanlı-Memluk ilişkilerine, Türk ve İslam dünyasında liderlik mücadelesi bağlamında değinilir.",
       isKeyKazanim: false,
     },
     {
       code: "10.5.4",
-      subTopicName: "Dunya Gucu Osmanli (1453-1595)",
+      subTopicName: "Dünya Gücü Osmanlı (1453-1595)",
       description:
-        "1520-1595 yillari arasindaki surecte meydana gelen baslica siyasi gelismeleri tarih seridi ve haritalar uzerinde gosterir.",
+        "1520-1595 yılları arasındaki süreçte meydana gelen başlıca siyasi gelişmeleri tarih şeridi ve haritalar üzerinde gösterir.",
       details: [
-        "Belgrad'in Fethi (1521), Rodos'un Fethi (1522), Mohac Muharebesi (1526), I. Viyana Kusatmasi (1529), Istanbul Antlasmasi (1533), Cezayir'in alinmasi (1533), Preveze Deniz Savasi (1538), Hint Deniz Seferleri (1538-1553), Tebriz'in alinmasi (1548), Trablusgarp'in Fethi (1551), Nahcivan'in alinmasi (1553), Sudan'in Kizildeniz sahilinde Sevakin Adasi merkezli Habes Eyaleti'nin kurulmasi (1555), Zigetvar Seferi (1566), Yemen'in alinmasi (1568), Kibris'in Fethi (1571), Inebahti Deniz Savasi (1571), Tunus'un Fethi (1574) ve Fas'ta Osmanli hakimiyetinin kurulmasi (1578) verilir.",
+        "Belgrad'ın Fethi (1521), Rodos'un Fethi (1522), Mohaç Muharebesi (1526), I. Viyana Kuşatması (1529), İstanbul Antlaşması (1533), Cezayir'in alınması (1533), Preveze Deniz Savaşı (1538), Hint Deniz Seferleri (1538-1553), Tebriz'in alınması (1548), Trablusgarp'ın Fethi (1551), Nahcivan'ın alınması (1553), Sudan'ın Kızıldeniz sahilinde Sevakin Adası merkezli Habeş Eyaleti'nin kurulması (1555), Zigetvar Seferi (1566), Yemen'in alınması (1568), Kıbrıs'ın Fethi (1571), İnebahtı Deniz Savaşı (1571), Tunus'un Fethi (1574) ve Fas'ta Osmanlı hâkimiyetinin kurulması (1578) verilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "10.5.5",
-      subTopicName: "Dunya Gucu Osmanli (1453-1595)",
+      subTopicName: "Dünya Gücü Osmanlı (1453-1595)",
       description:
-        "Kanuni Donemi'nden itibaren Osmanli Devleti'nin eristigi olgunlugu siyasi sinirlar ve devlet teskilati acisindan aciklar.",
+        "Kanuni Dönemi'nden itibaren Osmanlı Devleti'nin eriştiği olgunluğu siyasi sınırlar ve devlet teşkilatı açısından açıklar.",
       details:
-        "Osmanli Devleti'nin hakimiyet alanini genisletme cabalari baglaminda Habsburglar ve Safevilerle olan iliskileri kisaca ele alinir.",
+        "Osmanlı Devleti'nin hâkimiyet alanını genişletme çabaları bağlamında Habsburglar ve Safevilerle olan ilişkileri kısaca ele alınır.",
       isKeyKazanim: false,
     },
     {
       code: "10.5.6",
-      subTopicName: "Dunya Gucu Osmanli (1453-1595)",
+      subTopicName: "Dünya Gücü Osmanlı (1453-1595)",
       description:
-        "Uyguladigi uzun vadeli stratejinin Osmanli Devleti'nin dunya gucu haline gelmesindeki rolunu analiz eder.",
+        "Uyguladığı uzun vadeli stratejinin Osmanlı Devleti'nin dünya gücü hâline gelmesindeki rolünü analiz eder.",
       details: [
-        "a) Osmanli Devleti'nin XV ve XVI. yuzyillardaki stratejik rakiplerine (Venedik, Ceneviz, Portekiz, Ispanya, Habsburglar, Safeviler, Memlukler) karsi uyguladigi uzun vadeli politikalar ve kurdugu stratejik ortakliklara deginilir.",
-        "b) Osmanli Devleti'nin batidaki ilerleyisi karsisinda Avrupa'da olusan Turk algisini sebep ve etki acisindan analiz etmeleri saglanir.",
-        "c) Osmanli'nin XV ve XVI. yuzyillarda izledigi siyasetin uzun vadeli etkilerine (Roma Katolik Kilisesi'ne karsi Ortodokslugun ve Protestanligin himaye edilmesi, Avrupa monarsilerinin varliklarini devam ettirmeleri (Fransa, Ingiltere ve Hollanda), Afrika'daki Muslumanlarin himaye edilmesi) deginilir.",
-        "d) Osmanli Devleti'nin uyguladigi ekonomi politikalarindan ticaret yollarinin kontrolu ve kapitulasyonlara deginilerek bunlar uzerinden kurulan uzun vadeli stratejik ortakliklara vurgu yapilir.",
+        "a) Osmanlı Devleti'nin XV ve XVI. yüzyıllardaki stratejik rakiplerine (Venedik, Ceneviz, Portekiz, İspanya, Habsburglar, Safeviler, Memlükler) karşı uyguladığı uzun vadeli politikalar ve kurduğu stratejik ortaklıklara değinilir.",
+        "b) Osmanlı Devleti'nin batıdaki ilerleyişi karşısında Avrupa'da oluşan Türk algısını sebep ve etki açısından analiz etmeleri sağlanır.",
+        "c) Osmanlı'nın XV ve XVI. yüzyıllarda izlediği siyasetin uzun vadeli etkilerine (Roma Katolik Kilisesi'ne karşı Ortodoksluğun ve Protestanlığın himaye edilmesi, Avrupa monarşilerinin varlıklarını devam ettirmeleri (Fransa, İngiltere ve Hollanda), Afrika'daki Müslümanların himaye edilmesi) değinilir.",
+        "d) Osmanlı Devleti'nin uyguladığı ekonomi politikalarından ticaret yollarının kontrolü ve kapitülasyonlara değinilerek bunlar üzerinden kurulan uzun vadeli stratejik ortaklıklara vurgu yapılır.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "10.5.7",
-      subTopicName: "Dunya Gucu Osmanli (1453-1595)",
+      subTopicName: "Dünya Gücü Osmanlı (1453-1595)",
       description:
-        "Osmanli Devleti'nin takip ettigi kara ve deniz politikalarini analiz eder.",
+        "Osmanlı Devleti'nin takip ettikleri kara ve deniz politikalarını analiz eder.",
       details: [
-        "a) Osmanli Devleti'nin oncelikli olarak bir kita (kara) gucu oldugu vurgulanir ve donemin diger buyuk kita guclerine kisaca deginilir.",
-        "b) Osmanli Devleti'nin denizlerde yaptigi fetihlerin Akdeniz hakimiyetine etkisini ve bu baglamda Kibris'taki Turk varliginin tarihsel onemini analiz etmeleri saglanir.",
-        "c) Cografi Kesifler'e ve sonrasinda Asya, Afrika ve Amerika kitalarinda yasanan katlimlara ve bu bolgelerin zenginliklerinin Avrupa'ya tasinmasina deginilir.",
-        "d) Cografi Kesifler'in Osmanli Devleti'nin Akdeniz'deki hakimiyetinde meydana getirdigi degisimler ile okyanus guclerinin Akdeniz'e nufuz etme cabalarina deginilir.",
-        "e) Osmanli Devleti'nin stratejik amacli olarak Akdeniz disina yonelme cabalari baglaminda Hint Deniz Seferleri'ne deginilir.",
+        "a) Osmanlı Devleti'nin öncelikli olarak bir kıta (kara) gücü olduğu vurgulanır ve dönemin diğer büyük kıta güçlerine kısaca değinilir.",
+        "b) Osmanlı Devleti'nin denizlerde yaptığı fetihlerin Akdeniz hâkimiyetine etkisini ve bu bağlamda Kıbrıs'taki Türk varlığının tarihsel önemini analiz etmeleri sağlanır.",
+        "c) Coğrafi Keşifler'e ve sonrasında Asya, Afrika ve Amerika kıtalarında yaşanan katliamlara ve bu bölgelerin zenginliklerinin Avrupa'ya taşınmasına değinilir.",
+        "d) Coğrafi Keşifler'in Osmanlı Devleti'nin Akdeniz'deki hâkimiyetinde meydana getirdiği değişimler ile okyanus güçlerinin Akdeniz'e nüfuz etme çabalarına değinilir.",
+        "e) Osmanlı Devleti'nin stratejik amaçlı olarak Akdeniz dışına yönelme çabaları bağlamında Hint Deniz Seferleri'ne değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
@@ -503,57 +503,57 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "Yeniçağ Avrupası (1453-1789)": [
     {
       code: "9.3.1",
-      subTopicName: "Orta Cag'da Dunya",
+      subTopicName: "Orta Çağ'da Dünya",
       description:
-        "Orta Cag'da yeryuzunun cesitli bolgelerinde kurulan siyasi ve sosyal yapilari tanir.",
+        "Orta Çağ'da yeryüzünün çeşitli bölgelerinde kurulan siyasi ve sosyal yapıları tanır.",
       details: [
-        "a) Orta Cag'daki baslica siyasi gelismeler tarih seridi uzerinde gosterilir.",
-        "b) Orta Cag'in cesitli donemlerinde ortaya cikmis/kurulmus olan belli basli siyasi yapilar haritalar uzerinde gosterilir.",
-        "c) Orta Cag'daki siyasi yapilar arasindaki farkliliklar vurgulanarak gucun mesruiyet kaynagi ve maddi kaynaklari (cografi yapi, hayat ve gecim tarzi, soy dayanismasi ve silahli guc) cercevesinde ele alinir.",
+        "a) Orta Çağ'daki başlıca siyasi gelişmeler tarih şeridi üzerinde gösterilir.",
+        "b) Orta Çağ'ın çeşitli dönemlerinde ortaya çıkmış/kurulmuş olan belli başlı siyasi yapılar haritalar üzerinde gösterilir.",
+        "c) Orta Çağ'daki siyasi yapılar arasındaki farklılıklar vurgulanarak gücün meşruiyet kaynağı ve maddi kaynakları (coğrafi yapı, hayat ve geçim tarzı, soy dayanışması ve silahlı güç) çerçevesinde ele alınır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "9.3.2",
-      subTopicName: "Orta Cag'da Dunya",
+      subTopicName: "Orta Çağ'da Dünya",
       description:
-        "Orta Cag'da tarim ve ticaretin yaygin ekonomik faaliyetler olduklarini kavrar.",
+        "Orta Çağ'da tarım ve ticaretin yaygın ekonomik faaliyetler olduklarını kavrar.",
       details: [
-        "a) Tarima dayali ekonomilerde arti urunun bolusumu ile toprak mulkiyeti ve vergilendirmenin siyasi ve sosyal organizasyonlarin olusmasindaki islevleri ele alinir.",
-        "b) Orta Cag'da Asya ve Avrupa arasindaki ticarete konu olan mallara, nakliye araclarina, ticaret mekanlarina (arasta, bedesten, han, kapan, ribat, kervansaray, pazar, liman, panayir) ve madeni paralara deginilir.",
-        "c) Kral Yolu, Ipek Yolu, Kurk Yolu ve Baharat Yolu'nun dunya ticaretindeki rollerine ve bunlara hakim olma mucadelelerinin gerekceleri vurgulanir.",
+        "a) Tarıma dayalı ekonomilerde artı ürünün bölüşümü ile toprak mülkiyeti ve vergilendirmenin siyasi ve sosyal organizasyonların oluşmasındaki işlevleri ele alınır.",
+        "b) Orta Çağ'da Asya ve Avrupa arasındaki ticarete konu olan mallara, nakliye araçlarına, ticaret mekânlarına (arasta, bedesten, han, kapan, ribat, kervansaray, pazar, liman, panayır) ve madeni paralara değinilir.",
+        "c) Kral Yolu, İpek Yolu, Kürk Yolu ve Baharat Yolu'nun dünya ticaretindeki rollerine ve bunlara hâkim olma mücadelelerinin gerekçeleri vurgulanır.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "10.3.1",
-      subTopicName: "Savascilar ve Askerler",
+      subTopicName: "Savaşçılar ve Askerler",
       description:
-        "Kurulus Donemi'nde Osmanli askeri gucunu olusturan farkli muharip unsurlarini aciklar.",
+        "Kuruluş Dönemi'nde Osmanlı askerî gücünü oluşturan farklı muharip unsurlarını açıklar.",
       details: [
-        "a) Bir devlete bagli olmayan savasci topluluklar (asiret savascilari, ucretli savascilar, inanc ve din ugruna savasanlar) ile devlet askerleri arasindaki farklar kisaca aciklanarak Turk tarihindeki 'alpilik' ve 'gazilik' kavramlarina deginilir.",
-        "b) Diger Turk beylik ve devletlerinin aksine erken tarihte asiretten duzenli birliklere gecen Osmanli'nin ilk donem askeri teskilatina deginilir.",
+        "a) Bir devlete bağlı olmayan savaşçı topluluklar (aşiret savaşçıları, ücretli savaşçılar, inanç ve din uğruna savaşanlar) ile devlet askerleri arasındaki farklar kısaca açıklanarak Türk tarihindeki 'alpilik' ve 'gazilik' kavramlarına değinilir.",
+        "b) Diğer Türk beylik ve devletlerinin aksine erken tarihte aşiretten düzenli birliklere geçen Osmanlı'nın ilk dönem askerî teşkilatına değinilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "10.3.2",
-      subTopicName: "Savascilar ve Askerler",
+      subTopicName: "Savaşçılar ve Askerler",
       description:
-        "Timar sisteminin ozelliklerini siyasi, sosyal ve ekonomik acilardan degerlendirir.",
+        "Tımar sisteminin özelliklerini siyasi, sosyal ve ekonomik açılardan değerlendirir.",
       details: [
-        "Timar Sistemi'nin siyasi, sosyal ve ekonomik yonleri kisaca aciklanarak bu sistemin Osmanli savas organizasyonundaki rolu vurgulanir.",
+        "Tımar Sistemi'nin siyasi, sosyal ve ekonomik yönleri kısaca açıklanarak bu sistemin Osmanlı savaş organizasyonundaki rolü vurgulanır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "10.3.3",
-      subTopicName: "Savascilar ve Askerler",
+      subTopicName: "Savaşçılar ve Askerler",
       description:
-        "Yeniceri Ocagi'nin ve devsirme sisteminin Osmanli devletlesme surecine etkisini analiz eder.",
+        "Yeniçeri Ocağı'nın ve devşirme sisteminin Osmanlı devletleşme sürecine etkisini analiz eder.",
       details: [
-        "a) Kapikulu Ocagi ile devsirme sisteminin koklerine ve ortaya cikis surecine deginilerek bunlarin merkezi devlet yapisinin guclenmesindeki rolleri vurgulanir.",
-        "b) Yeniceri Ocagi ile birlikte profesyonel askerligin baslamasinin Osmanli Devleti'ni askeri teskilat ve guc bakimindan donemin diger Turk ve Avrupa devletlerinden ayristirdigina deginilir.",
+        "a) Kapıkulu Ocağı ile devşirme sisteminin köklerine ve ortaya çıkış sürecine değinilerek bunların merkezi devlet yapısının güçlenmesindeki rolleri vurgulanır.",
+        "b) Yeniçeri Ocağı ile birlikte profesyonel askerliğin başlamasının Osmanlı Devleti'ni askerî teşkilat ve güç bakımından dönemin diğer Türk ve Avrupa devletlerinden ayrıştırdığına değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
@@ -562,107 +562,107 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "Osmanlı Kültür ve Medeniyeti": [
     {
       code: "10.4.1",
-      subTopicName: "Beylikten Devlete Osmanli Medeniyeti",
+      subTopicName: "Beylikten Devlete Osmanlı Medeniyeti",
       description:
-        "Sufilerin ve alimlerin ogretilerinin Anadolu'nun Islamlasmasina ve sosyal huzurun yeniden saglanmasina etkisini aciklar.",
+        "Sufilerin ve âlimlerin öğretilerinin Anadolu'nun İslamlaşmasına ve sosyal huzurun yeniden sağlanmasına etkisini açıklar.",
       details: [
-        "Ogrencilerin Anadolu'nun Islamlasmasina ve sosyal huzurun yeniden saglanmasina etkisi baglaminda baslica Turk alim ve mutasavviflarin (Ahmet Yesevi, Ahi Evran, Mevlana Celaleddin-i Rumi, Haci Bektas-i Veli, Yunus Emre, Haci Bayram-i Veli) temel ogretilerini arastirip sonuclarini paylasmasi saglanir.",
+        "Öğrencilerin Anadolu'nun İslamlaşmasına ve sosyal huzurun yeniden sağlanmasına etkisi bağlamında başlıca Türk âlim ve mutasavvıfların (Ahmet Yesevi, Ahi Evran, Mevlana Celaleddin-i Rumi, Hacı Bektaş-ı Veli, Yunus Emre, Hacı Bayram-ı Veli) temel öğretilerini araştırıp sonuçlarını paylaşması sağlanır.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "10.4.2",
-      subTopicName: "Beylikten Devlete Osmanli Medeniyeti",
+      subTopicName: "Beylikten Devlete Osmanlı Medeniyeti",
       description:
-        "Osmanli devlet idaresinin ilmiye, kalemiye ve seyfiye siniflarinin birliktelgine dayali yapisini analiz eder.",
+        "Osmanlı devlet idaresinin ilmiye, kalemiye ve seyfiye sınıflarının birlikteliğine dayalı yapısını analiz eder.",
       details: [
-        "Osmanli toplum duzenindeki askeri (vergi vermeyen) - reaya (vergi odeyen) ayrimina deginilerek ilmiye, kalemiye ve seyfiye siniflarinin ana hatlariyla aciklanir.",
+        "Osmanlı toplum düzenindeki askerî (vergi vermeyen) - reaya (vergi ödeyen) ayrımına değinilerek ilmiye, kalemiye ve seyfiye sınıflarının ana hatlarıyla açıklanır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "10.4.3",
-      subTopicName: "Beylikten Devlete Osmanli Medeniyeti",
+      subTopicName: "Beylikten Devlete Osmanlı Medeniyeti",
       description:
-        "Osmanli cografyasindaki bilim, kultur, sanat ve zanaat faaliyetleri ile bunlara bagli olarak sosyal hayatta meydana gelen degisimleri analiz eder.",
+        "Osmanlı coğrafyasındaki bilim, kültür, sanat ve zanaat faaliyetleri ile bunlara bağlı olarak sosyal hayatta meydana gelen değişimleri analiz eder.",
       details: [
-        "a) Turk dunyasinda yetismis olan bilim insanlarina (Aksemseddin, Ali Kuscu ve Ulug Bey) ve calismarina deginilir.",
-        "b) Ahsap ve tas islemeciligi, dokumacillik, cinicilik, hat ve ebru sanatlarina deginilir.",
-        "c) Sozlu halk kulturu ile saray cevresi ve belirli sehirlerde olusan kitabi kultur ana hatlariyla ele alinir.",
+        "a) Türk dünyasında yetişmiş olan bilim insanlarına (Akşemseddin, Ali Kuşçu ve Uluğ Bey) ve çalışmalarına değinilir.",
+        "b) Ahşap ve taş işlemeciliği, dokumacılık, çinicilik, hat ve ebru sanatlarına değinilir.",
+        "c) Sözlü halk kültürü ile saray çevresi ve belirli şehirlerde oluşan kitabî kültür ana hatlarıyla ele alınır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "10.6.1",
-      subTopicName: "Sultan ve Osmanli Merkez Teskilati",
+      subTopicName: "Sultan ve Osmanlı Merkez Teşkilatı",
       description:
-        "Topkapi Sarayi'nin devlet idaresinin yani sira devlet adami yetistirilmesinde ve sehir kulturunun gelismesindeki rollerini analiz eder.",
+        "Topkapı Sarayı'nın devlet idaresinin yanı sıra devlet adamı yetiştirilmesinde ve şehir kültürünün gelişmesindeki rollerini analiz eder.",
       details: [
-        "a) Divan-i Humayun ve Enderun'a deginilerek Topkapi Sarayi'nin devlet idaresi ve devlet adami yetistirilmesinin merkezi oldugu vurgulanir.",
-        "b) Ogrencilerin Topkapi Sarayi'na gezi/sanal gezi yapmalari ve Topkapi Sarayi'nin Osmanli medeniyetine etkisine kanit gosteren tanitim rehberi hazirlamalari saglanir.",
+        "a) Divan-ı Hümayun ve Enderun'a değinilerek Topkapı Sarayı'nın devlet idaresi ve devlet adamı yetiştirilmesinin merkezi olduğu vurgulanır.",
+        "b) Öğrencilerin Topkapı Sarayı'na gezi/sanal gezi yapmaları ve Topkapı Sarayı'nın Osmanlı medeniyetine etkisine kanıt gösteren tanıtım rehberi hazırlamaları sağlanır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "10.6.2",
-      subTopicName: "Sultan ve Osmanli Merkez Teskilati",
+      subTopicName: "Sultan ve Osmanlı Merkez Teşkilatı",
       description:
-        "Osmanli Devleti'nde merkezi otoriteyi guclendirmeye yonelik duzenlemeleri analiz eder.",
+        "Osmanlı Devleti'nde merkezi otoriteyi güçlendirmeye yönelik düzenlemeleri analiz eder.",
       details: [
-        "Turklerde belirgin bir veraset sisteminin olmamasina, Fatih Kanunnamesi ile padisaha kendi oz kardesini devletin bekasi icin katletme izninin verilmesine, musadere sistemi ve sehzadelerin yetistirilme usulune kisaca deginilerek bunlarin Osmanli devlet yonetimine etkisi vurgulanir.",
+        "Türklerde belirgin bir veraset sisteminin olmamasına, Fatih Kanunnamesi ile padişaha kendi öz kardeşini devletin bekası için katletme izninin verilmesine, müsadere sistemi ve şehzadelerin yetiştirilme usulüne kısaca değinilerek bunların Osmanlı devlet yönetimine etkisi vurgulanır.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "10.7.1",
-      subTopicName: "Klasik Cagda Osmanli Toplum Duzeni",
+      subTopicName: "Klasik Çağda Osmanlı Toplum Düzeni",
       description:
-        "Osmanli Devleti'nde millet sisteminin yapisini analiz eder.",
+        "Osmanlı Devleti'nde millet sisteminin yapısını analiz eder.",
       details: [
-        "Ummet ve millet kavramlarina deginilerek farkli dini ve kulturel kimliklere sahip toplum kesimlerini idare etmenin millet sistemi sayesinde mumkun oldugu vurgulanir.",
+        "Ümmet ve millet kavramlarına değinilerek farklı dini ve kültürel kimliklere sahip toplum kesimlerini idare etmenin millet sistemi sayesinde mümkün olduğu vurgulanır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "10.7.2",
-      subTopicName: "Klasik Cagda Osmanli Toplum Duzeni",
+      subTopicName: "Klasik Çağda Osmanlı Toplum Düzeni",
       description:
-        "Osmanli Devleti'nin fethettigi yerlesimy yerlerinin Islam kulturu etkisiyle gecirdigi donusumu analiz eder.",
+        "Osmanlı Devleti'nin fethettiği yerleşim yerlerinin İslam kültürü etkisiyle geçirdiği dönüşümü analiz eder.",
       details: [
-        "a) Fethedilen bolgelerdeki gayrimuslimlerin yasadiklari toplumsal degisimi analiz etmeleri saglanir.",
-        "b) Osmanli sehirlerindeki mahalle merkezli sosyal hayat unsurlarina (panayir ve senlikler, dini torenlerin gunluk hayata yansimalari) deginilir.",
+        "a) Fethedilen bölgelerdeki gayrimüslimlerin yaşadıkları toplumsal değişimi analiz etmeleri sağlanır.",
+        "b) Osmanlı şehirlerindeki mahalle merkezli sosyal hayat unsurlarına (panayır ve şenlikler, dini törenlerin günlük hayata yansımaları) değinilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "10.7.3",
-      subTopicName: "Klasik Cagda Osmanli Toplum Duzeni",
+      subTopicName: "Klasik Çağda Osmanlı Toplum Düzeni",
       description:
-        "Osmanli ekonomik sistemi icerisinde tarimsal uretimin onemini aciklar.",
+        "Osmanlı ekonomik sistemi içerisinde tarımsal üretimin önemini açıklar.",
       details: [
-        "Osmanli Devleti'nde devletin toprak uzerindeki mulkiyeti ve ciftane sisteminin, zirai uretimin surdurmesindeki rolune deginilir.",
+        "Osmanlı Devleti'nde devletin toprak üzerindeki mülkiyeti ve çiftane sisteminin, zirai üretimin sürdürülmesindeki rolüne değinilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "10.7.4",
-      subTopicName: "Klasik Cagda Osmanli Toplum Duzeni",
+      subTopicName: "Klasik Çağda Osmanlı Toplum Düzeni",
       description:
-        "Lonca Teskilati'nin Osmanli ekonomik sistemi ve toplum yapisindaki yerini analiz eder.",
+        "Lonca Teşkilatı'nın Osmanlı ekonomik sistemi ve toplum yapısındaki yerini analiz eder.",
       details: [
-        "a) Loncalarin toplumsal hayat ve mesleki egitimdeki yerine deginilerek Osmanli sehirlerindeki baslica meslek gruplari kisaca ele alinir.",
-        "b) Osmanli ekonomik sistemi icerisindeki baslica ticaret mekanlarini (liman, kervansaray, pazar yeri, bedesten ve kapan) ve Osmanli yonetiminin tuketici ve ureticiyi korumak icin uyguladi yontemlere (narh, denetim ve ihracat yasaklari) deginilir.",
+        "a) Loncaların toplumsal hayat ve mesleki eğitimdeki yerine değinilerek Osmanlı şehirlerindeki başlıca meslek grupları kısaca ele alınır.",
+        "b) Osmanlı ekonomik sistemi içerisindeki başlıca ticaret mekânlarını (liman, kervansaray, pazar yeri, bedesten ve kapan) ve Osmanlı yönetiminin tüketici ve üreticiyi korumak için uyguladığı yöntemlere (narh, denetim ve ihracat yasakları) değinilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "10.7.5",
-      subTopicName: "Klasik Cagda Osmanli Toplum Duzeni",
+      subTopicName: "Klasik Çağda Osmanlı Toplum Düzeni",
       description:
-        "Osmanli Devleti'nde vakiflarin sosyal hayattaki yerini ve onemini aciklar.",
+        "Osmanlı Devleti'nde vakıfların sosyal hayattaki yerini ve önemini açıklar.",
       details: [
-        "a) Vakiflarin sosyal hayatta ustlendigi rollere (imar faaliyetleri, dini ve sosyo-ekonomik hizmetler) deginilerek faaliyet alanlarinin cesitliligini vakfiye ornekleri uzerinden kisaca ele alinir.",
-        "b) Ogrencilerin vakif sistemine yonelik gecmisteki ve gunumuzdeki uygulamalarin benzer ve farkli yonlerini karsilastirmalari saglanir.",
+        "a) Vakıfların sosyal hayatta üstlendiği rollere (imar faaliyetleri, dini ve sosyo-ekonomik hizmetler) değinilerek faaliyet alanlarının çeşitliliğini vakfiye örnekleri üzerinden kısaca ele alınır.",
+        "b) Öğrencilerin vakıf sistemine yönelik geçmişteki ve günümüzdeki uygulamaların benzer ve farklı yönlerini karşılaştırmaları sağlanır.",
       ].join("\n"),
       isKeyKazanim: true,
     },
@@ -673,46 +673,46 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "Arayış Yılları (17. yüzyıl)": [
     {
       code: "11.1.1",
-      subTopicName: "Degisen Dunya Dengeleri (1595-1774)",
+      subTopicName: "Değişen Dünya Dengeleri (1595-1774)",
       description:
-        "1595-1700 yillari arasindaki surecte meydana gelen baslica siyasi gelismeleri tarih seridi ve haritalar uzerinde gosterir.",
+        "1595-1700 yılları arasındaki süreçte meydana gelen başlıca siyasi gelişmeleri tarih şeridi ve haritalar üzerinde gösterir.",
       details: [
-        "Hacova Muharebesi (1596), Zitvatorok Antlasmasi (1606), Kasr-i Sirin Antlasmasi (1639), Girit'in Fethi (1669), Bucas Antlasmasi (1672), II. Viyana Kusatmasi (1683), Karlofca Antlasmasi (1699) ve Istanbul Antlasmasi (1700) verilir.",
+        "Haçova Muharebesi (1596), Zitvatorok Antlaşması (1606), Kasr-ı Şirin Antlaşması (1639), Girit'in Fethi (1669), Bucaş Antlaşması (1672), II. Viyana Kuşatması (1683), Karlofça Antlaşması (1699) ve İstanbul Antlaşması (1700) verilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "11.1.2",
-      subTopicName: "Degisen Dunya Dengeleri (1595-1774)",
+      subTopicName: "Değişen Dünya Dengeleri (1595-1774)",
       description:
-        "XVII. yuzyilda degisen siyasi rekabet icerisinde Osmanli Devleti'nin izledigi politikalari aciklar.",
+        "XVII. yüzyılda değişen siyasi rekabet içerisinde Osmanlı Devleti'nin izlediği politikaları açıklar.",
       details: [
-        "a) Avusturya'yla yapilan Zitvatorok Antlasmasi ile Avrupa diplomasisinde mutekabiliyet esasinin kabul edildigi vurgulanir.",
-        "b) Osmanli Devleti'nin Kazak meselesinden dolayi kuzeye yonelme politikasina (Hotin-Kamanice ve Cehrin seferleri) deginilir.",
-        "c) Kasr-i Sirin Antlasmasi ile Osmanli Devleti'nin dogu sinirinin buyuk olcude belirlendigine deginilir.",
+        "a) Avusturya'yla yapılan Zitvatorok Antlaşması ile Avrupa diplomasisinde mütekabiliyet esasının kabul edildiği vurgulanır.",
+        "b) Osmanlı Devleti'nin Kazak meselesinden dolayı kuzeye yönelme politikasına (Hotin-Kamaniçe ve Çehrin seferleri) değinilir.",
+        "c) Kasr-ı Şirin Antlaşması ile Osmanlı Devleti'nin doğu sınırının büyük ölçüde belirlendiğine değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "11.1.3",
-      subTopicName: "Degisen Dunya Dengeleri (1595-1774)",
+      subTopicName: "Değişen Dünya Dengeleri (1595-1774)",
       description:
-        "Denizcilik faaliyetlerinin icdenizlerden okyanusLara tasinmasinin dunya siyasetine ve ticaretine etkilerini analiz eder.",
+        "Denizcilik faaliyetlerinin iç denizlerden okyanuslara taşınmasının dünya siyasetine ve ticaretine etkilerini analiz eder.",
       details: [
-        "a) Avrupali guclerin degisen denizcilik stratejilerini, kuresel (askeri ve ekonomik) faaliyetlerini ve uyguladiklari somurgeciliginin etkilerini analiz etmeleri saglanir.",
-        "b) Osmanli Devleti'nin Akdeniz ve Karadeniz hakimiyetinin zayiflamasinin sebepleri uzerinde durulur.",
+        "a) Avrupalı güçlerin değişen denizcilik stratejilerini, küresel (askerî ve ekonomik) faaliyetlerini ve uyguladıkları sömürgeciliğinin etkilerini analiz etmeleri sağlanır.",
+        "b) Osmanlı Devleti'nin Akdeniz ve Karadeniz hâkimiyetinin zayıflamasının sebepleri üzerinde durulur.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "11.1.4",
-      subTopicName: "Degisen Dunya Dengeleri (1595-1774)",
+      subTopicName: "Değişen Dünya Dengeleri (1595-1774)",
       description:
-        "1700-1774 yillari arasindaki surecte Osmanli Devleti'nin diger devletlerle yuruttuugu rekabeti ve bu rekabette uyguladigi stratejileri analiz eder.",
+        "1700-1774 yılları arasındaki süreçte Osmanlı Devleti'nin diğer devletlerle yürüttüğü rekabeti ve bu rekabette uyguladığı stratejileri analiz eder.",
       details: [
-        "a) Prut Antlasmasi (1711), Pasarofca Antlasmasi (1718), Patrona Halil Isyani (1730), Belgrat Antlasmasi (1739), Kapitulasyonlarin surekli hale gelmesi (1740), Cesme Baskini (1770) ve Kucuk Kaynarca Antlasmasi (1774) verilir.",
-        "b) Osmanli Devleti'nin Karlofca Antlasmasi'yla kaybettigi topraklari geri alma stratejisine deginilir.",
-        "c) 1768-1774 Osmanli-Rus Savasi sebep ve sonuclari bakimindan ele alinir. Kirim'in kaybedilmesini tarihsel onem acisindan analiz etmeleri saglanir.",
+        "a) Prut Antlaşması (1711), Pasarofça Antlaşması (1718), Patrona Halil İsyanı (1730), Belgrad Antlaşması (1739), Kapitülasyonların sürekli hâle gelmesi (1740), Çeşme Baskını (1770) ve Küçük Kaynarca Antlaşması (1774) verilir.",
+        "b) Osmanlı Devleti'nin Karlofça Antlaşması'yla kaybettiği toprakları geri alma stratejisine değinilir.",
+        "c) 1768-1774 Osmanlı-Rus Savaşı sebep ve sonuçları bakımından ele alınır. Kırım'ın kaybedilmesini tarihsel önem açısından analiz etmeleri sağlanır.",
       ].join("\n"),
       isKeyKazanim: true,
     },
@@ -721,40 +721,40 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "18. Yüzyılda Değişim ve Diplomasi": [
     {
       code: "11.2.1",
-      subTopicName: "Degisim Caginda Avrupa ve Osmanli",
+      subTopicName: "Değişim Çağında Avrupa ve Osmanlı",
       description:
-        "Avrupa dusuncesinde meydana gelen degisimleri ve bunlarin etkilerini analiz eder.",
+        "Avrupa düşüncesinde meydana gelen değişimleri ve bunların etkilerini analiz eder.",
       details: [
-        "a) Roma Katolik Kilisesi'nin kurdugu baskiya karsi gelisen fikri-manevi (Ronesans-Reform, sekularlesme), sosyal ve ekonomik (merkantilizm ve burjuva sinifinin guclenmesi) degisimler ana hatlariyla ele alinir.",
-        "b) Modern devletler hukukunun ortaya cikmasi surecinde Vestfalya Barisi'ni sebep ve etki acisindan analiz etmeleri saglanir.",
-        "c) Bilim Devrimi'nin Avrupa'da meydana getirdigi degisime deginilir.",
+        "a) Roma Katolik Kilisesi'nin kurduğu baskıya karşı gelişen fikrî-manevi (Rönesans-Reform, sekülerleşme), sosyal ve ekonomik (merkantilizm ve burjuva sınıfının güçlenmesi) değişimler ana hatlarıyla ele alınır.",
+        "b) Modern devletler hukukunun ortaya çıkması sürecinde Vestfalya Barışı'nı sebep ve etki açısından analiz etmeleri sağlanır.",
+        "c) Bilim Devrimi'nin Avrupa'da meydana getirdiği değişime değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "11.2.2",
-      subTopicName: "Degisim Caginda Avrupa ve Osmanli",
+      subTopicName: "Değişim Çağında Avrupa ve Osmanlı",
       description:
-        "Avrupa'daki gelismelere bagli olarak Osmanli idari, askeri ve ekonomik yapisinda meydana gelen degisimleri analiz eder.",
+        "Avrupa'daki gelişmelere bağlı olarak Osmanlı idari, askerî ve ekonomik yapısında meydana gelen değişimleri analiz eder.",
       details: [
-        "a) Cografi Kesifler'in ardinda Avrupa'ya ve dunyaya yayilan degerli madenlerin ortaya cikardigi ekonomik degisimin Osmanli cografyasinda enflasyona yol actigi vurgulanir.",
-        "b) Kapitulasyonlarin surekli hale gelmesinin Osmanli ekonomisine etkisine deginilir.",
-        "c) Merkantilist ekonomi ve Askeri Devrim'in Osmanli Devleti'nin toprak duzeninde ve buna bagli savas organizasyonunda yol actigi zorunlu donusumler kisaca aciklanir.",
-        "d) Osmanli Devleti'nde artan savas finansmanini karsilamak icin alinan tedbirlere (vergilerin arttirilmasi, iltizam ve malikane sistemleri ve olaganustu savas vergileri) deginilir.",
+        "a) Coğrafi Keşifler'in ardından Avrupa'ya ve dünyaya yayılan değerli madenlerin ortaya çıkardığı ekonomik değişimin Osmanlı coğrafyasında enflasyona yol açtığı vurgulanır.",
+        "b) Kapitülasyonların sürekli hâle gelmesinin Osmanlı ekonomisine etkisine değinilir.",
+        "c) Merkantilist ekonomi ve Askerî Devrim'in Osmanlı Devleti'nin toprak düzeninde ve buna bağlı savaş organizasyonunda yol açtığı zorunlu dönüşümler kısaca açıklanır.",
+        "d) Osmanlı Devleti'nde artan savaş finansmanını karşılamak için alınan tedbirlere (vergilerin arttırılması, iltizam ve malikâne sistemleri ve olağanüstü savaş vergileri) değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "11.2.3",
-      subTopicName: "Degisim Caginda Avrupa ve Osmanli",
+      subTopicName: "Değişim Çağında Avrupa ve Osmanlı",
       description:
-        "Osmanli devlet idaresi ve toplum duzenindeki cozumlemeleri onleme cabalarini analiz eder.",
+        "Osmanlı devlet idaresi ve toplum düzenindeki çözülmeleri önleme çabalarını analiz eder.",
       details: [
-        "a) XVII. ve XVIII. yuzyillarda gerceklesen isyanlar (Celali ve Yeniceri isyanlari) kisaca ele alinir.",
-        "b) Ic siyasi karisikliklara engel olmak amaciyla Ekber ve Ersed Sistemi'nin ihdas edildigine deginilir.",
-        "c) Layihalarda sunulan cozum onerilerine Koci Bey Risalesi ornegi uzerinden deginilir.",
-        "d) Avrupa'da matbaanin kullanilmaya baslanmasinin bilginin uretimine ve bilgiye erisim alanlarinda sagladigi imkanlara temas edilerek Osmanli Devleti'nde Musluman ve gayrimuslimlerin matbaayi kullanmaya baslama sureclerine deginilir.",
-        "e) Donemin ilim ve irfan gelenegini canlandiran kisilerden (Evliya Celebi, Katip Celebi vb.) birine dair cikarimda bulunmalari saglanir.",
+        "a) XVII. ve XVIII. yüzyıllarda gerçekleşen isyanlar (Celali ve Yeniçeri isyanları) kısaca ele alınır.",
+        "b) İç siyasi karışıklıklara engel olmak amacıyla Ekber ve Erşed Sistemi'nin ihdas edildiğine değinilir.",
+        "c) Layihalarda sunulan çözüm önerilerine Koçi Bey Risalesi örneği üzerinden değinilir.",
+        "d) Avrupa'da matbaanın kullanılmaya başlanmasının bilginin üretimine ve bilgiye erişim alanlarında sağladığı imkânlara temas edilerek Osmanlı Devleti'nde Müslüman ve gayrimüslimlerin matbaayı kullanmaya başlama süreçlerine değinilir.",
+        "e) Dönemin ilim ve irfan geleneğini canlandıran kişilerden (Evliya Çelebi, Kâtip Çelebi vb.) birine dair çıkarımda bulunmaları sağlanır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
@@ -763,48 +763,48 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "Yakınçağ Avrupası (1789...)": [
     {
       code: "11.3.1",
-      subTopicName: "Devrimler Caginda Devlet-Toplum Iliskileri",
+      subTopicName: "Devrimler Çağında Devlet-Toplum İlişkileri",
       description:
-        "Fransiz Ihtilali ve Avrupa'da Sanayi Devrimi ile birlikte devlet-toplum iliskilerinde meydana gelen donusumu aciklar.",
+        "Fransız İhtilali ve Avrupa'da Sanayi Devrimi ile birlikte devlet-toplum ilişkilerinde meydana gelen dönüşümü açıklar.",
       details: [
-        "a) Fransiz Ihtilali'ne giden surec ve ihtilalin sonuclari ana hatlariyla aciklanir.",
-        "b) Fransiz Ihtilali ile ortaya cikan fikir akimlarinin; imparatorluklarin (Avusturya-Macaristan, Rusya ve Osmanli) siyasi hayatlarina etkilerine iliskin orneklere deginilir.",
-        "c) Geleneksel uretim tarzi ile endustriyel uretim tarzi arasindaki farklara deginilir.",
-        "d) Avrupa'da Sanayi Inklabi sonrasinda belirginlesen sinifli toplum yapisinin mutlakiyetci monarsilerin anayasal monarsilere donusmesi uzerindeki etkisine deginilir.",
+        "a) Fransız İhtilali'ne giden süreç ve ihtilalin sonuçları ana hatlarıyla açıklanır.",
+        "b) Fransız İhtilali ile ortaya çıkan fikir akımlarının; imparatorlukların (Avusturya-Macaristan, Rusya ve Osmanlı) siyasi hayatlarına etkilerine ilişkin örneklere değinilir.",
+        "c) Geleneksel üretim tarzı ile endüstriyel üretim tarzı arasındaki farklara değinilir.",
+        "d) Avrupa'da Sanayi İnkılabı sonrasında belirginleşen sınıflı toplum yapısının mutlakiyetçi monarşilerin anayasal monarşilere dönüşmesi üzerindeki etkisine değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "11.3.2",
-      subTopicName: "Devrimler Caginda Devlet-Toplum Iliskileri",
+      subTopicName: "Devrimler Çağında Devlet-Toplum İlişkileri",
       description:
-        "Sanayi Inklabi sonrasi Avrupalilarin giristigi sistemli somurgecilik faaliyetleri ile kuresel etkilerini analiz eder.",
+        "Sanayi İnkılabı sonrası Avrupalıların giriştiği sistemli sömürgecilik faaliyetleri ile küresel etkilerini analiz eder.",
       details: [
-        "Ogrencilerin Avrupa devletlerinin somurgecilik faaliyetleri kapsaminda yaptiklari katliamlarin etkileri hakkinda cikarimda bulunmalari saglanir.",
+        "Öğrencilerin Avrupa devletlerinin sömürgecilik faaliyetleri kapsamında yaptıkları katliamların etkileri hakkında çıkarımda bulunmaları sağlanır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "11.3.3",
-      subTopicName: "Devrimler Caginda Devlet-Toplum Iliskileri",
+      subTopicName: "Devrimler Çağında Devlet-Toplum İlişkileri",
       description:
-        "Osmanli Devleti'nde modern ordu teskilati ve yurttas askerligine yonelik duzenlemelerin siyasi ve sosyal boyutlarini analiz eder.",
+        "Osmanlı Devleti'nde modern ordu teşkilatı ve yurttaş askerliğine yönelik düzenlemelerin siyasi ve sosyal boyutlarını analiz eder.",
       details: [
-        "a) Fransiz Ihtilali sonrasinda Avrupa'da uygulanmaya baslanan zorunlu askerlik sisteminin gerekcelere ve sosyo-politik etkilerine deginilir.",
-        "b) Osmanli Devleti'nin yeni duzenli ordu kurma tesebbuslerinin (Nizam-i Cedit, Yeniceri Ocagi'nin kaldirilmasi ve Asakir-i Mansure-i Muhammediye) gerekceleri analiz etmeleri saglanir.",
+        "a) Fransız İhtilali sonrasında Avrupa'da uygulanmaya başlanan zorunlu askerlik sisteminin gerekçelerine ve sosyo-politik etkilerine değinilir.",
+        "b) Osmanlı Devleti'nin yeni düzenli ordu kurma teşebbüslerinin (Nizam-ı Cedit, Yeniçeri Ocağı'nın kaldırılması ve Asakir-i Mansure-i Muhammediye) gerekçeleri analiz etmeleri sağlanır.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "11.3.4",
-      subTopicName: "Devrimler Caginda Devlet-Toplum Iliskileri",
+      subTopicName: "Devrimler Çağında Devlet-Toplum İlişkileri",
       description:
-        "Ulus devletlesme ve endustrilesme sureclerinin sosyal hayata yansimalarini analiz eder.",
+        "Ulus devletleşme ve endüstrileşme süreçlerinin sosyal hayata yansımalarını analiz eder.",
       details: [
-        "a) Ulasim ve haberlesme sektorlerindeki gelismelerin (demiryolu, telgraf) merkezi idarelere hakimiyet alanlarini uzerindeki otoritelerini arttirma imkani vermesi Osmanli Devleti ornegi uzerinden ele alinir.",
-        "b) Avrupa devletleriyle girilen siyasi ve askeri rekabet cercevesinde acilan kurumlara (Hendesehane, Muhendishaneler, Mekteb-i Harbiye, Tibbiye, Mulkiye) ve II. Mahmud Donemi'nden itibaren zorunlu orgun egitime baslatilmasina deginilir.",
-        "c) Osmanli Devleti'nde acilan azinlik okullari ile yabanci ve misyoner okullarina deginilerek II. Abdulhamid Donemi'nde devlet tarafindan kurulan okullar kisaca ele alinir.",
-        "d) Turk tarihinde siyasi ve sosyal alanlardaki yuzyillar boyunca suren degisime ragmen onemini devam ettiren/varligini koruyan unsurlara (dil, aile yapisi, bayrak) deginilir.",
+        "a) Ulaşım ve haberleşme sektörlerindeki gelişmelerin (demiryolu, telgraf) merkezi idarelere hâkimiyet alanları üzerindeki otoritelerini arttırma imkânı vermesi Osmanlı Devleti örneği üzerinden ele alınır.",
+        "b) Avrupa devletleriyle girilen siyasi ve askerî rekabet çerçevesinde açılan kurumlara (Hendesehane, Mühendishaneler, Mekteb-i Harbiye, Tıbbiye, Mülkiye) ve II. Mahmud Dönemi'nden itibaren zorunlu örgün eğitime başlatılmasına değinilir.",
+        "c) Osmanlı Devleti'nde açılan azınlık okulları ile yabancı ve misyoner okullarına değinilerek II. Abdülhamid Dönemi'nde devlet tarafından kurulan okullar kısaca ele alınır.",
+        "d) Türk tarihinde siyasi ve sosyal alanlardaki yüzyıllar boyunca süren değişime rağmen önemini devam ettiren/varlığını koruyan unsurlara (dil, aile yapısı, bayrak) değinilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
@@ -813,83 +813,83 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "En Uzun Yüzyıl (1800-1922)": [
     {
       code: "11.4.1",
-      subTopicName: "Uluslararasi Iliskilerde Denge Stratejisi (1774-1914)",
+      subTopicName: "Uluslararası İlişkilerde Denge Stratejisi (1774-1914)",
       description:
-        "1774-1914 yillari arasindaki surecte meydana gelen baslica siyasi gelismeleri tarih seridi ve haritalar uzerinde gosterir.",
+        "1774-1914 yılları arasındaki süreçte meydana gelen başlıca siyasi gelişmeleri tarih şeridi ve haritalar üzerinde gösterir.",
       details: [
-        "Kirim'in ilhaki (1783), Fransiz Ihtilali (1789), Yas Antlasmasi (1792), Sirp Isyani (1804), Viyana Kongresi (1815), Rum Isyani (1821), Edirne Antlasmasi (1829), Hunkar Iskelesi Antlasmasi (1833), Balta Limani Antlasmasi (1838), Tanzimat Fermani (1839), Londra Bogazlar Sozlesmesi (1841), Kirim Savasi (1853-1856), Islahat Fermani (1856), Paris Antlasmasi (1856), Kanun-i Esasi (1876), Osmanli-Rus Savasi (1877-1878), Berlin Antlasmasi (1878), Duyun-i Umumiye Idaresinin kurulmasi (1881), II.Mesrutiyet'in ilani (1908), Trablusgarp Savasi (1911), I. Balkan Savasi (1912) ve II. Balkan Savasi (1913) verilir.",
+        "Kırım'ın ilhakı (1783), Fransız İhtilali (1789), Yaş Antlaşması (1792), Sırp İsyanı (1804), Viyana Kongresi (1815), Rum İsyanı (1821), Edirne Antlaşması (1829), Hünkâr İskelesi Antlaşması (1833), Balta Limanı Antlaşması (1838), Tanzimat Fermanı (1839), Londra Boğazlar Sözleşmesi (1841), Kırım Savaşı (1853-1856), Islahat Fermanı (1856), Paris Antlaşması (1856), Kanun-i Esasi (1876), Osmanlı-Rus Savaşı (1877-1878), Berlin Antlaşması (1878), Duyun-ı Umumiye İdaresinin kurulması (1881), II. Meşrutiyet'in ilanı (1908), Trablusgarp Savaşı (1911), I. Balkan Savaşı (1912) ve II. Balkan Savaşı (1913) verilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "11.4.2",
-      subTopicName: "Uluslararasi Iliskilerde Denge Stratejisi (1774-1914)",
+      subTopicName: "Uluslararası İlişkilerde Denge Stratejisi (1774-1914)",
       description:
-        "Osmanli Devleti'nin siyasi varligina yonelik ic ve dis tehditleri analiz eder.",
+        "Osmanlı Devleti'nin siyasi varlığına yönelik iç ve dış tehditleri analiz eder.",
       details: [
-        "a) Osmanli Devleti'nin guc kaybetmesiyle birlikte buyuk guclerin Osmanli cografyasina nufuz etme, muhtemel bir dagilma durumunda Osmanli topraklarini paylasma (Sark Meselesi) veya isgal etme cabalari kuresel guc mucadelesi baglaminda ele alinir.",
-        "b) 1815 Viyana Kongresi ile baslayan surecte buyuk guclerin mudahalesiyle uluslararasi boyut kazanan konular ele alinir.",
-        "c) Mehmet Ali Pasa'nin Osmanli Devleti'nin merkezi yonetimine ragmen guc kazanmasi ve nufuz alanini genisletme cabalarina deginilir.",
-        "d) 1768-1914 arasindaki surecte Osmanli-Rus rekabetini sebep-sonuc iliskisi acisindan analiz etmeleri saglanir.",
-        "e) Avrupa devletleri arasindaki bloklasmayla degisen uluslararasi sartlara deginilerek Avrupa'daki topraklarini kaybeden Osmanli Devleti'nin cesitli buyuk guclerle ittifak arayislari ele alinir.",
+        "a) Osmanlı Devleti'nin güç kaybetmesiyle birlikte büyük güçlerin Osmanlı coğrafyasına nüfuz etme, muhtemel bir dağılma durumunda Osmanlı topraklarını paylaşma (Şark Meselesi) veya işgal etme çabaları küresel güç mücadelesi bağlamında ele alınır.",
+        "b) 1815 Viyana Kongresi ile başlayan süreçte büyük güçlerin müdahalesiyle uluslararası boyut kazanan konular ele alınır.",
+        "c) Mehmet Ali Paşa'nın Osmanlı Devleti'nin merkezi yönetimine rağmen güç kazanması ve nüfuz alanını genişletme çabalarına değinilir.",
+        "d) 1768-1914 arasındaki süreçte Osmanlı-Rus rekabetini sebep-sonuç ilişkisi açısından analiz etmeleri sağlanır.",
+        "e) Avrupa devletleri arasındaki bloklaşmayla değişen uluslararası şartlara değinilerek Avrupa'daki topraklarını kaybeden Osmanlı Devleti'nin çeşitli büyük güçlerle ittifak arayışları ele alınır.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "11.4.3",
-      subTopicName: "Uluslararasi Iliskilerde Denge Stratejisi (1774-1914)",
+      subTopicName: "Uluslararası İlişkilerde Denge Stratejisi (1774-1914)",
       description:
-        "Tanzimat Fermani, Islahat Fermani ve Kanun-i Esasi'nin iceriklerini kuresel ve yerel siyasi sartlar baglaminda degerlendirir.",
+        "Tanzimat Fermanı, Islahat Fermanı ve Kanun-i Esasi'nin içeriklerini küresel ve yerel siyasi şartlar bağlamında değerlendirir.",
       details: [
-        "a) Sened-i Ittifak, Tanzimat ve Islahat Fermanlari ile Kanun-i Esasi'nin (I. ve II. Mesrutiyet); uluslararasi gucler, yerel siyasi aktorler ve ahalinin kriz donemlerindeki farkli taleplerinin merkezi idare tarafindan uzlastirilmasina yonelik cabalar oldugunu degerlendirmeleri saglanir.",
-        "b) Mecelle ve Kanun-i Esasi ornekleri uzerinden Osmanli hukuk sisteminde meydana gelen degisiklikler; devlet-toplum iliskileri ve Osmanli Devleti'nin Avrupa siyasi sistemine entegrasyonu cercevesinde kisaca ele alinir.",
-        "c) Osmanli Devleti'nin dagilmasini onlemeye yonelik Uc Tarz-i Siyaset olarak bilinen fikir akimlarinin, merkezi idarenin ve dusunce adamlarinin siyasi ve toplumsal birligi koruma cabalari olduguna deginilir.",
+        "a) Sened-i İttifak, Tanzimat ve Islahat Fermanları ile Kanun-i Esasi'nin (I. ve II. Meşrutiyet); uluslararası güçler, yerel siyasi aktörler ve ahalinin kriz dönemlerindeki farklı taleplerinin merkezi idare tarafından uzlaştırılmasına yönelik çabalar olduğunu değerlendirmeleri sağlanır.",
+        "b) Mecelle ve Kanun-i Esasi örnekleri üzerinden Osmanlı hukuk sisteminde meydana gelen değişiklikler; devlet-toplum ilişkileri ve Osmanlı Devleti'nin Avrupa siyasi sistemine entegrasyonu çerçevesinde kısaca ele alınır.",
+        "c) Osmanlı Devleti'nin dağılmasını önlemeye yönelik Üç Tarz-ı Siyaset olarak bilinen fikir akımlarının, merkezi idarenin ve düşünce adamlarının siyasi ve toplumsal birliği koruma çabaları olduğuna değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "11.4.4",
-      subTopicName: "Uluslararasi Iliskilerde Denge Stratejisi (1774-1914)",
+      subTopicName: "Uluslararası İlişkilerde Denge Stratejisi (1774-1914)",
       description:
-        "1876-1913 arasinda gerceklestirilen darbelerin Osmanli siyasi hayati uzerindeki etkilerini degerlendirir.",
+        "1876-1913 arasında gerçekleştirilen darbelerin Osmanlı siyasi hayatı üzerindeki etkilerini değerlendirir.",
       details: [
-        "a) 1876, 1909 ve 1913 darbelerinin sebeplerine ve sosyo-politik sonuclarina ve bu surecte yasanan toprak kayiplarina deginilir.",
-        "b) Ogrencilerin Osmanli Devleti'nde gerceklestirilen darbeleri ve bunlarin karakteristik ozelliklerini analiz etmeleri saglanir.",
+        "a) 1876, 1909 ve 1913 darbelerinin sebeplerine ve sosyo-politik sonuçlarına ve bu süreçte yaşanan toprak kayıplarına değinilir.",
+        "b) Öğrencilerin Osmanlı Devleti'nde gerçekleştirilen darbeleri ve bunların karakteristik özelliklerini analiz etmeleri sağlanır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "11.5.1",
-      subTopicName: "XIX ve XX. Yuzyilda Degisen Sosyo-Ekonomik Hayat",
+      subTopicName: "XIX ve XX. Yüzyılda Değişen Sosyo-Ekonomik Hayat",
       description:
-        "Osmanli Devleti'nin son donemlerinde endustriyel uretime gecis cabalarini ve bu surecte yasanan zorlulklari analiz eder.",
+        "Osmanlı Devleti'nin son dönemlerinde endüstriyel üretime geçiş çabalarını ve bu süreçte yaşanan zorlukları analiz eder.",
       details: [
-        "a) Osmanli Devleti'nde sanayilesme cabalarinin onundeki engellere (sermaye, bilim ve teknoloji, yetismis personel ve uzun vadeli strateji konularindaki yetersizlikler) deginilir.",
-        "b) Kuresel kapitalist guclerle rekabet etme konusundaki zorluklar; 1838 Balta Limani Antlasmasi orneginden hareketle gumruk ve ticaret antlasmalarinin sinirlayiciligi ve yerli uretim yerine ithalatin tercih edilmesi gibi faktorler baglaminda kisaca ele alinir.",
-        "c) 1856'dan sonraki surecte kamu maliyesinde yasanan borc krizleri sonucunda Duyun-i Umumiye Idaresinin kurulmasina deginilir.",
+        "a) Osmanlı Devleti'nde sanayileşme çabalarının önündeki engellere (sermaye, bilim ve teknoloji, yetişmiş personel ve uzun vadeli strateji konularındaki yetersizlikler) değinilir.",
+        "b) Küresel kapitalist güçlerle rekabet etme konusundaki zorluklar; 1838 Balta Limanı Antlaşması örneğinden hareketle gümrük ve ticaret antlaşmalarının sınırlayıcılığı ve yerli üretim yerine ithalatın tercih edilmesi gibi faktörler bağlamında kısaca ele alınır.",
+        "c) 1856'dan sonraki süreçte kamu maliyesinde yaşanan borç krizleri sonucunda Duyun-ı Umumiye İdaresinin kurulmasına değinilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "11.5.2",
-      subTopicName: "XIX ve XX. Yuzyilda Degisen Sosyo-Ekonomik Hayat",
+      subTopicName: "XIX ve XX. Yüzyılda Değişen Sosyo-Ekonomik Hayat",
       description:
-        "Osmanli Devleti'nin son donemlerindeki nufus hareketlerinin siyasi, askeri ve ekonomik sebep ve sonuclarini analiz eder.",
+        "Osmanlı Devleti'nin son dönemlerindeki nüfus hareketlerinin siyasi, askerî ve ekonomik sebep ve sonuçlarını analiz eder.",
       details: [
-        "a) Osmanli Devleti'ndeki nufus artis hizinin buyuk guclere nispetle azalmasinin uluslararasi rekabette guc kaybi uzerindeki etkilerine deginilir.",
-        "b) Osmanli Devleti'nin toprak kaybetmesiyle baslayan surecte Turk ve Musluman ahalinin maruz kaldigi katliamlar, Istanbul ve Anadolu'ya yaptiklari gocler sirasinda yasadiklarini tarihsel empati kurarak analiz etmeleri saglanir.",
+        "a) Osmanlı Devleti'ndeki nüfus artış hızının büyük güçlere nispetle azalmasının uluslararası rekabette güç kaybı üzerindeki etkilerine değinilir.",
+        "b) Osmanlı Devleti'nin toprak kaybetmesiyle başlayan süreçte Türk ve Müslüman ahalinin maruz kaldığı katliamlar, İstanbul ve Anadolu'ya yaptıkları göçler sırasında yaşadıklarını tarihsel empati kurarak analiz etmeleri sağlanır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "11.5.3",
-      subTopicName: "XIX ve XX. Yuzyilda Degisen Sosyo-Ekonomik Hayat",
+      subTopicName: "XIX ve XX. Yüzyılda Değişen Sosyo-Ekonomik Hayat",
       description:
-        "Modernlesmeyle birlikte sosyal, ekonomik ve politik anlayista yasanan degisim ve donusumlerin gundelik hayata etkilerini analiz eder.",
+        "Modernleşmeyle birlikte sosyal, ekonomik ve politik anlayışta yaşanan değişim ve dönüşümlerin gündelik hayata etkilerini analiz eder.",
       details: [
-        "a) Modern sehirlerin dokusunda yasanan degisimin olumlu ve olumsuz sonuclari kisaca ele alinir.",
-        "b) XIX. yuzyildaki salgin hastaliklarin etkilerini ve Osmanli Devleti'nin buna yonelik aldigi tedbirler kapsaminda edinilen tecrube analiz etmeleri saglanir.",
-        "c) XIX. yuzyilda gazetelerin ve diger sureli yayinlarin artmasiyla birlikte kamuoyunun etkin hale geldigi vurgulanir.",
+        "a) Modern şehirlerin dokusunda yaşanan değişimin olumlu ve olumsuz sonuçları kısaca ele alınır.",
+        "b) XIX. yüzyıldaki salgın hastalıkların etkilerini ve Osmanlı Devleti'nin buna yönelik aldığı tedbirler kapsamında edinilen tecrübeyi analiz etmeleri sağlanır.",
+        "c) XIX. yüzyılda gazetelerin ve diğer süreli yayınların artmasıyla birlikte kamuoyunun etkin hâle geldiği vurgulanır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
@@ -900,23 +900,23 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "20. Yüzyıl Başlarında Osmanlı Devleti": [
     {
       code: "I.1.1",
-      subTopicName: "20. Yuzyil Baslarinda Osmanli Devleti ve Dunya",
+      subTopicName: "20. Yüzyıl Başlarında Osmanlı Devleti ve Dünya",
       description:
-        "Mustafa Kemal'in Birinci Dunya Savasi'na kadarki egitim ve askerlik hayatini icinde bulundugu toplumun siyasi, sosyal ve kulturel yapisi ile iliskilendirir.",
+        "Mustafa Kemal'in Birinci Dünya Savaşı'na kadarki eğitim ve askerlik hayatını içinde bulunduğu toplumun siyasi, sosyal ve kültürel yapısı ile ilişkilendirir.",
       details: [
-        "a) Mustafa Kemal'in aldigi egitimin, okudugu okullarin ve ogretmenlerinin onun yetismesine ve kisiliginin olusmasina etkilerine deginilir.",
-        "b) Selanik, Manastir, Istanbul, Sam ve Sofya sehirlerindeki siyasi ve sosyal ortamin, okudugu kitaplarin, yerli ve yabanci dusunurlerin ve fikir akimlarinin Mustafa Kemal'in fikirlerine etkisi ele alinir.",
+        "a) Mustafa Kemal'in aldığı eğitimin, okuduğu okulların ve öğretmenlerinin onun yetişmesine ve kişiliğinin oluşmasına etkilerine değinilir.",
+        "b) Selanik, Manastır, İstanbul, Şam ve Sofya şehirlerindeki siyasi ve sosyal ortamın, okuduğu kitapların, yerli ve yabancı düşünürlerin ve fikir akımlarının Mustafa Kemal'in fikirlerine etkisi ele alınır.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "I.1.2",
-      subTopicName: "20. Yuzyil Baslarinda Osmanli Devleti ve Dunya",
+      subTopicName: "20. Yüzyıl Başlarında Osmanlı Devleti ve Dünya",
       description:
-        "20. yuzyil baslarinda Osmanli Devleti'nin siyasi, sosyal ve ekonomik durumunu analiz eder.",
+        "20. yüzyıl başlarında Osmanlı Devleti'nin siyasi, sosyal ve ekonomik durumunu analiz eder.",
       details: [
-        "a) II. Mesrutiyet'i hazirlayan fikri, siyasi ve sosyal gelismelere ve bu baglamda Ittihat ve Terakki Cemiyetine deginilir.",
-        "b) Balkan Savaslarinin Osmanli Devleti'nin sinirlarinin degismesine ve bu savaslarin Osmanli toplum yapisina etkilerine deginilir.",
+        "a) II. Meşrutiyet'i hazırlayan fikrî, siyasi ve sosyal gelişmelere ve bu bağlamda İttihat ve Terakki Cemiyetine değinilir.",
+        "b) Balkan Savaşlarının Osmanlı Devleti'nin sınırlarının değişmesine ve bu savaşların Osmanlı toplum yapısına etkilerine değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
@@ -925,29 +925,29 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "1. Dünya Savaşı": [
     {
       code: "I.1.3",
-      subTopicName: "I. Dunya Savasi Sureci",
+      subTopicName: "I. Dünya Savaşı Süreci",
       description:
-        "I. Dunya Savasi surecinde Osmanli Devleti'nin durumunu siyasi, askeri ve sosyal acilardan analiz eder.",
+        "I. Dünya Savaşı sürecinde Osmanlı Devleti'nin durumunu siyasi, askerî ve sosyal açılardan analiz eder.",
       details: [
-        "a) I. Dunya Savasi'nin sebepleri ve Osmanli Devleti'nin savasa girmesinin gerekceleri uzerinde durulur.",
-        "b) Osmanli Devleti'nin savastipi cepheler taarruz ve savunma ozellikleri de belirtilerek ele alinir.",
-        "c) Canakkale Cephesi'ndeki kara ve deniz zaferleri ile Irak Cephesi'ndeki Kut'ul-Amare Zaferi'ne, Kafkas Islami Ordusuna ve Medine Mudafaasi'na deginilir.",
-        "d) Mustafa Kemal'in Canakkale, Kafkas ve Suriye Cephelerindeki faaliyetleri ele alinir.",
-        "e) 1915 Olaylari ile Ermeni Tehciri'ne deginilir.",
-        "f) I. Dunya Savasi sirasinda Anadolu'da halkin durumu, yasanan sikintilar uzerinde durulur.",
+        "a) I. Dünya Savaşı'nın sebepleri ve Osmanlı Devleti'nin savaşa girmesinin gerekçeleri üzerinde durulur.",
+        "b) Osmanlı Devleti'nin savaştığı cepheler taarruz ve savunma özellikleri de belirtilerek ele alınır.",
+        "c) Çanakkale Cephesi'ndeki kara ve deniz zaferleri ile Irak Cephesi'ndeki Kut'ül-Amare Zaferi'ne, Kafkas İslami Ordusuna ve Medine Müdafaası'na değinilir.",
+        "d) Mustafa Kemal'in Çanakkale, Kafkas ve Suriye Cephelerindeki faaliyetleri ele alınır.",
+        "e) 1915 Olayları ile Ermeni Tehciri'ne değinilir.",
+        "f) I. Dünya Savaşı sırasında Anadolu'da halkın durumu, yaşanan sıkıntılar üzerinde durulur.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "I.1.4",
-      subTopicName: "I. Dunya Savasi Sonuclari",
+      subTopicName: "I. Dünya Savaşı Sonuçları",
       description:
-        "I. Dunya Savasi'nin sonuclarini Osmanli Devleti ve Batili devletler acisindan degerlendirir.",
+        "I. Dünya Savaşı'nın sonuçlarını Osmanlı Devleti ve Batılı devletler açısından değerlendirir.",
       details: [
-        "a) Mondros Ateskes Antlasmasi ve bu antlasmanin uygulanmasi uzerinde durulur.",
-        "b) Mondros Ateskes Antlasmasi'na karsi Istanbul Hukumetinin, Mustafa Kemal'in ve halkin tutumu uzerinde durulur.",
-        "c) Itilaf Devletleri'nin gerceklestirdikleri isgal ve uygulamalarla Wilson Ilkeleri arasindaki celiskiye deginilir.",
-        "d) Paris Baris Konferansi'na deginilir.",
+        "a) Mondros Ateşkes Antlaşması ve bu antlaşmanın uygulanması üzerinde durulur.",
+        "b) Mondros Ateşkes Antlaşması'na karşı İstanbul Hükûmetinin, Mustafa Kemal'in ve halkın tutumu üzerinde durulur.",
+        "c) İtilaf Devletleri'nin gerçekleştirdikleri işgal ve uygulamalarla Wilson İlkeleri arasındaki çelişkiye değinilir.",
+        "d) Paris Barış Konferansı'na değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
@@ -956,52 +956,52 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "Milli Mücadeleye Hazırlık Dönemi": [
     {
       code: "I.2.1",
-      subTopicName: "Milli Mucadele",
+      subTopicName: "Millî Mücadele",
       description:
-        "Kuvay-i Milliye hareketinin olusumundan Buyuk Millet Meclisinin acilisina kadar olan surecte meydana gelen gelismeleri aciklar.",
+        "Kuvay-ı Milliye hareketinin oluşumundan Büyük Millet Meclisinin açılışına kadar olan süreçte meydana gelen gelişmeleri açıklar.",
       details: [
-        "a) Izmir'in isgaline ve isgale tepki olarak meydana gelen gelismelere deginilir.",
-        "b) Mustafa Kemal'in Samsun'a cikarak Milli Mucadele'yi baslatmasina deginilir.",
-        "c) Milli cemiyetler ve milli varliga dusman cemiyetler uzerinde durulur. Pontus Meselesi kisaca ele alinir.",
-        "d) Havza ve Amasya Genelgeleri, yerel kongreler ile Erzurum ve Sivas Kongrelerinin milli hakimiyet ve milli birligin saglanmasi acsindan onemi vurgulanir.",
-        "e) Amiral Bristol ve General Harbord Raporlari uzerinden isgallerin haksizhgina deginilir.",
-        "f) Amasya Gorusmeleri'ne deginilir.",
-        "g) Misak-i Milli Kararlari ve onemi uzerinde durulur.",
+        "a) İzmir'in işgaline ve işgale tepki olarak meydana gelen gelişmelere değinilir.",
+        "b) Mustafa Kemal'in Samsun'a çıkarak Millî Mücadele'yi başlatmasına değinilir.",
+        "c) Millî cemiyetler ve millî varlığa düşman cemiyetler üzerinde durulur. Pontus Meselesi kısaca ele alınır.",
+        "d) Havza ve Amasya Genelgeleri, yerel kongreler ile Erzurum ve Sivas Kongrelerinin millî hâkimiyet ve millî birliğin sağlanması açısından önemi vurgulanır.",
+        "e) Amiral Bristol ve General Harbord Raporları üzerinden işgallerin haksızlığına değinilir.",
+        "f) Amasya Görüşmeleri'ne değinilir.",
+        "g) Misak-ı Millî Kararları ve önemi üzerinde durulur.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "I.2.2",
-      subTopicName: "Milli Mucadele",
+      subTopicName: "Millî Mücadele",
       description:
-        "Buyuk Millet Meclisinin acilis surecini ve sonrasinda meydana gelen gelismeleri kavrar.",
+        "Büyük Millet Meclisinin açılış sürecini ve sonrasında meydana gelen gelişmeleri kavrar.",
       details: [
-        "a) BMM'nin acilis gerekceleri vurgulanarak bu meclisin genel ozelliklerine deginilir.",
-        "b) BMM'ye karsi ayaklanmalar ve ayaklanmalarin bastirilmasi icin alinan tedbirlere deginilir.",
-        "c) Istiklal Mahkemeleri'nin kurulus gerekceleri, isleyisi ve bu mahkemelere getirilen elestitrilere cesitli kaynak ve goruslerden alitilar yapilarak yer verilir.",
-        "d) Anadolu Ajansinin kurulmasina deginilir.",
+        "a) BMM'nin açılış gerekçeleri vurgulanarak bu meclisin genel özelliklerine değinilir.",
+        "b) BMM'ye karşı ayaklanmalar ve ayaklanmaların bastırılması için alınan tedbirlere değinilir.",
+        "c) İstiklal Mahkemeleri'nin kuruluş gerekçeleri, işleyişi ve bu mahkemelere getirilen eleştirilere çeşitli kaynak ve görüşlerden alıntılar yapılarak yer verilir.",
+        "d) Anadolu Ajansının kurulmasına değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "I.2.3",
-      subTopicName: "Milli Mucadele",
+      subTopicName: "Millî Mücadele",
       description:
-        "Sevr Antlasmasi'nin Milli Mucadele surecine etkilerini analiz eder.",
+        "Sevr Antlaşması'nın Millî Mücadele sürecine etkilerini analiz eder.",
       details: [
-        "a) Sevr Antlasmasi'nin ongordudu sinirlari harita uzerinde gosterilir.",
-        "b) Sevr Antlasmasi'na karsi Istanbul Hukumetinin, Mustafa Kemal'in ve halkin tutumu uzerinde durulur.",
+        "a) Sevr Antlaşması'nın öngördüğü sınırları harita üzerinde gösterilir.",
+        "b) Sevr Antlaşması'na karşı İstanbul Hükûmetinin, Mustafa Kemal'in ve halkın tutumu üzerinde durulur.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "I.2.7",
-      subTopicName: "Milli Mucadele",
+      subTopicName: "Millî Mücadele",
       description:
-        "Milli Mucadele surecine katkida bulunmus onemli sahsiyetlerin kisilik ozellikleri ile faaliyetlerini iliskilendirir.",
+        "Millî Mücadele sürecine katkıda bulunmuş önemli şahsiyetlerin kişilik özellikleri ile faaliyetlerini ilişkilendirir.",
       details: [
-        "a) Halide Onbasi, Serife Baci, Fatma Seher Erden, Gordesli Makbule, Tayyar Rahmiye gibi kadin kahramanlarin Milli Mucadele'ye katkidarina deginilir.",
-        "b) Milli Mucadele'nin gercekleslesinde onemli rol oynayan Ismet Inonu, Kazim Karabekir, Fevzi Cakmak, Sahin Bey, Sutcu Imam gibi kahramanlarin sahsiyetleri hakkindaki anekdotlara yer verilir.",
+        "a) Halide Onbaşı, Şerife Bacı, Fatma Seher Erden, Gördesli Makbule, Tayyar Rahmiye gibi kadın kahramanların Millî Mücadele'ye katkılarına değinilir.",
+        "b) Millî Mücadele'nin gerçekleşmesinde önemli rol oynayan İsmet İnönü, Kâzım Karabekir, Fevzi Çakmak, Şahin Bey, Sütçü İmam gibi kahramanların şahsiyetleri hakkındaki anekdotlara yer verilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
@@ -1010,38 +1010,38 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "Kurtuluş Savaşında Cepheler": [
     {
       code: "I.2.4",
-      subTopicName: "Dogu ve Guney Cepheleri",
+      subTopicName: "Doğu ve Güney Cepheleri",
       description:
-        "Dogu ve Guney Cephelerinde verilen mucadelelerin ulkemizin bagimsizlik surecine katkilarini kavrar.",
+        "Doğu ve Güney Cephelerinde verilen mücadelelerin ülkemizin bağımsızlık sürecine katkılarını kavrar.",
       details: [
-        "Dogu ve Guney Cephelerinde Turk milletinin elde ettigi basarilarin ulusal ve uluslararasi sonuclari uzerinde durulur.",
+        "Doğu ve Güney Cephelerinde Türk milletinin elde ettiği başarıların ulusal ve uluslararası sonuçları üzerinde durulur.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "I.2.5",
-      subTopicName: "Bati Cephesi",
+      subTopicName: "Batı Cephesi",
       description:
-        "Duzenli ordunun kurulmasindan Mudanya Ateskes Antlasmasi'na kadar meydana gelen gelismelerin Turkiye'nin bagimsizlik surecine katkisini analiz eder.",
+        "Düzenli ordunun kurulmasından Mudanya Ateşkes Antlaşması'na kadar meydana gelen gelişmelerin Türkiye'nin bağımsızlık sürecine katkısını analiz eder.",
       details: [
-        "a) Duzenli ordunun kurulmasinin gerekceleri uzerinde durulur.",
-        "b) Bati Cephesi'nde elde edilen askeri basarilar ve bu basarilarin siyasi etkileri vurgulanir.",
-        "c) Teskilat-i Esasiye Kanunu'na (1921 Anayasasi) deginilir.",
-        "d) Mehmet Akif Ersoy'un Milli Mucadele'deki yeri ile Istiklal Marsi'nin kabulu ve onemi uzerinde durulur.",
-        "e) Maarif Kongresi'nin duzenlenmesi ve onemi vurgulanir.",
-        "f) Sakarya Meydan Muharebesi ve Buyuk Taarruz'un Milli Mucadele'deki onemi uzerinde durularak Mustafa Kemal'in bu muharebelerin kazanilmasindaki rolu vurgulanir.",
+        "a) Düzenli ordunun kurulmasının gerekçeleri üzerinde durulur.",
+        "b) Batı Cephesi'nde elde edilen askerî başarılar ve bu başarıların siyasi etkileri vurgulanır.",
+        "c) Teşkilat-ı Esasiye Kanunu'na (1921 Anayasası) değinilir.",
+        "d) Mehmet Akif Ersoy'un Millî Mücadele'deki yeri ile İstiklal Marşı'nın kabulü ve önemi üzerinde durulur.",
+        "e) Maarif Kongresi'nin düzenlenmesi ve önemi vurgulanır.",
+        "f) Sakarya Meydan Muharebesi ve Büyük Taarruz'un Millî Mücadele'deki önemi üzerinde durularak Mustafa Kemal'in bu muharebelerin kazanılmasındaki rolü vurgulanır.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "I.2.6",
-      subTopicName: "Diplomatik Basarilar",
+      subTopicName: "Diplomatik Başarılar",
       description:
-        "Milli Mucadele sonucunda kazanilan diplomatik basarilari ulkemizin bagimsizligi acisindan degerlendirir.",
+        "Millî Mücadele sonucunda kazanılan diplomatik başarıları ülkemizin bağımsızlığı açısından değerlendirir.",
       details: [
-        "a) Mudanya Ateskes Antlasmasi'nin onemi vurgulanir.",
-        "b) Turkiye'nin bagimsiz bir devlet olarak taninmasinda Lozan Baris Antlasmasi'nin onemi vurgulanir.",
-        "c) Lozan Baris Antlasmasi'nin maddeleri ile Sevr Antlasmasi'nin maddeleri karsilastirilir.",
+        "a) Mudanya Ateşkes Antlaşması'nın önemi vurgulanır.",
+        "b) Türkiye'nin bağımsız bir devlet olarak tanınmasında Lozan Barış Antlaşması'nın önemi vurgulanır.",
+        "c) Lozan Barış Antlaşması'nın maddeleri ile Sevr Antlaşması'nın maddeleri karşılaştırılır.",
       ].join("\n"),
       isKeyKazanim: true,
     },
@@ -1050,88 +1050,88 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "Türk İnkılabı": [
     {
       code: "I.3.1",
-      subTopicName: "Ataturkculuk ve Turk Inkilabi",
+      subTopicName: "Atatürkçülük ve Türk İnkılabı",
       description:
-        "Cagdaslasan Turkiye'nin temeli olan Ataturk ilkelerini kavrar.",
+        "Çağdaşlaşan Türkiye'nin temeli olan Atatürk ilkelerini kavrar.",
       details: [
-        "Cumhuriyetcilik, Milliyetcilik, Halkcik, Laiklik, Devletcilik ve Inkilapcilik ilkeleri aciklanir.",
+        "Cumhuriyetçilik, Milliyetçilik, Halkçılık, Laiklik, Devletçilik ve İnkılapçılık ilkeleri açıklanır.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "I.3.2",
-      subTopicName: "Ataturkculuk ve Turk Inkilabi",
+      subTopicName: "Atatürkçülük ve Türk İnkılabı",
       description:
-        "Siyasi alanda meydana gelen gelismeleri kavrar.",
+        "Siyasi alanda meydana gelen gelişmeleri kavrar.",
       details: [
-        "a) Saltanatin kaldirilmasi, Ankara'nin baskent olusu, Cumhuriyet'in ilan edilmesi, Halifelikin kaldirilmasi, Ser'iye ve Evkaf Vekaletinin kaldirilmasi, Erkan-i Harbiye Vekaletinin kaldirilmasi, 1924 Anayasasi'nin kabulunun neden ve sonuclariyla yer verilir.",
-        "b) Siyasi alanda gelen gelismeler Ataturk ilkeleri ile iliskilendirilir.",
+        "a) Saltanatın kaldırılması, Ankara'nın başkent oluşu, Cumhuriyet'in ilan edilmesi, Halifeliğin kaldırılması, Şer'iye ve Evkaf Vekâletinin kaldırılması, Erkân-ı Harbiye Vekâletinin kaldırılması, 1924 Anayasası'nın kabulünün neden ve sonuçlarıyla yer verilir.",
+        "b) Siyasi alanda gelen gelişmeler Atatürk ilkeleri ile ilişkilendirilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "I.3.3",
-      subTopicName: "Ataturkculuk ve Turk Inkilabi",
+      subTopicName: "Atatürkçülük ve Türk İnkılabı",
       description:
-        "Hukuk alaninda meydana gelen gelismelerin Turk toplumunda meydana getirdigi degisimleri kavrar.",
+        "Hukuk alanında meydana gelen gelişmelerin Türk toplumunda meydana getirdiği değişimleri kavrar.",
       details: [
-        "a) Hukuki duzenlemelerin neden yapildigi kisaca aciklanir ve bu alanda uygulama birliginin onemi vurgulanir.",
-        "b) Turk Medeni Kanunu'nun aile yapisinda ve kadinin toplumdaki yerinde meydana getirdigi degisim vurgulanir.",
-        "c) Hukuk alaninda gelen gelismeler Ataturk ilkeleri ile iliskilendirilir.",
+        "a) Hukuki düzenlemelerin neden yapıldığı kısaca açıklanır ve bu alanda uygulama birliğinin önemi vurgulanır.",
+        "b) Türk Medeni Kanunu'nun aile yapısında ve kadının toplumdaki yerinde meydana getirdiği değişim vurgulanır.",
+        "c) Hukuk alanında gelen gelişmeler Atatürk ilkeleri ile ilişkilendirilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "I.3.4",
-      subTopicName: "Ataturkculuk ve Turk Inkilabi",
+      subTopicName: "Atatürkçülük ve Türk İnkılabı",
       description:
-        "Egitim ve kultur alaninda yapilan inkilaplari ve gelismeleri kavrar.",
+        "Eğitim ve kültür alanında yapılan inkılapları ve gelişmeleri kavrar.",
       details: [
-        "a) Tevhid-i Tedrisat Kanunu, Harf Inkilabi, Millet Mektepleri, Turk Tarih Kurumu ve Turk Dil Kurumu ele alinir.",
-        "b) 1933 Universite Reformu'ndan hareketle Ataturk'un bilimsel gelisme ve kalkinmaya verdigi onem vurgulanir.",
-        "c) Ataturk'un guzel sanatlara ve spora verdigi onem aciklanirken muzik, heykel ve resim alanlarindaki uygulamalardan ve kurumsallasmalardan ornekler verilir.",
+        "a) Tevhid-i Tedrisat Kanunu, Harf İnkılabı, Millet Mektepleri, Türk Tarih Kurumu ve Türk Dil Kurumu ele alınır.",
+        "b) 1933 Üniversite Reformu'ndan hareketle Atatürk'ün bilimsel gelişme ve kalkınmaya verdiği önem vurgulanır.",
+        "c) Atatürk'ün güzel sanatlara ve spora verdiği önem açıklanırken müzik, heykel ve resim alanlarındaki uygulamalardan ve kurumsallaşmalardan örnekler verilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "I.3.5",
-      subTopicName: "Ataturkculuk ve Turk Inkilabi",
+      subTopicName: "Atatürkçülük ve Türk İnkılabı",
       description:
-        "Toplumsal alanda yapilan inkilaplari ve meydana gelen gelismeleri kavrar.",
+        "Toplumsal alanda yapılan inkılapları ve meydana gelen gelişmeleri kavrar.",
       details: [
-        "a) Kilik ve kiyafette yapilan duzenlemeler, tekke, zaviye ve turbelerin kapatilmasi, takvim, saat ve olculerde degisiklik yapilmasi ile Soyadi Kanunu konulari ele alinir.",
-        "b) Turk kadininan siyasi, sosyal ve egitim alanlarinda saglanan haklar uzerinde durulur.",
-        "c) Toplumsal alanda yapilan inkilaplar ve gelismeler Ataturk ilkeleri ile iliskilendirilir.",
+        "a) Kılık ve kıyafette yapılan düzenlemeler, tekke, zaviye ve türbelerin kapatılması, takvim, saat ve ölçülerde değişiklik yapılması ile Soyadı Kanunu konuları ele alınır.",
+        "b) Türk kadınının siyasi, sosyal ve eğitim alanlarında sağlanan haklar üzerinde durulur.",
+        "c) Toplumsal alanda yapılan inkılaplar ve gelişmeler Atatürk ilkeleri ile ilişkilendirilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "I.3.6",
-      subTopicName: "Ataturkculuk ve Turk Inkilabi",
+      subTopicName: "Atatürkçülük ve Türk İnkılabı",
       description:
-        "Ekonomi alaninda meydana gelen gelismeleri kavrar.",
+        "Ekonomi alanında meydana gelen gelişmeleri kavrar.",
       details: [
-        "a) Izmir Iktisat Kongresi'nde alinan kararlar milli iktisat anlayisi ve tasarruf bilinci acilarindan ele alinir.",
-        "b) Tarim, sanayi, ticaret ve denizcilik alanlarinda yapilan calismalar uzerinde durulur.",
-        "c) 1929 Dunya Ekonomik Bunalimi'nin Turkiye ekonomisine etkilerine kisaca deginilir.",
+        "a) İzmir İktisat Kongresi'nde alınan kararlar millî iktisat anlayışı ve tasarruf bilinci açılarından ele alınır.",
+        "b) Tarım, sanayi, ticaret ve denizcilik alanlarında yapılan çalışmalar üzerinde durulur.",
+        "c) 1929 Dünya Ekonomik Bunalımı'nın Türkiye ekonomisine etkilerine kısaca değinilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "I.3.7",
-      subTopicName: "Ataturkculuk ve Turk Inkilabi",
+      subTopicName: "Atatürkçülük ve Türk İnkılabı",
       description:
-        "Ataturk Donemi'nde saglik alaninda yapilan calismalari kavrar.",
+        "Atatürk Dönemi'nde sağlık alanında yapılan çalışmaları kavrar.",
       details: null,
       isKeyKazanim: false,
     },
     {
       code: "I.3.8",
-      subTopicName: "Ataturkculuk ve Turk Inkilabi",
+      subTopicName: "Atatürkçülük ve Türk İnkılabı",
       description:
-        "Ataturk ilke ve inkilaplarini olusturan temel esaslari Ataturkcu dusunce sistemi acisindan analiz eder.",
+        "Atatürk ilke ve inkılaplarını oluşturan temel esasları Atatürkçü düşünce sistemi açısından analiz eder.",
       details: [
-        "Milli tarih bilinci, vatan ve millet sevgisi, milli dil, bagimsizlik ve ozgurluk, egemenligin millete ait olmasi, milli kulturun gelistirilmesi, Turk milletini cagdas uygarlik duzeyinin uzerine cikarma, milli birlik ve beraberlik, ulke butunlugu cercevesinde ele alinir.",
+        "Millî tarih bilinci, vatan ve millet sevgisi, millî dil, bağımsızlık ve özgürlük, egemenliğin millete ait olması, millî kültürün geliştirilmesi, Türk milletini çağdaş uygarlık düzeyinin üzerine çıkarma, millî birlik ve beraberlik, ülke bütünlüğü çerçevesinde ele alınır.",
       ].join("\n"),
       isKeyKazanim: true,
     },
@@ -1140,39 +1140,39 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "Atatürkçülük ve Atatürk İlkeleri": [
     {
       code: "I.4.1",
-      subTopicName: "Iki Savas Arasindaki Donemde Turkiye ve Dunya",
+      subTopicName: "İki Savaş Arasındaki Dönemde Türkiye ve Dünya",
       description:
-        "Ataturk Donemi'nde Turkiye Cumhuriyeti'nin ic politikasindaki onemli gelismeleri aciklar.",
+        "Atatürk Dönemi'nde Türkiye Cumhuriyeti'nin iç politikasındaki önemli gelişmeleri açıklar.",
       details: [
-        "a) I. Meclisin ve II. Meclisin tesekkulundeki yontem ve sureclere kisaca deginilir.",
-        "b) Cok partili hayata gecis cercevesinde partilesme cabalari ele alinir.",
-        "c) Mustafa Kemal'e suikast girisimine deginilir.",
-        "d) Bu donemde cok partili siyasi hayatin devamliliginin saglanamamasinin nedenleri uzerinde durulur.",
+        "a) I. Meclisin ve II. Meclisin teşekkülündeki yöntem ve süreçlere kısaca değinilir.",
+        "b) Çok partili hayata geçiş çerçevesinde partileşme çabaları ele alınır.",
+        "c) Mustafa Kemal'e suikast girişimine değinilir.",
+        "d) Bu dönemde çok partili siyasi hayatın devamlılığının sağlanamamasının nedenleri üzerinde durulur.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "I.4.2",
-      subTopicName: "Iki Savas Arasindaki Donemde Turkiye ve Dunya",
+      subTopicName: "İki Savaş Arasındaki Dönemde Türkiye ve Dünya",
       description:
-        "Ataturk Donemi'nde (1923-1938) Turkiye Cumhuriyeti'nin dis politikasindaki baslica gelismeleri aciklar.",
+        "Atatürk Dönemi'nde (1923-1938) Türkiye Cumhuriyeti'nin dış politikasındaki başlıca gelişmeleri açıklar.",
       details: [
-        "a) Turkiye'nin Yunanistan, Ingiltere, Fransa ve SSCB ile iliskilerine deginilir.",
-        "b) Musul Sorunu ve bu soruna iliskin Turk ve Ingiliz tezleri uzerinde durulur.",
-        "c) Turkiye'nin Milletler Cemiyetine uyeligi, Balkan Antanti, Sadabat Pakti, Montro Bogazlar Sozlesmesi ve Hatay'in ana vatana katilmasi uzerinde durulur.",
-        "d) Ataturk'un olumune ve Ismet Inonu'nun cumhurbaskanini sekilmesine deginilir.",
+        "a) Türkiye'nin Yunanistan, İngiltere, Fransa ve SSCB ile ilişkilerine değinilir.",
+        "b) Musul Sorunu ve bu soruna ilişkin Türk ve İngiliz tezleri üzerinde durulur.",
+        "c) Türkiye'nin Milletler Cemiyetine üyeliği, Balkan Antantı, Sadabat Paktı, Montrö Boğazlar Sözleşmesi ve Hatay'ın ana vatana katılması üzerinde durulur.",
+        "d) Atatürk'ün ölümüne ve İsmet İnönü'nün cumhurbaşkanı seçilmesine değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "I.4.3",
-      subTopicName: "Iki Savas Arasindaki Donemde Turkiye ve Dunya",
+      subTopicName: "İki Savaş Arasındaki Dönemde Türkiye ve Dünya",
       description:
-        "Iki dunya savasi arasindaki donemde dunyada meydana gelen siyasi ve ekonomik gelismeleri kavrar.",
+        "İki dünya savaşı arasındaki dönemde dünyada meydana gelen siyasi ve ekonomik gelişmeleri kavrar.",
       details: [
-        "a) Birinci Dunya Savasi sonrasi kalici barisi saglama cabalarina (Milletler Cemiyeti, Locarno Antlasmasi ve Briand-Kellogg Pakti) deginilir.",
-        "b) 1929 Dunya Ekonomik Bunalimi (Kara Persembe) ve etkileri uzerinde durulur.",
-        "c) Iki savas arasindaki donemde etkilerini artiran fasizm, nazizm, komunizm, sosyalizm, liberalizm ve kapitalizmin genel ozelliklerine ve siyasi etkilerine deginilir.",
+        "a) Birinci Dünya Savaşı sonrası kalıcı barışı sağlama çabalarına (Milletler Cemiyeti, Locarno Antlaşması ve Briand-Kellogg Paktı) değinilir.",
+        "b) 1929 Dünya Ekonomik Bunalımı (Kara Perşembe) ve etkileri üzerinde durulur.",
+        "c) İki savaş arasındaki dönemde etkilerini artıran faşizm, nazizm, komünizm, sosyalizm, liberalizm ve kapitalizmin genel özelliklerine ve siyasi etkilerine değinilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
@@ -1181,130 +1181,130 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
   "Türk Dış Politikası": [
     {
       code: "I.5.1",
-      subTopicName: "II. Dunya Savasi Surecinde Turkiye ve Dunya",
+      subTopicName: "II. Dünya Savaşı Sürecinde Türkiye ve Dünya",
       description:
-        "II. Dunya Savasi'nin sebepleri, baslamasi ve yayilmasiyla ilgili baslica gelismeleri kavrar.",
+        "II. Dünya Savaşı'nın sebepleri, başlaması ve yayılmasıyla ilgili başlıca gelişmeleri kavrar.",
       details: [
-        "a) II. Dunya Savasi'nin arka planinda yer alan stratejik ve emperyalist rekabet vurgulanir.",
-        "b) II. Dunya Savasi'nin seyrini degistiren gelismeler (Stalingrad Kusatmasi, Normandiya Cikarmasi) ele alinir.",
-        "c) Birlesmis Milletler Teskilati'nin kurulus amacina ve gunumuzdeki misyonuna deginilir.",
+        "a) II. Dünya Savaşı'nın arka planında yer alan stratejik ve emperyalist rekabet vurgulanır.",
+        "b) II. Dünya Savaşı'nın seyrini değiştiren gelişmeler (Stalingrad Kuşatması, Normandiya Çıkarması) ele alınır.",
+        "c) Birleşmiş Milletler Teşkilatı'nın kuruluş amacına ve günümüzdeki misyonuna değinilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "I.5.2",
-      subTopicName: "II. Dunya Savasi Surecinde Turkiye ve Dunya",
+      subTopicName: "II. Dünya Savaşı Sürecinde Türkiye ve Dünya",
       description:
-        "II. Dunya Savasi surecinde Turkiye'nin izledigi siyaset ile savasin Turkiye uzerindeki ekonomik ve toplumsal etkilerini analiz eder.",
+        "II. Dünya Savaşı sürecinde Türkiye'nin izlediği siyaset ile savaşın Türkiye üzerindeki ekonomik ve toplumsal etkilerini analiz eder.",
       details: [
-        "Savas sirasinda Turkiye'nin aldigi ekonomik tedbirlerin (Milli Korunma Kanunu, Varlik Vergisi, karne uygulamasi, tarimsal urunlerin ordu ihtiyacina yonlendirilmesi) toplumsal hayata yansimalarina deginilir.",
+        "Savaş sırasında Türkiye'nin aldığı ekonomik tedbirlerin (Millî Korunma Kanunu, Varlık Vergisi, karne uygulaması, tarımsal ürünlerin ordu ihtiyacına yönlendirilmesi) toplumsal hayata yansımalarına değinilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "I.5.3",
-      subTopicName: "II. Dunya Savasi Surecinde Turkiye ve Dunya",
-      description: "II. Dunya Savasi'nin sonuclarini degerlendirir.",
+      subTopicName: "II. Dünya Savaşı Sürecinde Türkiye ve Dünya",
+      description: "II. Dünya Savaşı'nın sonuçlarını değerlendirir.",
       details: [
-        "a) Atlantik Bildirisi, Yalta ve Postdam Konferanslarindan hareketle savasin siyasi sonuclarina ve ortaya cikan iki kutuplu dunya duzenine deginilir.",
-        "b) Ortadogu'nun yeniden sekillenmesi ile ilgili gelismelere yer verilir.",
+        "a) Atlantik Bildirisi, Yalta ve Potsdam Konferanslarından hareketle savaşın siyasi sonuçlarına ve ortaya çıkan iki kutuplu dünya düzenine değinilir.",
+        "b) Ortadoğu'nun yeniden şekillenmesi ile ilgili gelişmelere yer verilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "I.6.1",
-      subTopicName: "II. Dunya Savasi Sonrasinda Turkiye ve Dunya",
+      subTopicName: "II. Dünya Savaşı Sonrasında Türkiye ve Dünya",
       description:
-        "1945-1950 yillari arasinda Turkiye'de meydana gelen siyasi, sosyal ve ekonomik gelismeleri kavrar.",
+        "1945-1950 yılları arasında Türkiye'de meydana gelen siyasi, sosyal ve ekonomik gelişmeleri kavrar.",
       details: [
-        "a) Cok partili hayata gecisin ve Demokrat Parti'nin kurulmasinin Turk demokrasi tarihi acisindan onemi uzerinde durulur.",
-        "b) 1946 ve 1950 secimleri ile secim sistem ve usullerindeki degisimler uzerinde durulur.",
+        "a) Çok partili hayata geçişin ve Demokrat Parti'nin kurulmasının Türk demokrasi tarihi açısından önemi üzerinde durulur.",
+        "b) 1946 ve 1950 seçimleri ile seçim sistem ve usullerindeki değişimler üzerinde durulur.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "I.6.2",
-      subTopicName: "II. Dunya Savasi Sonrasinda Turkiye ve Dunya",
+      subTopicName: "II. Dünya Savaşı Sonrasında Türkiye ve Dünya",
       description:
-        "II. Dunya Savasi sonrasi donemde uluslararasi iliskilerde ve Turk dis politikasinda meydana gelen gelismeleri kavrar.",
+        "II. Dünya Savaşı sonrası dönemde uluslararası ilişkilerde ve Türk dış politikasında meydana gelen gelişmeleri kavrar.",
       details: [
-        "a) Savas sonrasi ABD ve SSCB'nin iki kuresel guc olarak ortaya cikmasina ve bu baglamda Varsova Pakti ve Kuzey Atlantik Orgutu'nun (NATO) kurulmalarina deginilir.",
-        "b) Truman Doktrini'nin Turkiye'nin dis politika yonelimleri uzerindeki etkisine ve bu etkilerin yansimalarina (Kore Savasi ve Turkiye'nin NATO uyeligi) deginilir.",
-        "c) Turkiye'nin Avrupa Konseyi'ne girmesine deginilir.",
+        "a) Savaş sonrası ABD ve SSCB'nin iki küresel güç olarak ortaya çıkmasına ve bu bağlamda Varşova Paktı ve Kuzey Atlantik Örgütü'nün (NATO) kurulmalarına değinilir.",
+        "b) Truman Doktrini'nin Türkiye'nin dış politika yönelimleri üzerindeki etkisine ve bu etkilerin yansımalarına (Kore Savaşı ve Türkiye'nin NATO üyeliği) değinilir.",
+        "c) Türkiye'nin Avrupa Konseyi'ne girmesine değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "I.6.3",
-      subTopicName: "II. Dunya Savasi Sonrasinda Turkiye ve Dunya",
+      subTopicName: "II. Dünya Savaşı Sonrasında Türkiye ve Dünya",
       description:
-        "1950'ler Turkiye'sinde meydana gelen siyasi, sosyal ve ekonomik gelismeleri analiz eder.",
+        "1950'ler Türkiye'sinde meydana gelen siyasi, sosyal ve ekonomik gelişmeleri analiz eder.",
       details: [
-        "Marshall yardimlarin Turk ekonomisine etkisi (tarimda makinelesmye bagli olarak koyden kente goc ve sonuclari, demir yolu yapimından kara yolu yapimina donus) uzerinde durulur.",
+        "Marshall yardımlarının Türk ekonomisine etkisi (tarımda makineleşmeye bağlı olarak köyden kente göç ve sonuçları, demir yolu yapımından kara yolu yapımına dönüş) üzerinde durulur.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "I.7.1",
-      subTopicName: "Toplumsal Devrim Caginda Dunya ve Turkiye",
+      subTopicName: "Toplumsal Devrim Çağında Dünya ve Türkiye",
       description:
-        "1960 sonrasinda dunya siyasetinde ortaya cikan gelismeleri aciklar.",
+        "1960 sonrasında dünya siyasetinde ortaya çıkan gelişmeleri açıklar.",
       details: [
-        "a) Arap-Israil Savaslarina kisaca deginilir.",
-        "b) Iran-Irak Savasi'nin sebep ve sonuclari kisaca ele alinir.",
+        "a) Arap-İsrail Savaşlarına kısaca değinilir.",
+        "b) İran-Irak Savaşı'nın sebep ve sonuçları kısaca ele alınır.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "I.7.2",
-      subTopicName: "Toplumsal Devrim Caginda Dunya ve Turkiye",
+      subTopicName: "Toplumsal Devrim Çağında Dünya ve Türkiye",
       description:
-        "1960'lardan itibaren Turk dis politikasini etkileyen onemli gelismeleri kavrar.",
+        "1960'lardan itibaren Türk dış politikasını etkileyen önemli gelişmeleri kavrar.",
       details: [
-        "a) Kibris Sorunu'nun ortaya cikis nedenleri (ENOSIS, Megalo Idea, EOKA), Kibris Baris Harekati ve sonrasinda meydana gelen gelismeler uzerinde durulur.",
-        "b) Ege Adalari, Kita Sahanligi, Bati Trakya Turklerinin sorunlari baglaminda Turk-Yunan iliskileri uzerinde durulur.",
-        "c) Ermeni Sorunu baglaminda Turkiye'ye karsi gerceklestirilen uluslararasi girisim ve faaliyetlere (ASALA ve diaspora) deginilir.",
+        "a) Kıbrıs Sorunu'nun ortaya çıkış nedenleri (ENOSİS, Megalo İdea, EOKA), Kıbrıs Barış Harekâtı ve sonrasında meydana gelen gelişmeler üzerinde durulur.",
+        "b) Ege Adaları, Kıta Sahanlığı, Batı Trakya Türklerinin sorunları bağlamında Türk-Yunan ilişkileri üzerinde durulur.",
+        "c) Ermeni Sorunu bağlamında Türkiye'ye karşı gerçekleştirilen uluslararası girişim ve faaliyetlere (ASALA ve diaspora) değinilir.",
       ].join("\n"),
       isKeyKazanim: true,
     },
     {
       code: "I.7.3",
-      subTopicName: "Toplumsal Devrim Caginda Dunya ve Turkiye",
+      subTopicName: "Toplumsal Devrim Çağında Dünya ve Türkiye",
       description:
-        "1960'lardan itibaren Turkiye'de meydana gelen siyasi, ekonomik ve sosyo-kulturel gelismeleri analiz eder.",
+        "1960'lardan itibaren Türkiye'de meydana gelen siyasi, ekonomik ve sosyo-kültürel gelişmeleri analiz eder.",
       details: [
-        "a) 27 Mayis Askeri Darbesi, 1971 Muhtirasi ve 1980 Askeri Darbesi ile bu olaylarin siyasi ve sosyo-ekonomik etkileri kisaca ele alinir.",
-        "b) 1961 ve 1982 Anayasalari, yapilari ve insan haklarina yaklasim tarzlari bakimindan karsilastirilir.",
-        "c) Yurt disina ve koyden kente yapilan gocler ile bu goclerin sosyal hayatta meydana getirdigi degisimler ele alinir.",
-        "d) Ekonomik alandaki liberallesme politikalarina (serbest piyasa ekonomisi, ozellestirme, ithalat yasaklarinin kaldirilmasi, IMF ile iliskiler ve KDV uygulamasi) deginilir.",
+        "a) 27 Mayıs Askerî Darbesi, 1971 Muhtırası ve 1980 Askerî Darbesi ile bu olayların siyasi ve sosyo-ekonomik etkileri kısaca ele alınır.",
+        "b) 1961 ve 1982 Anayasaları, yapıları ve insan haklarına yaklaşım tarzları bakımından karşılaştırılır.",
+        "c) Yurt dışına ve köyden kente yapılan göçler ile bu göçlerin sosyal hayatta meydana getirdiği değişimler ele alınır.",
+        "d) Ekonomik alandaki liberalleşme politikalarına (serbest piyasa ekonomisi, özelleştirme, ithalat yasaklarının kaldırılması, IMF ile ilişkiler ve KDV uygulaması) değinilir.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "I.8.1",
-      subTopicName: "21. Yuzyilin Esiginde Turkiye ve Dunya",
+      subTopicName: "21. Yüzyılın Eşiğinde Türkiye ve Dünya",
       description:
-        "1990 sonrasinda Turkiye'de meydana gelen ekonomik, siyasi, sosyal ve kulturel gelismeleri kavrar.",
+        "1990 sonrasında Türkiye'de meydana gelen ekonomik, siyasi, sosyal ve kültürel gelişmeleri kavrar.",
       details: [
-        "a) Turkiye'de ortaya cikan ekonomik krizler (5 Nisan 1994, 2001 ve 2008 Krizleri) ve bu krizlerin toplumsal yansimalari uzerinde durulur.",
-        "b) 28 Subat mudahalesi, 27 Nisan e-muhtirasi ve 15 Temmuz darbe kalkismasi ile bunlarin etkilerine deginilir.",
-        "c) Teror ve teror orgutlerinin (PKK/PYD, DEAS, FETO) ortaya cikis nedenleri ile teroru onlemeye yonelik tedbirlere 15 Temmuz 2016 darbe kalkismasi ornegi uzerinden deginilir.",
-        "d) Bilim, sanat ve spor alanlarindaki baslica gelismeler uzerinde durulur.",
+        "a) Türkiye'de ortaya çıkan ekonomik krizler (5 Nisan 1994, 2001 ve 2008 Krizleri) ve bu krizlerin toplumsal yansımaları üzerinde durulur.",
+        "b) 28 Şubat müdahalesi, 27 Nisan e-muhtırası ve 15 Temmuz darbe kalkışması ile bunların etkilerine değinilir.",
+        "c) Terör ve terör örgütlerinin (PKK/PYD, DEAŞ, FETÖ) ortaya çıkış nedenleri ile terörü önlemeye yönelik tedbirlere 15 Temmuz 2016 darbe kalkışması örneği üzerinden değinilir.",
+        "d) Bilim, sanat ve spor alanlarındaki başlıca gelişmeler üzerinde durulur.",
       ].join("\n"),
       isKeyKazanim: false,
     },
     {
       code: "I.8.2",
-      subTopicName: "21. Yuzyilin Esiginde Turkiye ve Dunya",
+      subTopicName: "21. Yüzyılın Eşiğinde Türkiye ve Dünya",
       description:
-        "1990 sonrasinda meydana gelen siyasi gelismelerin Turkiye'ye etkilerini ve dunya siyasi konjonkturu baglaminda analiz eder.",
+        "1990 sonrasında meydana gelen siyasi gelişmelerin Türkiye'ye etkilerini ve dünya siyasi konjonktürü bağlamında analiz eder.",
       details: [
-        "a) SSCB'nin dagilmasi ile bagimsizligini kazanan Turk cumhuriyetlerine (Azerbaycan, Ozbekistan, Kazakistan, Kirgizistan, Turkmenistan) yonelik kurulan kuruluslara (TIKA, Yurtdisi Turkler ve Akraba Topluluklar Baskanligi, TURKSOY ve Yunus Emre Enstitusu) ve bu kuruluslarin faaliyetlerine kisaca deginilir.",
-        "b) Avrupa Birligi (AB) ile Turkiye arasindaki iliskiler kisaca ele alinir.",
-        "c) Bosna-Hersek Savasi ile bu savas sonrasinda Balkanlarda meydana gelen gelismelere kisaca deginilir.",
-        "d) Orta Dogu'da meydana gelen baslica gelismeler (Siyonizm Sorunu, 1990 ve 2003 Korfez Savaslari ve Arap Bahari'nin Orta Dogu ve dunyaya etkileri) kisaca ele alinir.",
-        "e) 11 Eylul Saldirilari sonrasinda dunyanin cesitli bolgelerinde meydana gelen teror eylemleri karsisinbda ulke ve toplumlarin takindiklari tavirlarin cesitlilikleri vurgulanir ve orneklendirilir.",
-        "f) Irak ve Suriye'deki siyasi gelismeler ile bu gelismelerin Turkiye'ye etkilerine deginilir. Bu baglamda Turkiye'nin multeci sorununa yaklasimi ile diger ulkelerin bu soruna yaklasimlari karsilastirilir.",
+        "a) SSCB'nin dağılması ile bağımsızlığını kazanan Türk cumhuriyetlerine (Azerbaycan, Özbekistan, Kazakistan, Kırgızistan, Türkmenistan) yönelik kurulan kuruluşlara (TİKA, Yurtdışı Türkler ve Akraba Topluluklar Başkanlığı, TÜRKSOY ve Yunus Emre Enstitüsü) ve bu kuruluşların faaliyetlerine kısaca değinilir.",
+        "b) Avrupa Birliği (AB) ile Türkiye arasındaki ilişkiler kısaca ele alınır.",
+        "c) Bosna-Hersek Savaşı ile bu savaş sonrasında Balkanlarda meydana gelen gelişmelere kısaca değinilir.",
+        "d) Orta Doğu'da meydana gelen başlıca gelişmeler (Siyonizm Sorunu, 1990 ve 2003 Körfez Savaşları ve Arap Baharı'nın Orta Doğu ve dünyaya etkileri) kısaca ele alınır.",
+        "e) 11 Eylül Saldırıları sonrasında dünyanın çeşitli bölgelerinde meydana gelen terör eylemleri karşısında ülke ve toplumların takındıkları tavırların çeşitlilikleri vurgulanır ve örneklendirilir.",
+        "f) Irak ve Suriye'deki siyasi gelişmeler ile bu gelişmelerin Türkiye'ye etkilerine değinilir. Bu bağlamda Türkiye'nin mülteci sorununa yaklaşımı ile diğer ülkelerin bu soruna yaklaşımları karşılaştırılır.",
       ].join("\n"),
       isKeyKazanim: true,
     },
@@ -1312,13 +1312,13 @@ const KAZANIMLAR: Record<string, KazanimDef[]> = {
 };
 
 // =====================================================================
-// ANA SEED FONKSIYONU
+// ANA SEED FONKSİYONU
 // =====================================================================
 
 async function main() {
   const tyt = await prisma.examType.findUnique({ where: { slug: "tyt" } });
   if (!tyt) {
-    console.log("TYT exam type bulunamadi, atliyorum.");
+    console.log("TYT exam type bulunamadı, atlıyorum.");
     return;
   }
 
@@ -1326,7 +1326,7 @@ async function main() {
     where: { name: "Tarih", examTypeId: tyt.id },
   });
   if (!tarihSubject) {
-    console.log("TYT Tarih subject bulunamadi, atliyorum.");
+    console.log("TYT Tarih subject bulunamadı, atlıyorum.");
     return;
   }
 
@@ -1341,13 +1341,13 @@ async function main() {
   for (const [topicName, kazanimList] of Object.entries(KAZANIMLAR)) {
     const topic = topics.find((t) => t.name === topicName);
     if (!topic) {
-      console.log(`Topic bulunamadi: "${topicName}" -- atlaniyor`);
+      console.log(`Topic bulunamadı: "${topicName}" -- atlanıyor`);
       continue;
     }
 
     if (topic._count.kazanimlar > 0) {
       console.log(
-        `"${topicName}" zaten ${topic._count.kazanimlar} kazanima sahip, atlaniyor`
+        `"${topicName}" zaten ${topic._count.kazanimlar} kazanıma sahip, atlanıyor`
       );
       totalSkipped += kazanimList.length;
       continue;
@@ -1370,12 +1370,12 @@ async function main() {
     }
 
     console.log(
-      `"${topicName}" -> ${kazanimList.length} kazanim eklendi`
+      `"${topicName}" -> ${kazanimList.length} kazanım eklendi`
     );
   }
 
   console.log(
-    `\nToplam: ${totalCreated} kazanim eklendi, ${totalSkipped} atlandi`
+    `\nToplam: ${totalCreated} kazanım eklendi, ${totalSkipped} atlandı`
   );
 }
 
