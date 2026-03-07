@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!["schulte", "tachistoscope", "peripheral"].includes(exerciseType)) {
+    if (!["schulte", "tachistoscope", "peripheral", "mental-math", "paragraph-reading"].includes(exerciseType)) {
       return NextResponse.json(
         { error: "Invalid exercise type" },
         { status: 400 }
