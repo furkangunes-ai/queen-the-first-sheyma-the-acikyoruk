@@ -23,7 +23,7 @@ interface StudentProfileData {
 // Constants
 // ---------------------------------------------------------------------------
 
-const DAY_LABELS = ["Pzt", "Sal", "\u00c7ar", "Per", "Cum", "Cmt", "Paz"];
+const DAY_LABELS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 
 const BREAK_OPTIONS = [
   { value: "25_5", label: "25/5 Pomodoro" },
@@ -127,9 +127,9 @@ export default function StudentProfileForm({
           <User className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-white">\u00d6\u011frenci Profili</h2>
+          <h2 className="text-lg font-bold text-white">Öğrenci Profili</h2>
           <p className="text-xs text-white/50">
-            \u00c7al\u0131\u015fma al\u0131\u015fkanl\u0131klar\u0131n\u0131 belirle, sana \u00f6zel plan olu\u015ftural\u0131m.
+            Çalışma alışkanlıklarını belirle, sana özel plan oluşturalım.
           </p>
         </div>
       </div>
@@ -172,10 +172,10 @@ export default function StudentProfileForm({
       <div className={sectionClass}>
         <div className="flex items-center gap-2 text-amber-400">
           <Clock className="w-4 h-4" />
-          <span className="text-sm font-semibold">G\u00fcnl\u00fck \u00c7al\u0131\u015fma Saati</span>
+          <span className="text-sm font-semibold">Günlük Çalışma Saati</span>
         </div>
         <label className={labelClass}>
-          G\u00fcnde ortalama ka\u00e7 saat \u00e7al\u0131\u015f\u0131yorsun?
+          Günde ortalama kaç saat çalışıyorsun?
         </label>
         <div className="flex items-center gap-3">
           <input
@@ -195,14 +195,14 @@ export default function StudentProfileForm({
         </div>
       </div>
 
-      {/* ---- 2. M\u00fcsait G\u00fcnler ---- */}
+      {/* ---- 2. Müsait Günler ---- */}
       <div className={sectionClass}>
         <div className="flex items-center gap-2 text-amber-400">
           <Calendar className="w-4 h-4" />
-          <span className="text-sm font-semibold">M\u00fcsait G\u00fcnler</span>
+          <span className="text-sm font-semibold">Müsait Günler</span>
         </div>
         <label className={labelClass}>
-          Hangi g\u00fcnler \u00e7al\u0131\u015fabilirsin?
+          Hangi günler çalışabilirsin?
         </label>
         <div className="flex flex-wrap gap-2">
           {DAY_LABELS.map((label, idx) => {
@@ -226,14 +226,14 @@ export default function StudentProfileForm({
         </div>
       </div>
 
-      {/* ---- 3. \u00c7al\u0131\u015fma D\u00fczeni ---- */}
+      {/* ---- 3. Çalışma Düzeni ---- */}
       <div className={sectionClass}>
         <div className="flex items-center gap-2 text-amber-400">
           <Target className="w-4 h-4" />
-          <span className="text-sm font-semibold">\u00c7al\u0131\u015fma D\u00fczeni</span>
+          <span className="text-sm font-semibold">Çalışma Düzeni</span>
         </div>
         <label className={labelClass}>
-          \u00c7al\u0131\u015fma d\u00fczenin nas\u0131l?
+          Çalışma düzenin nasıl?
         </label>
         <div className="flex gap-3">
           {REGULARITY_OPTIONS.map((opt) => {
@@ -264,7 +264,7 @@ export default function StudentProfileForm({
           <span className="text-sm font-semibold">Mola Tercihi</span>
         </div>
         <label className={labelClass}>
-          Hangi mola d\u00f6ng\u00fcs\u00fcn\u00fc tercih edersin?
+          Hangi mola döngüsünü tercih edersin?
         </label>
         <div className="flex flex-wrap gap-3">
           {BREAK_OPTIONS.map((opt) => {
@@ -288,14 +288,14 @@ export default function StudentProfileForm({
         </div>
       </div>
 
-      {/* ---- 5. YKS S\u0131nav Tarihi ---- */}
+      {/* ---- 5. YKS Sınav Tarihi ---- */}
       <div className={sectionClass}>
         <div className="flex items-center gap-2 text-amber-400">
           <Calendar className="w-4 h-4" />
-          <span className="text-sm font-semibold">YKS S\u0131nav Tarihi</span>
+          <span className="text-sm font-semibold">YKS Sınav Tarihi</span>
         </div>
         <label className={labelClass}>
-          S\u0131nav tarihin ne zaman?
+          Sınav tarihin ne zaman?
         </label>
         <input
           type="date"
@@ -315,7 +315,7 @@ export default function StudentProfileForm({
           if (diff > 0) {
             return (
               <p className="text-xs text-white/40 mt-1">
-                S\u0131nava <span className="text-amber-400 font-semibold">{diff}</span> g\u00fcn kald\u0131.
+                Sınava <span className="text-amber-400 font-semibold">{diff}</span> gün kaldı.
               </p>
             );
           }
@@ -323,20 +323,20 @@ export default function StudentProfileForm({
         })()}
       </div>
 
-      {/* ---- 6. Hedef S\u0131ralama ---- */}
+      {/* ---- 6. Hedef Sıralama ---- */}
       <div className={sectionClass}>
         <div className="flex items-center gap-2 text-amber-400">
           <Target className="w-4 h-4" />
-          <span className="text-sm font-semibold">Hedef S\u0131ralama</span>
+          <span className="text-sm font-semibold">Hedef Sıralama</span>
         </div>
         <label className={labelClass}>
-          Hedefledi\u011fin s\u0131ralama nedir? (iste\u011fe ba\u011fl\u0131)
+          Hedeflediğin sıralama nedir? (isteğe bağlı)
         </label>
         <input
           type="number"
           min={1}
           max={3000000}
-          placeholder="\u00d6rn: 10000"
+          placeholder="Örn: 10000"
           value={form.targetRank ?? ""}
           onChange={(e) =>
             setForm((p) => ({

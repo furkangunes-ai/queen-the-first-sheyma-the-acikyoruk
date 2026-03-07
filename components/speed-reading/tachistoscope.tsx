@@ -97,6 +97,12 @@ export default function Tachistoscope() {
     number: "Sayı",
   };
 
+  const isGamePhase =
+    tach.phase === "countdown" ||
+    tach.phase === "showing" ||
+    tach.phase === "answering" ||
+    tach.phase === "feedback";
+
   return (
     <AnimatePresence mode="wait">
       {/* =========== SETUP =========== */}
@@ -218,173 +224,141 @@ export default function Tachistoscope() {
         </motion.div>
       )}
 
-      {/* =========== COUNTDOWN =========== */}
-      {tach.phase === "countdown" && (
+      {/* =========== GAME PHASES (single key — no AnimatePresence delays between phases) =========== */}
+      {isGamePhase && (
         <motion.div
-          key="countdown"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 1.1 }}
-          className="glass-panel p-16 flex items-center justify-center min-h-[300px]"
-        >
-          <motion.span
-            initial={{ scale: 2, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="text-4xl font-bold text-amber-400"
-          >
-            Hazırlan...
-          </motion.span>
-        </motion.div>
-      )}
-
-      {/* =========== SHOWING =========== */}
-      {tach.phase === "showing" && (
-        <motion.div
-          key="showing"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="space-y-5"
-        >
-          <div className="flex items-center justify-between text-sm text-white/40">
-            <span>
-              Tur {tach.currentIndex + 1}/{tach.itemCount}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Clock size={14} />
-              {tach.displayMs}ms
-            </span>
-          </div>
-
-          <motion.div
-            initial={{ backgroundColor: "rgba(255,191,36,0.05)" }}
-            animate={{ backgroundColor: "rgba(255,191,36,0.15)" }}
-            transition={{ duration: Math.min(tach.displayMs / 1000 * 0.2, 0.1) }}
-            className="glass-panel p-12 md:p-16 flex items-center justify-center min-h-[280px] relative overflow-hidden"
-          >
-            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
-            <span className="text-3xl md:text-5xl font-bold text-white text-center leading-tight">
-              {tach.currentItem}
-            </span>
-          </motion.div>
-        </motion.div>
-      )}
-
-      {/* =========== ANSWERING =========== */}
-      {tach.phase === "answering" && (
-        <motion.div
-          key="answering"
+          key="game"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -12 }}
           className="space-y-5"
         >
-          <div className="flex items-center justify-between text-sm text-white/40">
-            <span>
-              Tur {tach.currentIndex + 1}/{tach.itemCount}
-            </span>
-            <div className="flex items-center gap-3">
-              <span className="text-emerald-400">
-                {tach.correctCount}✓
-              </span>
-              <span className="text-red-400">
-                {tach.totalAnswered - tach.correctCount}✗
+          {/* --- COUNTDOWN --- */}
+          {tach.phase === "countdown" && (
+            <div className="glass-panel p-16 flex items-center justify-center min-h-[300px]">
+              <span className="text-4xl font-bold text-amber-400 animate-pulse">
+                Hazırlan...
               </span>
             </div>
-          </div>
+          )}
 
-          <div className="glass-panel p-12 md:p-16 flex items-center justify-center min-h-[280px]">
-            <span className="text-3xl text-white/20">?</span>
-          </div>
+          {/* --- SHOWING / ANSWERING / FEEDBACK share a stable container --- */}
+          {tach.phase !== "countdown" && (
+            <>
+              {/* Header */}
+              <div className="flex items-center justify-between text-sm text-white/40">
+                <span>
+                  Tur {tach.currentIndex + 1}/{tach.itemCount}
+                </span>
+                <div className="flex items-center gap-3">
+                  {tach.phase === "showing" && (
+                    <span className="flex items-center gap-1.5">
+                      <Clock size={14} />
+                      {tach.displayMs}ms
+                    </span>
+                  )}
+                  {tach.totalAnswered > 0 && (
+                    <>
+                      <span className="text-emerald-400">
+                        {tach.correctCount}✓
+                      </span>
+                      <span className="text-red-400">
+                        {tach.totalAnswered - tach.correctCount}✗
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
 
-          <div className="glass-panel p-5 space-y-4">
-            <label className="text-sm font-medium text-white/60">
-              Ne gördün?
-            </label>
-            <div className="flex gap-3">
-              <input
-                ref={inputRef}
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Cevabını yaz..."
-                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:border-amber-500/30 focus:outline-none transition-colors text-lg"
-                autoComplete="off"
-                autoCorrect="off"
-                spellCheck={false}
-              />
-              <button
-                onClick={handleSubmitAnswer}
-                disabled={!userInput.trim()}
-                className="px-5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-colors disabled:opacity-30"
-              >
-                <Send size={18} />
-              </button>
-            </div>
-            <p className="text-xs text-white/30 text-center">
-              Enter tuşuyla gönder
-            </p>
-          </div>
-        </motion.div>
-      )}
-
-      {/* =========== FEEDBACK =========== */}
-      {tach.phase === "feedback" && (
-        <motion.div
-          key="feedback"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          className="space-y-5"
-        >
-          <div className="flex items-center justify-between text-sm text-white/40">
-            <span>
-              Tur {tach.currentIndex + 1}/{tach.itemCount}
-            </span>
-          </div>
-
-          <div className="glass-panel p-12 md:p-16 flex flex-col items-center justify-center min-h-[280px] gap-4">
-            {tach.items.length > 0 &&
-              (() => {
-                const lastItem = tach.items[tach.items.length - 1];
-                return (
+              {/* Main display area — stable DOM, content swaps instantly */}
+              <div className="glass-panel p-12 md:p-16 flex flex-col items-center justify-center min-h-[280px] relative overflow-hidden">
+                {/* SHOWING */}
+                {tach.phase === "showing" && (
                   <>
-                    {lastItem.correct ? (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="flex items-center gap-3 text-emerald-400"
-                      >
-                        <CheckCircle size={32} />
-                        <span className="text-xl font-bold">Doğru!</span>
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="space-y-3 text-center"
-                      >
-                        <div className="flex items-center justify-center gap-3 text-red-400">
-                          <XCircle size={32} />
-                          <span className="text-xl font-bold">Yanlış</span>
-                        </div>
-                        <div className="text-sm">
-                          <span className="text-white/40">Doğrusu: </span>
-                          <span className="text-white font-bold">
-                            {lastItem.shown}
-                          </span>
-                        </div>
-                        <div className="text-sm">
-                          <span className="text-white/40">Senin cevabın: </span>
-                          <span className="text-red-300">{lastItem.answer}</span>
-                        </div>
-                      </motion.div>
-                    )}
+                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
+                    <span className="text-3xl md:text-5xl font-bold text-white text-center leading-tight">
+                      {tach.currentItem}
+                    </span>
                   </>
-                );
-              })()}
-          </div>
+                )}
+
+                {/* ANSWERING */}
+                {tach.phase === "answering" && (
+                  <span className="text-3xl text-white/20">?</span>
+                )}
+
+                {/* FEEDBACK */}
+                {tach.phase === "feedback" &&
+                  tach.items.length > 0 &&
+                  (() => {
+                    const lastItem = tach.items[tach.items.length - 1];
+                    return (
+                      <>
+                        {lastItem.correct ? (
+                          <div className="flex items-center gap-3 text-emerald-400">
+                            <CheckCircle size={32} />
+                            <span className="text-xl font-bold">Doğru!</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-3 text-center">
+                            <div className="flex items-center justify-center gap-3 text-red-400">
+                              <XCircle size={32} />
+                              <span className="text-xl font-bold">Yanlış</span>
+                            </div>
+                            <div className="text-sm">
+                              <span className="text-white/40">Doğrusu: </span>
+                              <span className="text-white font-bold">
+                                {lastItem.shown}
+                              </span>
+                            </div>
+                            <div className="text-sm">
+                              <span className="text-white/40">
+                                Senin cevabın:{" "}
+                              </span>
+                              <span className="text-red-300">
+                                {lastItem.answer}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+              </div>
+
+              {/* Answer input — only during answering phase */}
+              {tach.phase === "answering" && (
+                <div className="glass-panel p-5 space-y-4">
+                  <label className="text-sm font-medium text-white/60">
+                    Ne gördün?
+                  </label>
+                  <div className="flex gap-3">
+                    <input
+                      ref={inputRef}
+                      value={userInput}
+                      onChange={(e) => setUserInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Cevabını yaz..."
+                      className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:border-amber-500/30 focus:outline-none transition-colors text-lg"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      spellCheck={false}
+                    />
+                    <button
+                      onClick={handleSubmitAnswer}
+                      disabled={!userInput.trim()}
+                      className="px-5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-colors disabled:opacity-30"
+                    >
+                      <Send size={18} />
+                    </button>
+                  </div>
+                  <p className="text-xs text-white/30 text-center">
+                    Enter tuşuyla gönder
+                  </p>
+                </div>
+              )}
+            </>
+          )}
         </motion.div>
       )}
 

@@ -58,10 +58,12 @@ export function useTachistoscope(config: TachistoscopeConfig) {
     setCurrentItem(item);
     setPhase("showing");
 
-    // Hide after displayMs
-    timerRef.current = setTimeout(() => {
-      setPhase("answering");
-    }, displayMs);
+    // Ensure the browser has painted the content before scheduling hide
+    requestAnimationFrame(() => {
+      timerRef.current = setTimeout(() => {
+        setPhase("answering");
+      }, displayMs);
+    });
   }, [generateNextItem, displayMs]);
 
   const start = useCallback(() => {
@@ -83,9 +85,11 @@ export function useTachistoscope(config: TachistoscopeConfig) {
       setCurrentItem(item);
       setPhase("showing");
 
-      timerRef.current = setTimeout(() => {
-        setPhase("answering");
-      }, config.displayMs);
+      requestAnimationFrame(() => {
+        timerRef.current = setTimeout(() => {
+          setPhase("answering");
+        }, config.displayMs);
+      });
     }, 1500);
   }, [config.displayMs, config.mode, config.difficulty]);
 
@@ -125,13 +129,15 @@ export function useTachistoscope(config: TachistoscopeConfig) {
           setCurrentIndex(nextIndex);
 
           // Adaptive difficulty: decrease displayMs if accuracy > 80%
+          let nextDisplayMs = displayMs;
           const answeredSoFar = updatedItems.length;
           if (answeredSoFar >= 5 && answeredSoFar % 5 === 0) {
             const recentCorrect = updatedItems
               .slice(-5)
               .filter((i) => i.correct).length;
             if (recentCorrect >= 4) {
-              setDisplayMs((ms) => Math.max(50, ms - 50));
+              nextDisplayMs = Math.max(150, displayMs - 50);
+              setDisplayMs(nextDisplayMs);
             }
           }
 
@@ -143,9 +149,12 @@ export function useTachistoscope(config: TachistoscopeConfig) {
           setCurrentItem(item);
           setPhase("showing");
 
-          timerRef.current = setTimeout(() => {
-            setPhase("answering");
-          }, displayMs);
+          // Ensure the browser has painted before scheduling hide
+          requestAnimationFrame(() => {
+            timerRef.current = setTimeout(() => {
+              setPhase("answering");
+            }, nextDisplayMs);
+          });
         }
       }, Math.max(500, displayMs * 3)); // proportional feedback display
     },

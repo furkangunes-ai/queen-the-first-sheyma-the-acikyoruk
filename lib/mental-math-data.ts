@@ -51,7 +51,7 @@ const mediumCalc: QuestionGenerator = () => {
     case "mul": {
       const a = rand(2, 9);
       const b = rand(2, 9);
-      return { expression: `${a} \u00d7 ${b}`, answer: a * b, type: "carpma", difficulty: 2 };
+      return { expression: `${a} × ${b}`, answer: a * b, type: "carpma", difficulty: 2 };
     }
     default:
       return easyAddSub();
@@ -77,13 +77,13 @@ const hardCalc: QuestionGenerator = () => {
     case "mul2": {
       const a = rand(11, 25);
       const b = rand(2, 9);
-      return { expression: `${a} \u00d7 ${b}`, answer: a * b, type: "carpma", difficulty: 3 };
+      return { expression: `${a} × ${b}`, answer: a * b, type: "carpma", difficulty: 3 };
     }
     case "div": {
       const b = rand(2, 12);
       const answer = rand(3, 15);
       const a = b * answer;
-      return { expression: `${a} \u00f7 ${b}`, answer, type: "bolme", difficulty: 3 };
+      return { expression: `${a} ÷ ${b}`, answer, type: "bolme", difficulty: 3 };
     }
     case "mixed": {
       const a = rand(10, 50);
@@ -107,13 +107,13 @@ const hardCalc: QuestionGenerator = () => {
 // Difficulty 4: Percentage, fraction, complex, ratio, equation, factorial
 const ratioCalc: QuestionGenerator = () => {
   const a = rand(2, 8), b = rand(2, 8), multiplier = rand(2, 7);
-  return { expression: `${a}:${b} = x:${b * multiplier} \u2192 x`, answer: a * multiplier, type: "oran", difficulty: 4 };
+  return { expression: `${a}:${b} = x:${b * multiplier} → x`, answer: a * multiplier, type: "oran", difficulty: 4 };
 };
 
 const equationCalc: QuestionGenerator = () => {
   const a = rand(2, 7), answer = rand(2, 10), b = rand(3, 15);
   const result = a * answer + b;
-  return { expression: `${a}x + ${b} = ${result} \u2192 x`, answer, type: "denklem", difficulty: 4 };
+  return { expression: `${a}x + ${b} = ${result} → x`, answer, type: "denklem", difficulty: 4 };
 };
 
 const factorialCalc: QuestionGenerator = () => {
@@ -147,7 +147,7 @@ const advancedCalc: QuestionGenerator = () => {
       const f = pick(fracs);
       const base = f.den * rand(2, 8);
       return {
-        expression: `${base}'nin ${f.num}/${f.den}'${f.den === 2 ? "si" : f.den === 3 ? "\u00fc" : "\u00fc"}`,
+        expression: `${base}'nin ${f.num}/${f.den}'${f.den === 2 ? "si" : f.den === 3 ? "ü" : "ü"}`,
         answer: (base * f.num) / f.den,
         type: "kesir",
         difficulty: 4,
@@ -158,7 +158,7 @@ const advancedCalc: QuestionGenerator = () => {
       const b = rand(2, 9);
       const c = rand(2, 5);
       return {
-        expression: `${a} \u00d7 ${b} + ${c * c}`,
+        expression: `${a} × ${b} + ${c * c}`,
         answer: a * b + c * c,
         type: "karisik",
         difficulty: 4,
@@ -178,13 +178,13 @@ const advancedCalc: QuestionGenerator = () => {
 // Difficulty 5: EBOB-EKOK style, multi-step, YKS-level, triangle, geometric sequence, modular, compound
 const triangleCalc: QuestionGenerator = () => {
   const triangles: [string, number][] = [
-    ["3-4-5 \u00fc\u00e7genin alan\u0131", 6],
-    ["5-12-13 \u00fc\u00e7genin alan\u0131", 30],
-    ["6-8-10 \u00fc\u00e7genin alan\u0131", 24],
-    ["8-15-17 \u00fc\u00e7genin alan\u0131", 60],
-    ["Taban 10, y\u00fckseklik 6 \u2192 alan", 30],
-    ["Taban 12, y\u00fckseklik 5 \u2192 alan", 30],
-    ["Taban 7, y\u00fckseklik 8 \u2192 alan", 28],
+    ["3-4-5 üçgenin alanı", 6],
+    ["5-12-13 üçgenin alanı", 30],
+    ["6-8-10 üçgenin alanı", 24],
+    ["8-15-17 üçgenin alanı", 60],
+    ["Taban 10, yükseklik 6 → alan", 30],
+    ["Taban 12, yükseklik 5 → alan", 30],
+    ["Taban 7, yükseklik 8 → alan", 28],
   ];
   const [expr, ans] = pick(triangles);
   return { expression: expr, answer: ans, type: "ucgen", difficulty: 5 };
@@ -196,7 +196,7 @@ const geometricCalc: QuestionGenerator = () => {
   const n = rand(4, 6);
   const answer = a1 * Math.pow(r, n - 1);
   const terms = [a1, a1*r, a1*r*r].join(", ");
-  return { expression: `${terms}, ... \u2192 ${n}. terim`, answer, type: "dizi", difficulty: 5 };
+  return { expression: `${terms}, ... → ${n}. terim`, answer, type: "dizi", difficulty: 5 };
 };
 
 const modCalc: QuestionGenerator = () => {
@@ -206,7 +206,7 @@ const modCalc: QuestionGenerator = () => {
 
 const squareCalc: QuestionGenerator = () => {
   const n = rand(11, 25);
-  return { expression: `${n}\u00b2`, answer: n * n, type: "kare", difficulty: 5 };
+  return { expression: `${n}²`, answer: n * n, type: "kare", difficulty: 5 };
 };
 
 const compoundCalc: QuestionGenerator = () => {
@@ -218,15 +218,15 @@ const compoundCalc: QuestionGenerator = () => {
       const div = pick([2, 5, 10]);
       const answer = (n * n - sub) / div;
       if (!Number.isInteger(answer) || answer < 0) return compoundCalc();
-      return { expression: `(${n}\u00b2 - ${sub}) / ${div}`, answer, type: "bilesik", difficulty: 5 };
+      return { expression: `(${n}² - ${sub}) / ${div}`, answer, type: "bilesik", difficulty: 5 };
     }
     case "b": {
       const a = rand(2, 5), b = rand(2, 5), c = rand(2, 9);
-      return { expression: `${a} \u00d7 ${b} + ${c}\u00b2`, answer: a * b + c * c, type: "bilesik", difficulty: 5 };
+      return { expression: `${a} × ${b} + ${c}²`, answer: a * b + c * c, type: "bilesik", difficulty: 5 };
     }
     default: {
       const a = rand(10, 30), b = rand(10, 30);
-      return { expression: `${a}\u00b2 - ${b}\u00b2`, answer: a*a - b*b, type: "bilesik", difficulty: 5 };
+      return { expression: `${a}² - ${b}²`, answer: a*a - b*b, type: "bilesik", difficulty: 5 };
     }
   }
 };
@@ -283,7 +283,7 @@ const yksCalc: QuestionGenerator = () => {
     case "square": {
       const n = rand(11, 25);
       return {
-        expression: `${n}\u00b2`,
+        expression: `${n}²`,
         answer: n * n,
         type: "kare",
         difficulty: 5,
@@ -294,7 +294,7 @@ const yksCalc: QuestionGenerator = () => {
       const b = rand(2, 5);
       const c = rand(10, 30);
       return {
-        expression: `${a} \u00d7 ${b} - ${c}`,
+        expression: `${a} × ${b} - ${c}`,
         answer: a * b - c,
         type: "karisik",
         difficulty: 5,

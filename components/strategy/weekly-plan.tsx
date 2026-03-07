@@ -455,7 +455,7 @@ export default function WeeklyPlan() {
   const weekLabel = useMemo(() => {
     const startStr = format(weekStart, "d MMM", { locale: tr });
     const endStr = format(weekEnd, "d MMM yyyy", { locale: tr });
-    return `${startStr} \u2013 ${endStr}`;
+    return `${startStr} – ${endStr}`;
   }, [weekStart, weekEnd]);
 
   const startDateStr = useMemo(
@@ -466,7 +466,7 @@ export default function WeeklyPlan() {
   const defaultTitle = useMemo(() => {
     const s = format(weekStart, "d MMM", { locale: tr });
     const e = format(weekEnd, "d MMM", { locale: tr });
-    return `${s} \u2013 ${e} Plan\u0131`;
+    return `${s} – ${e} Planı`;
   }, [weekStart, weekEnd]);
 
   const completedCount = useMemo(
@@ -708,7 +708,7 @@ export default function WeeklyPlan() {
 
   const handleDeletePlan = useCallback(async () => {
     if (!plan) return;
-    if (!window.confirm("Bu plan\u0131 silmek istedi\u011finize emin misiniz?")) return;
+    if (!window.confirm("Bu planı silmek istediğinize emin misiniz?")) return;
     setDeleting(true);
     try {
       const res = await fetch(`/api/weekly-plans/${plan.id}`, {
@@ -895,7 +895,7 @@ export default function WeeklyPlan() {
     if (!wizardData) return;
 
     if (plan) {
-      if (!window.confirm("Mevcut plan\u0131 silip AI ile yeni plan olu\u015fturulacak. Devam etmek istiyor musunuz?")) {
+      if (!window.confirm("Mevcut planı silip AI ile yeni plan oluşturulacak. Devam etmek istiyor musunuz?")) {
         return;
       }
       // Delete existing plan first
