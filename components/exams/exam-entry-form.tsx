@@ -374,12 +374,12 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
               {examCategory === 'brans' && examTypeId && (
                 <div>
                   <label className="block text-[11px] font-bold text-amber-400/70 uppercase tracking-widest px-1 mb-2">
-                    Brans Turu
+                    Branş Türü
                   </label>
                   {loadingSubjects ? (
                     <div className="flex items-center gap-2 text-white/40 h-[46px] px-4">
                       <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
-                      <span className="text-sm font-medium">Yukleniyor...</span>
+                      <span className="text-sm font-medium">Yükleniyor...</span>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-2">
@@ -434,14 +434,14 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
               {examCategory === 'brans' && examTypeId && branchMode === 'tek-ders' && (
                 <div>
                   <label className="block text-[11px] font-bold text-amber-400/70 uppercase tracking-widest px-1 mb-2">
-                    Brans Dersi
+                    Branş Dersi
                   </label>
                   <select
                     value={branchSubjectId}
                     onChange={(e) => setBranchSubjectId(e.target.value)}
                     className={`${inputClassName} [color-scheme:dark] !border-amber-500/20 focus:!ring-amber-400/50 focus:!border-amber-400/30`}
                   >
-                    <option value="">Brans dersi secin</option>
+                    <option value="">Branş dersi seçin</option>
                     {subjects.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.name} ({s.questionCount} soru)
@@ -506,8 +506,8 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                 {examCategory === 'brans' && results.length > 0 && (
                   <p className="text-sm text-amber-400/70 mt-1">
                     {branchMode === 'group'
-                      ? `${BRANCH_GROUPS[examTypeName]?.find(g => g.key === selectedGroupKey)?.label ?? ''} brans denemesi`
-                      : `${results[0].subjectName} brans denemesi`
+                      ? `${BRANCH_GROUPS[examTypeName]?.find(g => g.key === selectedGroupKey)?.label ?? ''} branş denemesi`
+                      : `${results[0].subjectName} branş denemesi`
                     }
                   </p>
                 )}

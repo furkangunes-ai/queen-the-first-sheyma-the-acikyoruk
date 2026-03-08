@@ -73,11 +73,11 @@ interface ExamDetailViewProps {
 const CHART_COLORS = ['#f472b6', '#fbbf24', '#34d399', '#fb7185', '#a78bfa', '#ec4899', '#2dd4bf', '#f97316'];
 
 const TABS = [
-  { key: 'summary', label: 'Ozet', icon: BookOpen },
+  { key: 'summary', label: 'Özet', icon: BookOpen },
   { key: 'questions', label: 'Sorular', icon: ListOrdered },
-  { key: 'wrong', label: 'Yanlis Analizi', icon: PieChartIcon },
-  { key: 'topics', label: 'Konu Dagilimi', icon: BarChart3 },
-  { key: 'photos', label: 'Fotograflar', icon: Image },
+  { key: 'wrong', label: 'Yanlış Analizi', icon: PieChartIcon },
+  { key: 'topics', label: 'Konu Dağılımı', icon: BarChart3 },
+  { key: 'photos', label: 'Fotoğraflar', icon: Image },
 ] as const;
 
 type TabKey = (typeof TABS)[number]['key'];
@@ -90,7 +90,7 @@ const DIFFICULTY_MAP: Record<string, { label: string; color: string; bg: string 
 
 const STATUS_MAP: Record<string, { label: string; icon: React.ElementType; color: string; bg: string }> = {
   anladim: { label: 'Anladım', icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
-  tekrar: { label: 'Tekrar Lazim', icon: RefreshCw, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
+  tekrar: { label: 'Tekrar Lazım', icon: RefreshCw, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
   anlamadim: { label: 'Anlamadım', icon: AlertTriangle, color: 'text-rose-400', bg: 'bg-rose-500/10 border-rose-500/20' },
 };
 
@@ -776,6 +776,17 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
   const [editNotes, setEditNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Results edit state
+  const [editingResults, setEditingResults] = useState(false);
+  const [editResults, setEditResults] = useState<Array<{
+    subjectId: string;
+    subjectName: string;
+    correctCount: number;
+    wrongCount: number;
+    emptyCount: number;
+  }>>([]);
+  const [savingResults, setSavingResults] = useState(false);
+
   // Question detail modal
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null);
 
@@ -895,7 +906,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
       toast.success('Deneme silindi');
       onDeleted ? onDeleted() : onBack();
     } catch {
-      toast.error('Deneme silinirken hata olustu');
+      toast.error('Deneme silinirken hata oluştu');
     } finally {
       setDeleting(false);
       setShowDeleteConfirm(false);
@@ -908,6 +919,57 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
     setEditDate(new Date(exam.date).toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" }));
     setEditNotes('');
     setEditing(true);
+  };
+
+  const startEditingResults = () => {
+    if (!exam) return;
+    setEditResults(exam.subjectResults.map(sr => ({
+      subjectId: sr.subjectId,
+      subjectName: sr.subject.name,
+      correctCount: sr.correctCount,
+      wrongCount: sr.wrongCount,
+      emptyCount: sr.emptyCount,
+    })));
+    setEditingResults(true);
+  };
+
+  const handleSaveResults = async () => {
+    setSavingResults(true);
+    try {
+      const res = await fetch(`/api/exams/${examId}/results`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          results: editResults.map(r => ({
+            subjectId: r.subjectId,
+            correctCount: r.correctCount,
+            wrongCount: r.wrongCount,
+            emptyCount: r.emptyCount,
+          })),
+        }),
+      });
+      if (!res.ok) throw new Error('Sonuçlar güncellenemedi');
+      const data = await res.json();
+      // Update exam state with new results
+      setExam(prev => prev ? {
+        ...prev,
+        subjectResults: data.results,
+      } : prev);
+      toast.success('Ders sonuçları güncellendi');
+      setEditingResults(false);
+    } catch {
+      toast.error('Sonuçlar güncellenirken hata oluştu');
+    } finally {
+      setSavingResults(false);
+    }
+  };
+
+  const updateEditResult = (index: number, field: 'correctCount' | 'wrongCount' | 'emptyCount', value: number) => {
+    setEditResults(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: Math.max(0, value) };
+      return updated;
+    });
   };
 
   const handleSaveEdit = async () => {
@@ -925,10 +987,10 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
       if (!res.ok) throw new Error('Güncelleme başarısız');
       const updated = await res.json();
       setExam(prev => prev ? { ...prev, title: updated.title, date: updated.date } : prev);
-      toast.success('Deneme guncellendi');
+      toast.success('Deneme güncellendi');
       setEditing(false);
     } catch {
-      toast.error('Deneme guncellenirken hata olustu');
+      toast.error('Deneme güncellenirken hata oluştu');
     } finally {
       setSaving(false);
     }
@@ -956,7 +1018,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
       try {
         const res = await fetch(`/api/exams/${examId}`);
         if (!res.ok) {
-          throw new Error(`Sinav yuklenemedi (${res.status})`);
+          throw new Error(`Sınav yüklenemedi (${res.status})`);
         }
         const data: ExamDetail = await res.json();
         if (!cancelled) {
@@ -964,7 +1026,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Bilinmeyen bir hata olustu');
+          setError(err instanceof Error ? err.message : 'Bilinmeyen bir hata oluştu');
         }
       } finally {
         if (!cancelled) {
@@ -991,7 +1053,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
             className="flex items-center gap-2 text-sm text-white/50 hover:text-white/90 transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-            <span>Geri Don</span>
+            <span>Geri Dön</span>
           </button>
 
           {exam && !loading && (
@@ -1062,9 +1124,16 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
               <button
                 onClick={startEditing}
                 className="p-2 text-white/40 hover:text-pink-400 hover:bg-pink-500/10 rounded-lg transition-colors"
-                title="Duzenle"
+                title="Düzenle"
               >
                 <Pencil className="w-4 h-4" />
+              </button>
+              <button
+                onClick={startEditingResults}
+                className="p-2 text-white/40 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
+                title="Sonuçları Düzenle"
+              >
+                <Target className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(true)}
@@ -1088,7 +1157,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
             >
               <div className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-4">
                 <p className="text-sm text-rose-400 font-medium mb-3">
-                  Bu denemeyi silmek istedigine emin misin? Bu islem geri alinamaz.
+                  Bu denemeyi silmek istediğine emin misin? Bu işlem geri alınamaz.
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -1122,10 +1191,10 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
               className="overflow-hidden mb-6"
             >
               <div className="bg-pink-500/10 border border-pink-500/20 rounded-lg p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-pink-400">Denemeyi Duzenle</h3>
+                <h3 className="text-sm font-semibold text-pink-400">Denemeyi Düzenle</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-white/60 block mb-1">Baslik</label>
+                    <label className="text-xs text-white/60 block mb-1">Başlık</label>
                     <input
                       type="text"
                       value={editTitle}
@@ -1166,6 +1235,84 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
           )}
         </AnimatePresence>
 
+        {/* Results Edit Form */}
+        <AnimatePresence>
+          {editingResults && exam && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden mb-6"
+            >
+              <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-cyan-400">Ders Sonuçlarını Düzenle</h3>
+                <div className="overflow-x-auto rounded-xl border border-white/5 bg-white/[0.02]">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-white/[0.03] border-b border-white/10">
+                        <th className="text-left py-3 px-4 text-[11px] uppercase tracking-widest font-bold text-white/50">Ders</th>
+                        <th className="text-center py-3 px-3 text-[11px] uppercase tracking-widest font-bold text-emerald-400 w-20">Doğru</th>
+                        <th className="text-center py-3 px-3 text-[11px] uppercase tracking-widest font-bold text-rose-400 w-20">Yanlış</th>
+                        <th className="text-center py-3 px-3 text-[11px] uppercase tracking-widest font-bold text-white/50 w-20">Boş</th>
+                        <th className="text-center py-3 px-4 text-[11px] uppercase tracking-widest font-bold text-pink-400 w-20">Net</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {editResults.map((r, i) => {
+                        const net = r.correctCount - r.wrongCount / 4;
+                        return (
+                          <tr key={r.subjectId} className="border-b border-white/5">
+                            <td className="py-2 px-4 text-sm font-medium text-white/80">{r.subjectName}</td>
+                            <td className="py-2 px-3">
+                              <input type="number" min={0} value={r.correctCount}
+                                onChange={e => updateEditResult(i, 'correctCount', parseInt(e.target.value) || 0)}
+                                className="w-full py-1.5 px-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center text-sm font-bold text-white focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                              />
+                            </td>
+                            <td className="py-2 px-3">
+                              <input type="number" min={0} value={r.wrongCount}
+                                onChange={e => updateEditResult(i, 'wrongCount', parseInt(e.target.value) || 0)}
+                                className="w-full py-1.5 px-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-center text-sm font-bold text-white focus:outline-none focus:ring-1 focus:ring-rose-400"
+                              />
+                            </td>
+                            <td className="py-2 px-3">
+                              <input type="number" min={0} value={r.emptyCount}
+                                onChange={e => updateEditResult(i, 'emptyCount', parseInt(e.target.value) || 0)}
+                                className="w-full py-1.5 px-1 rounded-lg bg-white/[0.04] border border-white/10 text-center text-sm font-bold text-white focus:outline-none focus:ring-1 focus:ring-white/30"
+                              />
+                            </td>
+                            <td className="py-2 px-4 text-center text-sm font-black text-pink-400">{net.toFixed(2)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t border-white/10">
+                        <td colSpan={4} className="py-3 px-4 text-right text-sm font-bold text-white/60">Toplam Net:</td>
+                        <td className="py-3 px-4 text-center text-lg font-black text-pink-400">
+                          {editResults.reduce((sum, r) => sum + r.correctCount - r.wrongCount / 4, 0).toFixed(2)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button onClick={handleSaveResults} disabled={savingResults}
+                    className="px-4 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-400 disabled:opacity-50 flex items-center gap-2">
+                    {savingResults ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    Sonuçları Kaydet
+                  </button>
+                  <button onClick={() => setEditingResults(false)} disabled={savingResults}
+                    className="px-4 py-2 bg-white/[0.06] text-white/70 border border-white/10 rounded-lg text-sm font-medium hover:bg-white/10 flex items-center gap-2">
+                    <X className="w-4 h-4" />
+                    İptal
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Loading */}
         {loading && <DetailSkeleton />}
 
@@ -1178,7 +1325,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
               onClick={onBack}
               className="mt-4 text-sm text-pink-400 hover:text-pink-300 underline"
             >
-              Geri don
+              Geri dön
             </button>
           </div>
         )}
