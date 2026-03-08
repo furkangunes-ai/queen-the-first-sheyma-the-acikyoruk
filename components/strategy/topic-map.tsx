@@ -11,13 +11,14 @@ import {
   BookOpen,
   Tag,
   Check,
+  CheckCircle2,
   StickyNote,
   Star,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { filterExamTypesByTrack, type ExamTrack } from "@/lib/exam-track-filter";
-import { LEVEL_COLORS, LEVEL_BORDER_COLORS, LEVEL_LABELS } from "@/lib/constants";
+import { LEVEL_COLORS, LEVEL_BORDER_COLORS, LEVEL_LABELS, SUBJECT_GROUPS } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -139,26 +140,6 @@ function knowledgeDot(level: number) {
 // ---------------------------------------------------------------------------
 // Subject Grouping — dersleri alt başlıklar altında göster
 // ---------------------------------------------------------------------------
-
-interface SubjectGroup {
-  label: string; // boşsa standalone, header gösterilmez
-  subjectNames: string[];
-}
-
-const SUBJECT_GROUPS: Record<string, SubjectGroup[]> = {
-  TYT: [
-    { label: "", subjectNames: ["Türkçe"] },
-    { label: "Temel Matematik", subjectNames: ["Matematik", "Geometri"] },
-    { label: "Fen Bilimleri", subjectNames: ["Fizik", "Kimya", "Biyoloji"] },
-    { label: "Sosyal Bilimler", subjectNames: ["Tarih", "Coğrafya", "Felsefe", "Din Kültürü ve Ahlak Bilgisi"] },
-  ],
-  AYT: [
-    { label: "", subjectNames: ["Matematik"] },
-    { label: "Fen Bilimleri", subjectNames: ["Fizik", "Kimya", "Biyoloji"] },
-    { label: "Edebiyat – Sosyal 1", subjectNames: ["Edebiyat", "Tarih", "Coğrafya"] },
-    { label: "Sosyal 2", subjectNames: ["Felsefe", "Mantık", "Psikoloji", "Sosyoloji", "Din Kültürü ve Ahlak Bilgisi"] },
-  ],
-};
 
 function groupSubjects(examTypeName: string, subjects: Subject[]): { label: string; subjects: Subject[] }[] {
   const groups = SUBJECT_GROUPS[examTypeName];
@@ -826,7 +807,13 @@ export default function TopicMap() {
                                                 delay: tIdx * 0.02,
                                               }}
                                               onClick={() => toggleTopicExpand(topic.id)}
-                                              className="flex items-center gap-3 px-4 py-2.5 w-full text-left hover:bg-white/[0.02] transition-colors"
+                                              className={`flex items-center gap-3 px-4 py-2.5 w-full text-left hover:bg-white/[0.02] transition-colors${
+                                                level >= 5
+                                                  ? " border-l-2 border-cyan-400 bg-cyan-400/[0.04]"
+                                                  : level >= 4
+                                                    ? " border-l-2 border-emerald-400 bg-emerald-400/[0.03]"
+                                                    : ""
+                                              }`}
                                             >
                                               {/* Expand chevron */}
                                               <motion.div
@@ -839,8 +826,11 @@ export default function TopicMap() {
 
                                               {/* Topic name */}
                                               <div className="flex-1 min-w-0">
-                                                <span className="text-sm text-white/80 truncate block">
+                                                <span className="text-sm text-white/80 truncate flex items-center gap-1.5">
                                                   {topic.name}
+                                                  {level >= 5 && (
+                                                    <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                                                  )}
                                                 </span>
                                                 {/* Concept tags */}
                                                 {conceptsMap.get(topic.id)?.length ? (

@@ -35,3 +35,62 @@ export const LEVEL_BG_TINTS: Record<number, string> = {
   4: "bg-emerald-400/5",
   5: "bg-cyan-400/5",
 };
+
+// ---------------------------------------------------------------------------
+// Subject Groupings — ders grupları (topic-map, exam-entry-form vb.)
+// ---------------------------------------------------------------------------
+
+export interface SubjectGroup {
+  label: string; // boşsa standalone, header gösterilmez
+  subjectNames: string[];
+}
+
+export const SUBJECT_GROUPS: Record<string, SubjectGroup[]> = {
+  TYT: [
+    { label: "", subjectNames: ["Türkçe"] },
+    { label: "Temel Matematik", subjectNames: ["Matematik", "Geometri"] },
+    { label: "Fen Bilimleri", subjectNames: ["Fizik", "Kimya", "Biyoloji"] },
+    { label: "Sosyal Bilimler", subjectNames: ["Tarih", "Coğrafya", "Felsefe", "Din Kültürü ve Ahlak Bilgisi"] },
+  ],
+  AYT: [
+    { label: "", subjectNames: ["Matematik"] },
+    { label: "Fen Bilimleri", subjectNames: ["Fizik", "Kimya", "Biyoloji"] },
+    { label: "Edebiyat \u2013 Sosyal 1", subjectNames: ["Edebiyat", "Tarih", "Coğrafya"] },
+    { label: "Sosyal 2", subjectNames: ["Felsefe", "Mantık", "Psikoloji", "Sosyoloji", "Din Kültürü ve Ahlak Bilgisi"] },
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// Branch Groups — branş deneme türleri (exam-entry-form vb.)
+// ---------------------------------------------------------------------------
+
+export interface BranchGroup {
+  key: string;
+  label: string;
+  subjectNames: string[];
+}
+
+export const BRANCH_GROUPS: Record<string, BranchGroup[]> = {
+  TYT: [
+    { key: "fen", label: "Fen Bilimleri", subjectNames: ["Fizik", "Kimya", "Biyoloji"] },
+    { key: "sosyal", label: "Sosyal Bilimler", subjectNames: ["Tarih", "Coğrafya", "Felsefe", "Din Kültürü ve Ahlak Bilgisi"] },
+    { key: "matematik", label: "Temel Matematik", subjectNames: ["Matematik", "Geometri"] },
+  ],
+  AYT: [
+    { key: "fen", label: "Fen Bilimleri", subjectNames: ["Fizik", "Kimya", "Biyoloji"] },
+    { key: "matematik", label: "Matematik", subjectNames: ["Matematik"] },
+    { key: "edebiyat-sosyal1", label: "Edebiyat \u2013 Sosyal 1", subjectNames: ["Edebiyat", "Tarih", "Coğrafya"] },
+    { key: "sosyal2", label: "Sosyal 2", subjectNames: ["Felsefe", "Mantık", "Psikoloji", "Sosyoloji", "Din Kültürü ve Ahlak Bilgisi"] },
+  ],
+};
+
+// Helper: branş grubunun label'ını examCategory string'inden al
+export function getBranchGroupLabel(examCategory: string | null): string | null {
+  if (!examCategory || !examCategory.startsWith("brans-")) return null;
+  const key = examCategory.replace("brans-", "");
+  for (const groups of Object.values(BRANCH_GROUPS)) {
+    const found = groups.find((g) => g.key === key);
+    if (found) return found.label;
+  }
+  return null;
+}

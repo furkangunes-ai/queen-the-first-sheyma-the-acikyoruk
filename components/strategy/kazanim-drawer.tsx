@@ -86,6 +86,9 @@ export default function KazanimDrawer({
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
 
+  // Manual level override
+  const [manualLevel, setManualLevel] = useState<number | null>(null);
+
   // Notes debounce timers
   const noteTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
   // Track local note values for optimistic display
@@ -128,6 +131,7 @@ export default function KazanimDrawer({
       // Reset UI state when opening
       setExpandedDetails(new Set());
       setExpandedNotes(new Set());
+      setManualLevel(null);
     }
 
     // Cleanup note timers on close
@@ -173,6 +177,30 @@ export default function KazanimDrawer({
     return { checkedCount: checked, totalCount: total, percentage: pct, autoLevel: level };
   }, [kazanimlar]);
 
+  // Display level: manual override takes precedence over auto
+  const displayLevel = manualLevel !== null ? manualLevel : autoLevel;
+
+  // -------------------------------------------------------------------------
+  // Manual level override
+  // -------------------------------------------------------------------------
+
+  const handleManualLevel = useCallback(async (level: number) => {
+    setManualLevel(level);
+    try {
+      const res = await fetch("/api/topic-knowledge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topicId, level }),
+      });
+      if (!res.ok) throw new Error("Kaydedilemedi");
+      if (onLevelChange) onLevelChange(topicId, level);
+      toast.success(`Seviye ${level}/5 olarak güncellendi`);
+    } catch {
+      setManualLevel(null);
+      toast.error("Seviye güncellenemedi");
+    }
+  }, [topicId, onLevelChange]);
+
   // -------------------------------------------------------------------------
   // Toggle checkbox
   // -------------------------------------------------------------------------
@@ -212,9 +240,10 @@ export default function KazanimDrawer({
 
         const data = await res.json();
 
-        // If API returns autoLevel, propagate to parent
-        if (data.autoLevel !== undefined && onLevelChange) {
-          onLevelChange(topicId, data.autoLevel);
+        // If API returns autoLevel, propagate to parent and clear manual override
+        if (data.autoLevel !== undefined) {
+          setManualLevel(null);
+          if (onLevelChange) onLevelChange(topicId, data.autoLevel);
         }
       } catch (err) {
         console.error("KazanimDrawer: toggle failed", err);
@@ -396,25 +425,34 @@ export default function KazanimDrawer({
                   {topicName}
                 </h2>
 
-                {/* Auto-level badge */}
+                {/* Level badge */}
                 {totalCount > 0 && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-xs text-white/50">Seviye:</span>
-                    <div className="flex items-center gap-1.5">
-                      {[0, 1, 2, 3, 4, 5].map((lvl) => (
-                        <span
-                          key={lvl}
-                          className={`w-2 h-2 rounded-full transition-all ${
-                            lvl <= autoLevel
-                              ? DRAWER_LEVEL_COLORS[lvl]
-                              : "bg-white/10"
-                          }`}
-                        />
-                      ))}
+                  <div className="mt-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-white/50">Seviye:</span>
+                      <div className="flex items-center gap-1.5">
+                        {[0, 1, 2, 3, 4, 5].map((lvl) => (
+                          <button
+                            key={lvl}
+                            type="button"
+                            onClick={() => handleManualLevel(lvl)}
+                            title={`${DRAWER_LEVEL_LABELS[lvl]} (${lvl}/5)`}
+                            className={`w-3 h-3 rounded-full transition-all cursor-pointer hover:scale-125 hover:ring-2 hover:ring-white/20 ${
+                              lvl <= displayLevel
+                                ? DRAWER_LEVEL_COLORS[lvl]
+                                : "bg-white/10 hover:bg-white/20"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs font-medium text-white/70">
+                        {displayLevel}/5 - {DRAWER_LEVEL_LABELS[displayLevel]}
+                      </span>
+                      {manualLevel !== null && (
+                        <span className="text-[10px] text-amber-400/70 ml-1">(manuel)</span>
+                      )}
                     </div>
-                    <span className="text-xs font-medium text-white/70">
-                      {autoLevel}/5 - {DRAWER_LEVEL_LABELS[autoLevel]}
-                    </span>
+                    <p className="text-[10px] text-white/30 mt-1">Noktaları tıklayarak seviyeyi değiştirebilirsiniz</p>
                   </div>
                 )}
               </div>
