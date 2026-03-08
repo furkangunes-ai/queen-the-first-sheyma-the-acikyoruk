@@ -101,6 +101,10 @@ export function usePeripheralVision(config: PeripheralConfig) {
   }, [prepareRound, levelParams.displayMs]);
 
   const start = useCallback(() => {
+    // Clear any existing timers before starting
+    if (elapsedRef.current) clearInterval(elapsedRef.current);
+    if (timerRef.current) clearTimeout(timerRef.current);
+
     setRounds([]);
     setCurrentRound(0);
     setElapsedSeconds(0);

@@ -46,9 +46,12 @@ export default function MentalMath() {
   }, [math.phase, math.currentIndex]);
 
   const handleSubmit = useCallback(() => {
+    if (!userInput.trim()) return;
+    // Köklü ifade desteği: "5√2", "5root2", "5kok2" gibi
+    const hasRoot = /√|root|kök|kok/i.test(userInput);
     const num = parseInt(userInput);
-    if (isNaN(num)) return;
-    math.submitAnswer(num);
+    if (!hasRoot && isNaN(num)) return;
+    math.submitAnswer(hasRoot ? NaN : num, userInput.trim());
     setUserInput("");
   }, [userInput, math]);
 
@@ -285,18 +288,18 @@ export default function MentalMath() {
                 ref={inputRef}
                 value={userInput}
                 onChange={(e) => {
-                  // Allow negative numbers and digits only
+                  // Sayılar, negatif, ve köklü ifadeler (√, root, kok, kök)
                   const val = e.target.value;
-                  if (val === "" || val === "-" || /^-?\d+$/.test(val)) {
+                  if (val === "" || val === "-" || /^-?[\d√rootkökc]*$/i.test(val.replace(/\s/g, ""))) {
                     setUserInput(val);
                   }
                 }}
                 onKeyDown={handleKeyDown}
-                placeholder="Cevabını yaz..."
+                placeholder={math.currentQuestion?.answerText ? "Örn: 5√2" : "Cevabını yaz..."}
                 className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:border-cyan-500/30 focus:outline-none transition-colors text-lg font-mono text-center"
                 autoComplete="off"
                 autoCorrect="off"
-                inputMode="numeric"
+                inputMode="text"
               />
               <button
                 onClick={handleSubmit}
@@ -405,7 +408,7 @@ export default function MentalMath() {
                   </span>
                   <div className="flex items-center gap-2">
                     <span className="text-white/30 font-mono">
-                      = {attempt.question.answer}
+                      = {attempt.question.answerText || attempt.question.answer}
                     </span>
                     {attempt.skipped ? (
                       <SkipForward size={12} className="text-white/30" />
@@ -414,7 +417,7 @@ export default function MentalMath() {
                     ) : (
                       <div className="flex items-center gap-1">
                         <span className="text-red-300/70 font-mono">
-                          ({attempt.userAnswer})
+                          ({attempt.userAnswerText || attempt.userAnswer})
                         </span>
                         <XCircle size={12} className="text-red-400" />
                       </div>

@@ -2,13 +2,15 @@
 
 import React, { useState } from "react";
 import { motion } from "motion/react";
-import { Brain, Dumbbell, BookOpen } from "lucide-react";
+import { Brain, Dumbbell, BookOpen, History } from "lucide-react";
 import MentalMath from "@/components/training/mental-math";
 import ParagraphComprehension from "@/components/training/paragraph-comprehension";
+import TrainingHistory from "@/components/training/training-history";
 
 const TABS = [
   { key: "mental-math", label: "İşlem Hızı", icon: Brain, color: "cyan" },
   { key: "paragraph", label: "Paragraf Anlama", icon: BookOpen, color: "purple" },
+  { key: "history", label: "Geçmiş", icon: History, color: "amber" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -60,6 +62,7 @@ export default function TrainingPage() {
       >
         {activeTab === "mental-math" && <MentalMath />}
         {activeTab === "paragraph" && <ParagraphComprehension />}
+        {activeTab === "history" && <TrainingHistory />}
       </motion.div>
     </div>
   );

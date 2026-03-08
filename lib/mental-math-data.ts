@@ -3,6 +3,7 @@
 export interface MathQuestion {
   expression: string; // "24 × 7 = ?"
   answer: number;
+  answerText?: string; // "5√2" gibi köklü cevaplar için (varsa string karşılaştırma yapılır)
   type: string;
   difficulty: number;
 }
@@ -306,22 +307,85 @@ const triangleCalc: QuestionGenerator = () => {
   return { expression: `Taban ${taban}, yükseklik ${yukseklik} → alan`, answer: alan, type: "üçgen", difficulty: 5 };
 };
 
-/** Pisagor üçlüsü: (m²-n², 2mn, m²+n²) formülü ile sonsuz üçlü */
-const pisagorCalc: QuestionGenerator = () => {
-  const m = rand(2, 8);
-  const n = rand(1, m - 1);
-  const a = m * m - n * n;
-  const b = 2 * m * n;
-  const c = m * m + n * n;
-
-  const type = pick(["find_c", "find_a", "find_b"]);
+/** Dik üçgen kenar soruları — doğal dil, özel üçgenler, köklü değerler */
+const dikUcgenCalc: QuestionGenerator = () => {
+  const type = pick(["klasik", "30_60_90_rational", "30_60_90_sqrt", "45_45_90_sqrt", "kenar_bul"]);
   switch (type) {
-    case "find_c":
-      return { expression: `a=${a}, b=${b} → c=? (Pisagor)`, answer: c, type: "pisagor", difficulty: 5 };
-    case "find_a":
-      return { expression: `b=${b}, c=${c} → a=? (Pisagor)`, answer: a, type: "pisagor", difficulty: 5 };
-    default:
-      return { expression: `a=${a}, c=${c} → b=? (Pisagor)`, answer: b, type: "pisagor", difficulty: 5 };
+    case "klasik": {
+      // Pisagor üçlüsü ile — doğal dil
+      const m = rand(2, 7);
+      const n = rand(1, m - 1);
+      const a = m * m - n * n;
+      const b = 2 * m * n;
+      const c = m * m + n * n;
+      const variant = pick(["find_c", "find_a", "find_b"]);
+      if (variant === "find_c") {
+        return { expression: `Dik üçgende kenarlar ${a} ve ${b} ise hipotenüs kaçtır?`, answer: c, type: "dik üçgen", difficulty: 5 };
+      } else if (variant === "find_a") {
+        return { expression: `Dik üçgende hipotenüs ${c}, bir kenar ${b} ise diğer kenar kaçtır?`, answer: a, type: "dik üçgen", difficulty: 5 };
+      }
+      return { expression: `Dik üçgende hipotenüs ${c}, bir kenar ${a} ise diğer kenar kaçtır?`, answer: b, type: "dik üçgen", difficulty: 5 };
+    }
+    case "30_60_90_rational": {
+      // 30-60-90: kenarlar x, x√3, 2x — kısa kenar ↔ hipotenüs (tam sayı)
+      const x = rand(3, 15);
+      const variant = pick(["find_short", "find_hyp"]);
+      if (variant === "find_short") {
+        return { expression: `30°-60°-90° dik üçgende hipotenüs ${2 * x} ise kısa kenar kaçtır?`, answer: x, type: "özel üçgen", difficulty: 5 };
+      }
+      return { expression: `30°-60°-90° dik üçgende kısa kenar ${x} ise hipotenüs kaçtır?`, answer: 2 * x, type: "özel üçgen", difficulty: 5 };
+    }
+    case "30_60_90_sqrt": {
+      // 30-60-90: kısa kenar → uzun kenar = x√3 (köklü cevap)
+      const x = rand(2, 12);
+      const variant = pick(["find_long", "find_hyp_from_long"]);
+      if (variant === "find_long") {
+        return {
+          expression: `30°-60°-90° dik üçgende kısa kenar ${x} ise uzun kenar kaçtır?`,
+          answer: Math.round(x * Math.sqrt(3) * 100) / 100,
+          answerText: `${x}√3`,
+          type: "özel üçgen",
+          difficulty: 5,
+        };
+      }
+      // Hipotenüs verilmiş → uzun kenar bul (hipotenüs = 2x → uzun kenar = x√3)
+      return {
+        expression: `30°-60°-90° dik üçgende hipotenüs ${2 * x} ise uzun kenar kaçtır?`,
+        answer: Math.round(x * Math.sqrt(3) * 100) / 100,
+        answerText: `${x}√3`,
+        type: "özel üçgen",
+        difficulty: 5,
+      };
+    }
+    case "45_45_90_sqrt": {
+      // 45-45-90: kenarlar x, x, x√2
+      const x = rand(2, 15);
+      const variant = pick(["find_hyp", "find_leg"]);
+      if (variant === "find_hyp") {
+        return {
+          expression: `45°-45°-90° dik üçgende bir kenar ${x} ise hipotenüs kaçtır?`,
+          answer: Math.round(x * Math.sqrt(2) * 100) / 100,
+          answerText: `${x}√2`,
+          type: "özel üçgen",
+          difficulty: 5,
+        };
+      }
+      // Hipotenüs verilmiş → kenar bul (hipotenüs = x√2 → kenar = x)
+      // Tam sayı cevaplı: "hipotenüs a√2 ise kenar a"
+      return {
+        expression: `45°-45°-90° dik üçgende hipotenüs ${x}√2 ise bir kenar kaçtır?`,
+        answer: x,
+        type: "özel üçgen",
+        difficulty: 5,
+      };
+    }
+    default: {
+      // Genel dik üçgen — kenar bul
+      const triples = [[3,4,5],[5,12,13],[8,15,17],[7,24,25],[9,40,41],[11,60,61],[6,8,10],[9,12,15],[12,16,20],[15,20,25]];
+      const [a, b, c] = pick(triples);
+      const k = pick([1, 2]); // çarpan
+      return { expression: `Dik üçgende kenarlar ${a*k} ve ${b*k} ise hipotenüs kaçtır?`, answer: c * k, type: "dik üçgen", difficulty: 5 };
+    }
   }
 };
 
@@ -465,7 +529,7 @@ const compoundCalc: QuestionGenerator = () => {
 /** Ana YKS zorluk üretici — tüm tipler algoritmik */
 const yksCalc: QuestionGenerator = () => {
   const type = pick([
-    "ebob", "ekok", "ucgen", "pisagor",
+    "ebob", "ekok", "ucgen", "dikucgen",
     "aritmetik_dizi", "geometrik_dizi",
     "kup_kok", "log", "asal_carpan",
     "mod", "mutlak", "us_kurali",
@@ -475,7 +539,7 @@ const yksCalc: QuestionGenerator = () => {
     case "ebob": return ebobCalc();
     case "ekok": return ekokCalc();
     case "ucgen": return triangleCalc();
-    case "pisagor": return pisagorCalc();
+    case "dikucgen": return dikUcgenCalc();
     case "aritmetik_dizi": return aritmetikDiziCalc();
     case "geometrik_dizi": return geometrikDiziCalc();
     case "kup_kok": return kupKokCalc();
@@ -490,6 +554,15 @@ const yksCalc: QuestionGenerator = () => {
     default: return advancedCalc();
   }
 };
+
+/** Köklü ifade cevaplarını normalize et: "5√2", "5root2", "5kök2", "5kok2" → "5√2" */
+export function normalizeAnswer(input: string): string {
+  return input
+    .trim()
+    .replace(/\s+/g, "")
+    .replace(/root|kök|kok|kik/gi, "√")
+    .toLowerCase();
+}
 
 // ---------- Public API ----------
 

@@ -190,6 +190,7 @@ const NAV_GROUPS: NavGroup[] = [
       { path: '/study', label: 'Günlük Çalışma', icon: BookOpenCheck },
       { path: '/exams', label: 'Denemeler', icon: GraduationCap },
       { path: '/tasks', label: 'Planlama', icon: CheckSquare },
+      { path: '/calendar', label: 'Takvim', icon: CalendarDays },
     ],
   },
   {
