@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { ChevronRight, Save, Loader2, FileText, CheckCircle2 } from 'lucide-react';
+import { BRANCH_GROUPS } from "@/lib/constants";
 
 interface ExamType {
   id: string;
@@ -39,6 +40,8 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
   // Step 1: Basic info
   const [examCategory, setExamCategory] = useState<'genel' | 'brans'>('genel');
   const [branchSubjectId, setBranchSubjectId] = useState('');
+  const [branchMode, setBranchMode] = useState<'group' | 'tek-ders' | ''>('');
+  const [selectedGroupKey, setSelectedGroupKey] = useState('');
   const [title, setTitle] = useState('');
   const [examTypeId, setExamTypeId] = useState('');
   const [date, setDate] = useState(() => {
@@ -52,6 +55,9 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loadingExamTypes, setLoadingExamTypes] = useState(true);
   const [loadingSubjects, setLoadingSubjects] = useState(false);
+
+  // Computed: exam type name for BRANCH_GROUPS lookup
+  const examTypeName = examTypes.find(et => et.id === examTypeId)?.name ?? '';
 
   // Step 2: Subject results
   const [results, setResults] = useState<SubjectResult[]>([]);
@@ -81,9 +87,11 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
     fetchExamTypes();
   }, []);
 
-  // Reset branchSubjectId when switching category or examType
+  // Reset branch-related state when switching category or examType
   useEffect(() => {
     setBranchSubjectId('');
+    setBranchMode('');
+    setSelectedGroupKey('');
   }, [examCategory, examTypeId]);
 
   // Fetch subjects when exam type changes
@@ -161,7 +169,9 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
   function canProceedToStep2() {
     const baseValid = title.trim() !== '' && examTypeId !== '' && date !== '';
     if (examCategory === 'brans') {
-      return baseValid && branchSubjectId !== '';
+      if (branchMode === 'group') return baseValid && selectedGroupKey !== '';
+      if (branchMode === 'tek-ders') return baseValid && branchSubjectId !== '';
+      return false; // no branch mode selected yet
     }
     return baseValid;
   }
@@ -186,7 +196,9 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
           examTypeId,
           date,
           notes: notes.trim() || undefined,
-          examCategory: examCategory === 'brans' ? 'brans' : undefined,
+          examCategory: examCategory === 'brans'
+            ? (branchMode === 'group' && selectedGroupKey ? `brans-${selectedGroupKey}` : 'brans')
+            : undefined,
         }),
       });
 
@@ -358,31 +370,84 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                 </div>
               </div>
 
-              {/* Branch Subject Picker - only shown in brans mode */}
+              {/* Branch Type Picker - Stage 1: group or tek-ders */}
               {examCategory === 'brans' && examTypeId && (
                 <div>
                   <label className="block text-[11px] font-bold text-amber-400/70 uppercase tracking-widest px-1 mb-2">
-                    Branş Dersi
+                    Brans Turu
                   </label>
                   {loadingSubjects ? (
                     <div className="flex items-center gap-2 text-white/40 h-[46px] px-4">
                       <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
-                      <span className="text-sm font-medium">Dersler yükleniyor...</span>
+                      <span className="text-sm font-medium">Yukleniyor...</span>
                     </div>
                   ) : (
-                    <select
-                      value={branchSubjectId}
-                      onChange={(e) => setBranchSubjectId(e.target.value)}
-                      className={`${inputClassName} [color-scheme:dark] !border-amber-500/20 focus:!ring-amber-400/50 focus:!border-amber-400/30`}
-                    >
-                      <option value="">Branş dersi seçin</option>
-                      {subjects.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} ({s.questionCount} soru)
-                        </option>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(BRANCH_GROUPS[examTypeName] || []).map((group) => (
+                        <button
+                          key={group.key}
+                          type="button"
+                          onClick={() => {
+                            setBranchMode('group');
+                            setSelectedGroupKey(group.key);
+                            setBranchSubjectId('');
+                            // Set results to the group's subjects
+                            const groupSubjects = subjects.filter(s => group.subjectNames.includes(s.name));
+                            setResults(groupSubjects.map(s => ({
+                              subjectId: s.id,
+                              subjectName: s.name,
+                              correctCount: 0,
+                              wrongCount: 0,
+                              emptyCount: 0,
+                            })));
+                          }}
+                          className={`py-3 px-4 rounded-xl text-sm font-bold tracking-wide transition-all border ${
+                            branchMode === 'group' && selectedGroupKey === group.key
+                              ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-400 border-amber-500/30 shadow-[inset_0_0_20px_rgba(245,158,11,0.1)]'
+                              : 'bg-white/[0.03] text-white/50 border-white/10 hover:bg-white/[0.06] hover:text-white/70'
+                          }`}
+                        >
+                          {group.label}
+                        </button>
                       ))}
-                    </select>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBranchMode('tek-ders');
+                          setSelectedGroupKey('');
+                          setResults([]);
+                        }}
+                        className={`py-3 px-4 rounded-xl text-sm font-bold tracking-wide transition-all border ${
+                          branchMode === 'tek-ders'
+                            ? 'bg-gradient-to-r from-purple-500/20 to-purple-600/20 text-purple-400 border-purple-500/30 shadow-[inset_0_0_20px_rgba(168,85,247,0.1)]'
+                            : 'bg-white/[0.03] text-white/50 border-white/10 hover:bg-white/[0.06] hover:text-white/70'
+                        }`}
+                      >
+                        Tek Ders
+                      </button>
+                    </div>
                   )}
+                </div>
+              )}
+
+              {/* Branch Subject Picker - Stage 2: only for tek-ders mode */}
+              {examCategory === 'brans' && examTypeId && branchMode === 'tek-ders' && (
+                <div>
+                  <label className="block text-[11px] font-bold text-amber-400/70 uppercase tracking-widest px-1 mb-2">
+                    Brans Dersi
+                  </label>
+                  <select
+                    value={branchSubjectId}
+                    onChange={(e) => setBranchSubjectId(e.target.value)}
+                    className={`${inputClassName} [color-scheme:dark] !border-amber-500/20 focus:!ring-amber-400/50 focus:!border-amber-400/30`}
+                  >
+                    <option value="">Brans dersi secin</option>
+                    {subjects.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.questionCount} soru)
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
 
@@ -440,7 +505,10 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                 </h2>
                 {examCategory === 'brans' && results.length > 0 && (
                   <p className="text-sm text-amber-400/70 mt-1">
-                    {results[0].subjectName} branş denemesi
+                    {branchMode === 'group'
+                      ? `${BRANCH_GROUPS[examTypeName]?.find(g => g.key === selectedGroupKey)?.label ?? ''} brans denemesi`
+                      : `${results[0].subjectName} brans denemesi`
+                    }
                   </p>
                 )}
               </div>
