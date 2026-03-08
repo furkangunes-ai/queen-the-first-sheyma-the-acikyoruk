@@ -1,11 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { generateMathQuestion, type MathQuestion } from "@/lib/mental-math-data";
+import { generateMathQuestion, normalizeAnswer, type MathQuestion } from "@/lib/mental-math-data";
 
 export type MentalMathPhase = "setup" | "countdown" | "playing" | "results";
 
 export interface MathAttempt {
   question: MathQuestion;
   userAnswer: number | null;
+  userAnswerText?: string; // köklü ifade cevapları için
   correct: boolean;
   skipped: boolean;
   responseTimeMs: number;
@@ -95,15 +96,23 @@ export function useMentalMath(config: MentalMathConfig) {
   }, [config.difficulty]);
 
   const submitAnswer = useCallback(
-    (userAnswer: number) => {
+    (userAnswer: number, userAnswerRaw?: string) => {
       if (phase !== "playing" || !currentQuestion) return;
 
       const responseTimeMs = Date.now() - questionStartRef.current;
-      const isCorrect = userAnswer === currentQuestion.answer;
+
+      // Köklü ifade desteği: answerText varsa string karşılaştır
+      let isCorrect: boolean;
+      if (currentQuestion.answerText && userAnswerRaw) {
+        isCorrect = normalizeAnswer(userAnswerRaw) === normalizeAnswer(currentQuestion.answerText);
+      } else {
+        isCorrect = userAnswer === currentQuestion.answer;
+      }
 
       const attempt: MathAttempt = {
         question: currentQuestion,
         userAnswer,
+        userAnswerText: userAnswerRaw,
         correct: isCorrect,
         skipped: false,
         responseTimeMs,
