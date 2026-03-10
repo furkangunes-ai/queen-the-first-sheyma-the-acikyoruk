@@ -7,32 +7,22 @@ import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import {
   LayoutDashboard,
-  CheckSquare,
   GraduationCap,
-  BarChart2,
   Image as ImageIcon,
   UserCircle,
   Heart,
-  Activity,
   Shield,
   LogOut,
   BookOpenCheck,
   BrainCircuit,
-  Zap,
   Menu,
   X,
   Sparkles,
   CalendarDays,
-  Bot,
-  Dumbbell,
-  Map,
-  RotateCw,
-  Target,
-  ChevronDown,
-  ChevronRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import NotificationBell from '@/components/notifications/notification-bell';
+import FeatureTour from '@/components/onboarding/feature-tour';
 import { Beaker, BookText, Scale } from 'lucide-react';
 import { getExamTrackLabel, type ExamTrack } from '@/lib/exam-track-filter';
 
@@ -157,7 +147,7 @@ function ExamTrackModal({ onSelect }: { onSelect: (track: string) => void }) {
   );
 }
 
-// ---------- Grouped Navigation ----------
+// ---------- Flat Navigation ----------
 
 interface NavItem {
   path: string;
@@ -165,140 +155,19 @@ interface NavItem {
   icon: any;
 }
 
-interface NavGroup {
-  label: string;
-  icon: any;
-  items: NavItem[];
-  defaultOpen?: boolean;
-}
-
-const NAV_GROUPS: NavGroup[] = [
-  {
-    label: "Genel",
-    icon: LayoutDashboard,
-    defaultOpen: true,
-    items: [
-      { path: '/', label: 'Genel Bakış', icon: LayoutDashboard },
-      { path: '/analytics', label: 'Analiz', icon: BarChart2 },
-    ],
-  },
-  {
-    label: "Çalışma",
-    icon: BookOpenCheck,
-    defaultOpen: true,
-    items: [
-      { path: '/study', label: 'Günlük Çalışma', icon: BookOpenCheck },
-      { path: '/exams', label: 'Denemeler', icon: GraduationCap },
-      { path: '/tasks', label: 'Planlama', icon: CheckSquare },
-      { path: '/calendar', label: 'Takvim', icon: CalendarDays },
-    ],
-  },
-  {
-    label: "Antrenman",
-    icon: Dumbbell,
-    defaultOpen: false,
-    items: [
-      { path: '/speed-reading', label: 'Hızlı Okuma', icon: Zap },
-      { path: '/training', label: 'Antrenman', icon: Dumbbell },
-    ],
-  },
-  {
-    label: "Strateji",
-    icon: BrainCircuit,
-    defaultOpen: false,
-    items: [
-      { path: '/strategy', label: 'Strateji', icon: BrainCircuit },
-    ],
-  },
-  {
-    label: "Kişisel",
-    icon: Heart,
-    defaultOpen: false,
-    items: [
-      { path: '/check-in', label: 'Check-in', icon: Heart },
-      { path: '/metrics', label: 'Metrikler', icon: Activity },
-      { path: '/gallery', label: 'Dosyalar', icon: ImageIcon },
-    ],
-  },
+const NAV_ITEMS: NavItem[] = [
+  { path: '/', label: 'Genel Bakış', icon: LayoutDashboard },
+  { path: '/study', label: 'Günlük Çalışma', icon: BookOpenCheck },
+  { path: '/exams', label: 'Denemeler', icon: GraduationCap },
+  { path: '/strategy', label: 'Strateji', icon: BrainCircuit },
+  { path: '/calendar', label: 'Takvim', icon: CalendarDays },
+  { path: '/check-in', label: 'Check-in', icon: Heart },
+  { path: '/gallery', label: 'Dosyalar', icon: ImageIcon },
 ];
 
 const ADMIN_NAV_ITEMS = [
   { path: '/admin', label: 'Admin Paneli', icon: Shield },
 ];
-
-// ---------- Collapsible Nav Group ----------
-
-function NavGroupSection({
-  group,
-  pathname,
-  onNavClick,
-}: {
-  group: NavGroup;
-  pathname: string;
-  onNavClick?: () => void;
-}) {
-  const hasActiveItem = group.items.some(
-    (item) => pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path))
-  );
-
-  const [isOpen, setIsOpen] = useState(group.defaultOpen || hasActiveItem);
-
-  const GroupIcon = group.icon;
-
-  return (
-    <div className="mb-1">
-      {/* Group Header */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-white/30 hover:text-white/50 transition-colors"
-      >
-        <motion.div
-          animate={{ rotate: isOpen ? 0 : -90 }}
-          transition={{ duration: 0.15 }}
-        >
-          <ChevronDown size={12} />
-        </motion.div>
-        <span>{group.label}</span>
-      </button>
-
-      {/* Group Items */}
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="overflow-hidden"
-          >
-            <div className="flex flex-col gap-1 pb-1">
-              {group.items.map((item) => {
-                const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path));
-                return (
-                  <Link
-                    key={item.path}
-                    href={item.path}
-                    onClick={onNavClick}
-                    className={`
-                      group flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-300
-                      ${isActive
-                        ? 'bg-pink-500/20 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_4px_12px_rgba(255,42,133,0.3)] border border-pink-400/30'
-                        : 'text-white/60 hover:bg-pink-500/10 hover:text-white border border-transparent hover:border-pink-500/20'
-                      }
-                    `}
-                  >
-                    <item.icon className={`w-[18px] h-[18px] flex-shrink-0 transition-transform duration-300 ${isActive ? 'scale-110 text-pink-300' : 'group-hover:scale-110 group-hover:text-pink-300'}`} />
-                    <span className="text-[14px] font-medium tracking-wide">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
 
 // ---------- Sidebar Content ----------
 
@@ -321,16 +190,28 @@ function SidebarContent({ pathname, isAdmin, userName, examTrack, onNavClick }: 
         </div>
       </div>
 
-      {/* Navigation Links (Grouped) */}
-      <nav className="flex-1 py-2 flex flex-col px-3 overflow-y-auto no-scrollbar">
-        {NAV_GROUPS.map((group) => (
-          <NavGroupSection
-            key={group.label}
-            group={group}
-            pathname={pathname}
-            onNavClick={onNavClick}
-          />
-        ))}
+      {/* Navigation Links */}
+      <nav className="flex-1 py-2 flex flex-col gap-1 px-3 overflow-y-auto no-scrollbar">
+        {NAV_ITEMS.map((item) => {
+          const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path));
+          return (
+            <Link
+              key={item.path}
+              href={item.path}
+              onClick={onNavClick}
+              className={`
+                group flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-300
+                ${isActive
+                  ? 'bg-pink-500/20 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_4px_12px_rgba(255,42,133,0.3)] border border-pink-400/30'
+                  : 'text-white/60 hover:bg-pink-500/10 hover:text-white border border-transparent hover:border-pink-500/20'
+                }
+              `}
+            >
+              <item.icon className={`w-[18px] h-[18px] flex-shrink-0 transition-transform duration-300 ${isActive ? 'scale-110 text-pink-300' : 'group-hover:scale-110 group-hover:text-pink-300'}`} />
+              <span className="text-[14px] font-medium tracking-wide">{item.label}</span>
+            </Link>
+          );
+        })}
 
         {/* Admin */}
         {isAdmin && (
@@ -417,6 +298,9 @@ export function BinderLayout({ children }: { children: React.ReactNode }) {
           <ExamTrackModal onSelect={handleExamTrackSelect} />
         )}
       </AnimatePresence>
+
+      {/* Onboarding Feature Tour (shown after exam track is set) */}
+      {!showExamTrackModal && <FeatureTour />}
 
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex w-[280px] h-screen sticky top-0 flex-col relative z-20">

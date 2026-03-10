@@ -5,21 +5,11 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { clsx } from 'clsx';
 import { getTurkeyDateString } from '@/lib/utils';
-import { CheckCircle2, Circle, TrendingUp, Calendar, AlertCircle, Loader2, GraduationCap, Heart, CheckCircle, CheckSquare, ChevronRight, Sparkles, Flame, CalendarDays, Clock, ChevronDown } from 'lucide-react';
+import { Circle, TrendingUp, Loader2, GraduationCap, Heart, CheckCircle, Sparkles, CalendarDays, Clock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
-import StreakBadgeWidget from '@/components/gamification/streak-badge-widget';
-
-interface DashboardTask {
-  id: string;
-  title: string;
-  completed: boolean;
-  priority: string;
-  folder: { name: string; color: string } | null;
-  completions: Array<{ completedAt: string }>;
-}
 
 interface DashboardExam {
   id: string;
@@ -73,14 +63,12 @@ export default function DashboardPage() {
   const { data: session } = useSession();
   const router = useRouter();
 
-  const [tasks, setTasks] = useState<DashboardTask[]>([]);
   const [exams, setExams] = useState<DashboardExam[]>([]);
   const [todayCheckIn, setTodayCheckIn] = useState<DashboardCheckIn | null>(null);
   const [weeklyPlan, setWeeklyPlan] = useState<WeeklyPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [aiInsightLoading, setAiInsightLoading] = useState(false);
-  const [upcomingExpanded, setUpcomingExpanded] = useState(false);
 
   const userName = session?.user?.name || 'Kullanıcı';
   const isAdmin = (session?.user as any)?.role === 'admin';
@@ -88,17 +76,12 @@ export default function DashboardPage() {
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      const [tasksRes, examsRes, checkInRes, planRes] = await Promise.all([
-        fetch('/api/tasks'),
+      const [examsRes, checkInRes, planRes] = await Promise.all([
         fetch('/api/exams?limit=5'),
         fetch('/api/check-ins?limit=1'),
         fetch('/api/weekly-plans?current=true'),
       ]);
 
-      if (tasksRes.ok) {
-        const tasksData = await tasksRes.json();
-        setTasks(tasksData);
-      }
       if (examsRes.ok) {
         const examsData = await examsRes.json();
         setExams(examsData);
@@ -152,10 +135,6 @@ export default function DashboardPage() {
     fetchAIInsight();
   }, []);
 
-  const pendingTasks = tasks.filter(t => !t.completed);
-  const completedTasks = tasks.filter(t => t.completed);
-  const todaysTasks = pendingTasks.slice(0, 5);
-
   const lastExam = exams.length > 0 ? exams[0] : null;
   const lastExamTotalNet = lastExam
     ? lastExam.subjectResults.reduce((sum, sr) => sum + sr.netScore, 0)
@@ -168,23 +147,11 @@ export default function DashboardPage() {
     : '0';
 
   // ─── Weekly Plan: Today & Upcoming ───
-  const DAY_NAMES_TR = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
-
   // Türkiye saatine göre bugünün gününü hesapla (0=Pazartesi..6=Pazar)
   const turkeyNow = new Date(getTurkeyDateString() + 'T12:00:00+03:00');
   const todayDayOfWeek = (turkeyNow.getDay() + 6) % 7;
   const todayPlanItems = weeklyPlan?.items?.filter(i => i.dayOfWeek === todayDayOfWeek) || [];
   const todayPlanCompleted = todayPlanItems.filter(i => i.completed).length;
-
-  // Upcoming: next 3 days (wrap around week)
-  const upcomingDays: { dayOfWeek: number; dayName: string; items: WeeklyPlanItem[] }[] = [];
-  for (let offset = 1; offset <= 3; offset++) {
-    const dow = (todayDayOfWeek + offset) % 7;
-    const items = weeklyPlan?.items?.filter(i => i.dayOfWeek === dow) || [];
-    if (items.length > 0) {
-      upcomingDays.push({ dayOfWeek: dow, dayName: DAY_NAMES_TR[dow], items });
-    }
-  }
 
   const handleTogglePlanItem = async (itemId: string, currentCompleted: boolean) => {
     if (!weeklyPlan) return;
@@ -281,12 +248,12 @@ export default function DashboardPage() {
             </div>
             <div className="glass bg-white/[0.03] p-5 rounded-3xl border border-white/5 hover-lift">
               <div className="flex items-center gap-2 text-pink-400 mb-2">
-                <AlertCircle size={18} />
-                <span className="font-bold text-xs uppercase tracking-wider">Bekleyen</span>
+                <CalendarDays size={18} />
+                <span className="font-bold text-xs uppercase tracking-wider">Bugün</span>
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-white tracking-tighter">{pendingTasks.length}</span>
-                <span className="text-sm text-white/40 font-medium">görev</span>
+                <span className="text-4xl font-bold text-white tracking-tighter">{todayPlanCompleted}</span>
+                <span className="text-sm text-white/40 font-medium">/ {todayPlanItems.length} plan</span>
               </div>
             </div>
           </div>
@@ -379,18 +346,15 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-center py-8 relative z-10">
-                <div className="w-36 h-36 rounded-full glass border border-pink-400/30 flex items-center justify-center bg-white/[0.02] shadow-[inset_0_0_20px_rgba(255,42,133,0.1)] relative z-10 glow-pink-soft group-hover:glow-pink transition-all duration-300">
+              <div className="flex items-center justify-center py-6 relative z-10">
+                <div className="w-28 h-28 rounded-full glass border border-pink-400/30 flex items-center justify-center bg-white/[0.02] shadow-[inset_0_0_20px_rgba(255,42,133,0.1)] glow-pink-soft group-hover:glow-pink transition-all duration-300">
                   <div className="text-center">
-                    <span className="block text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-pink-400 to-pink-600">
+                    <span className="block text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-pink-400 to-pink-600">
                       {lastExamTotalNet.toFixed(1)}
                     </span>
                     <span className="text-[10px] text-white/50 uppercase tracking-widest font-semibold mt-1 block">Net</span>
                   </div>
                 </div>
-                {/* Decorative rotating dashed ring */}
-                <div className="absolute w-44 h-44 rounded-full border border-dashed border-cyan-400/30 animate-[spin_10s_linear_infinite] opacity-50"></div>
-                <div className="absolute w-[184px] h-[184px] rounded-full border border-dashed border-pink-400/20 animate-[spin_15s_linear_infinite_reverse] opacity-50"></div>
               </div>
 
               <div className="text-center mt-4 relative z-10">
@@ -424,17 +388,9 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Streak & Badges */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-        >
-          <StreakBadgeWidget />
-        </motion.div>
       </div>
 
-      {/* Right Column: Today's Plan, Tasks, Upcoming Plan */}
+      {/* Right Column: Today's Plan */}
       <div className="flex flex-col gap-6 lg:gap-8">
 
         {/* ─── A. Bugünün Planı (Today's Plan) ─── */}
@@ -537,169 +493,6 @@ export default function DashboardPage() {
                   ))
                 )}
               </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* ─── B. Yapılacaklar (Tasks) — Existing ─── */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-          className="glass-panel flex flex-col relative"
-        >
-          <div className="p-6 lg:p-8 flex flex-col">
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
-              <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
-                <CheckSquare size={24} className="text-cyan-400" />
-                Yapılacaklar
-              </h2>
-              <div className="glass bg-white/[0.05] border-white/10 px-3 py-1.5 rounded-xl flex items-center gap-2">
-                <span className="text-xs font-bold text-pink-300">{completedTasks.length}</span>
-                <span className="text-xs text-white/30">/</span>
-                <span className="text-xs font-bold text-white/70">{tasks.length}</span>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {todaysTasks.length === 0 ? (
-                <div className="text-center py-16 flex flex-col items-center justify-center relative">
-                  <div className="absolute inset-0 bg-pink-500/5 blur-3xl rounded-full" />
-                  <CheckCircle size={48} className="text-pink-400/20 mb-4" />
-                  <p className="text-white/40 font-medium z-10">Bugün için bekleyen görev yok!</p>
-                  <p className="text-white/30 text-sm mt-1 z-10">Harika gidiyorsun.</p>
-                </div>
-              ) : (
-                todaysTasks.map((task, idx) => (
-                  <motion.div
-                    key={task.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 + (idx * 0.05) }}
-                    className="group flex items-start gap-4 p-4 glass bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-pink-500/30 rounded-2xl transition-all duration-300 cursor-pointer"
-                    onClick={() => router.push('/tasks')}
-                  >
-                    <div className="mt-0.5 relative">
-                      {task.completed ? (
-                        <CheckCircle2 size={22} className="text-cyan-400" />
-                      ) : (
-                        <>
-                          <Circle size={22} className="text-white/20 group-hover:text-pink-400/50 transition-colors" />
-                          <div className="absolute inset-0 bg-pink-400/20 rounded-full scale-0 group-hover:scale-150 opacity-0 group-hover:opacity-100 transition-all duration-500 blur-md" />
-                        </>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className={clsx("text-[15px] leading-snug font-medium transition-colors",
-                        task.completed ? "line-through text-white/30" : "text-white/80 group-hover:text-white"
-                      )}>
-                        {task.title}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-2 mt-2">
-                        {task.folder && (
-                          <span className="text-[10px] glass bg-white/[0.05] px-2 py-1 rounded-md text-white/60 border border-white/10 uppercase tracking-widest font-semibold flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: task.folder.color || '#ff2a85' }} />
-                            {task.folder.name}
-                          </span>
-                        )}
-                        {task.priority === 'high' && (
-                          <span className="text-[10px] bg-rose-500/10 px-2 py-1 rounded-md text-rose-400 border border-rose-500/20 uppercase tracking-widest font-bold">
-                            Yüksek Öncelik
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))
-              )}
-
-              {pendingTasks.length > 5 && (
-                <div className="text-center pt-6 pb-2">
-                  <button
-                    onClick={() => router.push('/tasks')}
-                    className="inline-flex items-center justify-center gap-2 text-sm text-pink-400 hover:text-pink-300 font-medium transition-colors hover:glow-pink-soft px-4 py-2 rounded-full border border-transparent hover:border-pink-500/30"
-                  >
-                    Tümünü Gör ({pendingTasks.length} görev) →
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* ─── C. Yaklaşan Plan (Upcoming Plan) ─── */}
-        {weeklyPlan && upcomingDays.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.25 }}
-            className="glass-panel relative overflow-hidden"
-          >
-            <div className="p-6 lg:p-8">
-              <button
-                onClick={() => setUpcomingExpanded(prev => !prev)}
-                className="w-full flex items-center justify-between mb-1 relative z-10"
-              >
-                <h2 className="text-lg font-bold text-white/70 tracking-tight flex items-center gap-2.5">
-                  <Calendar size={20} className="text-white/40" />
-                  Yaklaşan Plan
-                </h2>
-                <ChevronDown
-                  size={20}
-                  className={clsx(
-                    "text-white/30 transition-transform duration-300",
-                    upcomingExpanded && "rotate-180"
-                  )}
-                />
-              </button>
-
-              {upcomingExpanded && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.25 }}
-                  className="mt-4 space-y-5 relative z-10"
-                >
-                  {upcomingDays.map(day => (
-                    <div key={day.dayOfWeek}>
-                      <div className="flex items-center gap-2 mb-2.5">
-                        <span className="text-[11px] text-white/30 uppercase tracking-widest font-bold">
-                          {day.dayName}
-                        </span>
-                        <div className="flex-1 h-px bg-white/5" />
-                        <span className="text-[10px] text-white/20 font-medium">
-                          {day.items.length} öğe
-                        </span>
-                      </div>
-                      <div className="space-y-1.5">
-                        {day.items.map(item => (
-                          <div
-                            key={item.id}
-                            className="flex items-center gap-3 px-3.5 py-2.5 glass bg-white/[0.015] rounded-xl border border-white/[0.03]"
-                          >
-                            <div className="w-1.5 h-1.5 rounded-full bg-white/15 flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[13px] text-white/45 font-medium truncate">
-                                {item.subject.name}
-                                {item.topic && (
-                                  <span className="text-white/25"> &mdash; {item.topic.name}</span>
-                                )}
-                              </p>
-                            </div>
-                            {item.duration && (
-                              <span className="text-[10px] text-white/25 flex items-center gap-1 flex-shrink-0">
-                                <Clock size={9} />
-                                {item.duration} dk
-                              </span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </motion.div>
-              )}
             </div>
           </motion.div>
         )}

@@ -201,69 +201,79 @@ export default function CheckInPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {/* Uyku Suresi */}
-                <div>
-                  <label className="flex items-center gap-2 text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-2">
-                    <Clock size={16} className="text-cyan-400" />
-                    Uyku Süresi (saat)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="24"
-                    step="0.5"
-                    value={sleep}
-                    onChange={(e) => setSleep(e.target.value)}
-                    placeholder="Örn: 7.5"
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-3.5 text-[15px] font-medium text-white placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-400/50 focus:border-cyan-400/30 transition-all hover:border-white/20"
-                  />
+              {/* Detaylar — Opsiyonel Alanlar */}
+              <details className="group/details">
+                <summary className="text-[11px] font-bold text-white/30 uppercase tracking-widest cursor-pointer hover:text-white/50 transition-colors select-none flex items-center gap-1.5">
+                  <ChevronDown size={12} className="transition-transform group-open/details:rotate-180" />
+                  Detaylar (uyku, şükran, notlar)
+                </summary>
+
+                <div className="mt-6 space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {/* Uyku Suresi */}
+                    <div>
+                      <label className="flex items-center gap-2 text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-2">
+                        <Clock size={16} className="text-cyan-400" />
+                        Uyku Süresi (saat)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="24"
+                        step="0.5"
+                        value={sleep}
+                        onChange={(e) => setSleep(e.target.value)}
+                        placeholder="Örn: 7.5"
+                        className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-3.5 text-[15px] font-medium text-white placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-400/50 focus:border-cyan-400/30 transition-all hover:border-white/20"
+                      />
+                    </div>
+
+                    {/* Tarih */}
+                    <div>
+                      <label className="flex items-center gap-2 text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-2">
+                        <Calendar size={16} className="text-pink-400" />
+                        Kayıt Tarihi
+                      </label>
+                      <input
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-3.5 text-[15px] font-medium text-white focus:outline-none focus:ring-1 focus:ring-pink-400/50 focus:border-pink-400/30 transition-all hover:border-white/20 [color-scheme:dark]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Minnettarlik */}
+                  <div>
+                    <label className="flex items-center gap-2 text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-2">
+                      <Heart size={16} className="text-rose-400" />
+                      Bugün Ne İçin Minnettarsın?
+                    </label>
+                    <textarea
+                      value={gratitude}
+                      onChange={(e) => setGratitude(e.target.value)}
+                      placeholder="Küçük ya da büyük, bugün seni mutlu eden bir şey..."
+                      rows={2}
+                      className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-[15px] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-rose-400/50 focus:border-rose-400/30 transition-all hover:border-white/20 resize-none leading-relaxed"
+                    />
+                  </div>
+
+                  {/* Notlar */}
+                  <div>
+                    <label className="flex items-center gap-2 text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-2">
+                      <StickyNote size={16} className="text-purple-400" />
+                      Günün Notları
+                    </label>
+                    <textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Günün nasıl geçti? Neler öğrendin?"
+                      rows={2}
+                      className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-[15px] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-purple-400/50 focus:border-purple-400/30 transition-all hover:border-white/20 resize-none leading-relaxed"
+                    />
+                  </div>
                 </div>
-
-                {/* Tarih */}
-                <div>
-                  <label className="flex items-center gap-2 text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-2">
-                    <Calendar size={16} className="text-pink-400" />
-                    Kayıt Tarihi
-                  </label>
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-3.5 text-[15px] font-medium text-white focus:outline-none focus:ring-1 focus:ring-pink-400/50 focus:border-pink-400/30 transition-all hover:border-white/20 [color-scheme:dark]"
-                  />
-                </div>
-              </div>
-
-              {/* Minnettarlik */}
-              <div>
-                <label className="flex items-center gap-2 text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-2">
-                  <Heart size={16} className="text-rose-400" />
-                  Bugün Ne İçin Minnettarsın?
-                </label>
-                <textarea
-                  value={gratitude}
-                  onChange={(e) => setGratitude(e.target.value)}
-                  placeholder="Küçük ya da büyük, bugün seni mutlu eden bir şey..."
-                  rows={3}
-                  className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-[15px] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-rose-400/50 focus:border-rose-400/30 transition-all hover:border-white/20 resize-none leading-relaxed"
-                />
-              </div>
-
-              {/* Notlar */}
-              <div>
-                <label className="flex items-center gap-2 text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-2">
-                  <StickyNote size={16} className="text-purple-400" />
-                  Günün Notları
-                </label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Günün nasıl geçti? Neler öğrendin?"
-                  rows={3}
-                  className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-[15px] text-white/90 placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-purple-400/50 focus:border-purple-400/30 transition-all hover:border-white/20 resize-none leading-relaxed"
-                />
-              </div>
+              </details>
 
               {/* Submit */}
               <button

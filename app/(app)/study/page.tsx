@@ -758,7 +758,8 @@ export default function StudyPage() {
                     <button onClick={resetStudyForm} className="text-white/40 hover:text-white p-1 bg-white/5 rounded-lg transition-colors"><X size={14} /></button>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-5">
+                  {/* Temel Alanlar */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     <select value={sSubjectId} onChange={(e) => { setSSubjectId(e.target.value); setSTopicId(""); }} className={inputClass}>
                       <option value="">Ders seçin...</option>
                       {Object.entries(groupedSubjects).map(([etName, subs]) => (
@@ -773,14 +774,24 @@ export default function StudyPage() {
                     </select>
                     <input type="number" min={0} placeholder="Toplam Soru *" value={sQuestionCount} onChange={(e) => setSQuestionCount(e.target.value)} className={inputClass} />
                     <input type="number" min={0} placeholder="Doğru (ops)" value={sCorrectCount} onChange={(e) => setSCorrectCount(e.target.value)} className={inputClass} />
-                    <input type="number" min={0} placeholder="Yanlış (ops)" value={sWrongCount} onChange={(e) => setSWrongCount(e.target.value)} className={inputClass} />
-                    <select value={sDifficulty} onChange={(e) => setSDifficulty(e.target.value)} className={inputClass}>
-                      {DIFFICULTY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                    <input type="text" placeholder="Kaynak (ops)" value={sSource} onChange={(e) => setSSource(e.target.value)} className={inputClass} />
-                    <input type="number" min={0} placeholder="Süre (dk)" value={sDuration} onChange={(e) => setSDuration(e.target.value)} className={inputClass} />
-                    <input type="text" placeholder="Notlar (ops)" value={sNotes} onChange={(e) => setSNotes(e.target.value)} className={`lg:col-span-2 ${inputClass}`} />
                   </div>
+
+                  {/* Detaylar — Genişletilebilir */}
+                  <details className="mb-4 group/details">
+                    <summary className="text-[11px] font-bold text-white/30 uppercase tracking-widest cursor-pointer hover:text-white/50 transition-colors select-none flex items-center gap-1.5 mb-3">
+                      <ChevronRight size={12} className="transition-transform group-open/details:rotate-90" />
+                      Detaylar
+                    </summary>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <input type="number" min={0} placeholder="Yanlış (ops)" value={sWrongCount} onChange={(e) => setSWrongCount(e.target.value)} className={inputClass} />
+                      <select value={sDifficulty} onChange={(e) => setSDifficulty(e.target.value)} className={inputClass}>
+                        {DIFFICULTY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                      <input type="text" placeholder="Kaynak (ops)" value={sSource} onChange={(e) => setSSource(e.target.value)} className={inputClass} />
+                      <input type="number" min={0} placeholder="Süre (dk)" value={sDuration} onChange={(e) => setSDuration(e.target.value)} className={inputClass} />
+                      <input type="text" placeholder="Notlar (ops)" value={sNotes} onChange={(e) => setSNotes(e.target.value)} className={`md:col-span-3 ${inputClass}`} />
+                    </div>
+                  </details>
 
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/10">
                     <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -831,7 +842,8 @@ export default function StudyPage() {
                     <button onClick={resetReviewForm} className="text-white/40 hover:text-white p-1 bg-white/5 rounded-lg transition-colors"><X size={14} /></button>
                   </div>
 
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+                  {/* Temel Alanlar */}
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                     <select value={rSubjectId} onChange={(e) => { setRSubjectId(e.target.value); setRTopicId(""); }} className={inputClass}>
                       <option value="">Ders seçin...</option>
                       {Object.entries(groupedSubjects).map(([etName, subs]) => (
@@ -844,15 +856,25 @@ export default function StudyPage() {
                       <option value="">Konu seçin *...</option>
                       {rTopics.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
-                    <input type="number" min={0} placeholder="Süre (dk)" value={rDuration} onChange={(e) => setRDuration(e.target.value)} className={inputClass} />
                     <select value={rConfidence} onChange={(e) => setRConfidence(e.target.value)} className={inputClass}>
                       {CONFIDENCE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
-                    <select value={rMethod} onChange={(e) => setRMethod(e.target.value)} className={inputClass}>
-                      {METHOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                    <input type="text" placeholder="Notlar (ops)" value={rNotes} onChange={(e) => setRNotes(e.target.value)} className={`lg:col-span-3 ${inputClass}`} />
                   </div>
+
+                  {/* Detaylar — Genişletilebilir */}
+                  <details className="mb-4 group/details">
+                    <summary className="text-[11px] font-bold text-white/30 uppercase tracking-widest cursor-pointer hover:text-white/50 transition-colors select-none flex items-center gap-1.5 mb-3">
+                      <ChevronRight size={12} className="transition-transform group-open/details:rotate-90" />
+                      Detaylar
+                    </summary>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                      <input type="number" min={0} placeholder="Süre (dk)" value={rDuration} onChange={(e) => setRDuration(e.target.value)} className={inputClass} />
+                      <select value={rMethod} onChange={(e) => setRMethod(e.target.value)} className={inputClass}>
+                        {METHOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                      <input type="text" placeholder="Notlar (ops)" value={rNotes} onChange={(e) => setRNotes(e.target.value)} className={inputClass} />
+                    </div>
+                  </details>
 
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/10">
                     <div className="flex items-center gap-3 w-full sm:w-auto">

@@ -15,9 +15,12 @@ import {
   BarChart3,
   Award,
   Hash,
+  Sparkles,
+  GraduationCap,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getBranchGroupLabel } from '@/lib/constants';
+import AnalyticsView from '@/components/analytics/analytics-view';
 import {
   AreaChart,
   Area,
@@ -104,8 +107,13 @@ function getExamCategoryBadge(examCategory: string | null | undefined): { label:
   return { label: 'Branş', className: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' };
 }
 
+type MainTab = 'denemelerim' | 'analiz';
+
 export default function ExamsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'analiz' ? 'analiz' : 'denemelerim';
+  const [mainTab, setMainTab] = useState<MainTab>(initialTab as MainTab);
   const [exams, setExams] = useState<ExamListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<PageView>('list');
@@ -259,7 +267,40 @@ export default function ExamsPage() {
   }, [filteredExams]);
 
   return (
-    <div className="h-full flex flex-col gap-8">
+    <div className="h-full flex flex-col gap-6">
+      {/* Main Tab Bar */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex gap-2 bg-white/[0.03] rounded-2xl p-1 border border-white/5">
+          <button
+            onClick={() => setMainTab('denemelerim')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+              mainTab === 'denemelerim'
+                ? 'bg-pink-500/20 text-white border border-pink-400/30 shadow-[0_4px_12px_rgba(255,42,133,0.2)]'
+                : 'text-white/50 hover:text-white/80 hover:bg-white/[0.05] border border-transparent'
+            }`}
+          >
+            <GraduationCap size={18} />
+            Denemelerim
+          </button>
+          <button
+            onClick={() => setMainTab('analiz')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+              mainTab === 'analiz'
+                ? 'bg-pink-500/20 text-white border border-pink-400/30 shadow-[0_4px_12px_rgba(255,42,133,0.2)]'
+                : 'text-white/50 hover:text-white/80 hover:bg-white/[0.05] border border-transparent'
+            }`}
+          >
+            <Sparkles size={18} />
+            Analiz
+          </button>
+        </div>
+      </div>
+
+      {/* Analytics View */}
+      {mainTab === 'analiz' && <AnalyticsView />}
+
+      {/* Exams List View */}
+      {mainTab === 'denemelerim' && (
       <AnimatePresence mode="wait">
         {view === 'list' && (
           <motion.div
@@ -544,6 +585,7 @@ export default function ExamsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      )}
     </div>
   );
 }
