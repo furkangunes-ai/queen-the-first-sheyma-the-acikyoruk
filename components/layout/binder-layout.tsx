@@ -19,6 +19,8 @@ import {
   X,
   Sparkles,
   CalendarDays,
+  Dumbbell,
+  BookOpen,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import NotificationBell from '@/components/notifications/notification-bell';
@@ -160,6 +162,8 @@ const NAV_ITEMS: NavItem[] = [
   { path: '/study', label: 'Günlük Çalışma', icon: BookOpenCheck },
   { path: '/exams', label: 'Denemeler', icon: GraduationCap },
   { path: '/strategy', label: 'Strateji', icon: BrainCircuit },
+  { path: '/training', label: 'Antrenman', icon: Dumbbell },
+  { path: '/speed-reading', label: 'Hızlı Okuma', icon: BookOpen },
   { path: '/calendar', label: 'Takvim', icon: CalendarDays },
   { path: '/check-in', label: 'Check-in', icon: Heart },
   { path: '/gallery', label: 'Dosyalar', icon: ImageIcon },
