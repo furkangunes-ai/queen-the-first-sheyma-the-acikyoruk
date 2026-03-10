@@ -67,7 +67,7 @@ const tooltipStyle = {
 const MODE_FILTERS: { key: ExamModeFilter; label: string }[] = [
   { key: 'all', label: 'Hepsi' },
   { key: 'genel', label: 'Genel' },
-  { key: 'brans', label: 'T\u00FCm Bran\u015F' },
+  { key: 'brans', label: 'Tüm Branş' },
   { key: 'brans-fen', label: 'Fen' },
   { key: 'brans-sosyal', label: 'Sosyal' },
   { key: 'brans-matematik', label: 'Matematik' },
@@ -101,7 +101,7 @@ function getExamCategoryBadge(examCategory: string | null | undefined): { label:
   if (examCategory === 'brans') return { label: 'Tek Ders', className: 'bg-purple-500/10 text-purple-400 border border-purple-500/20' };
   const label = getBranchGroupLabel(examCategory);
   if (label) return { label, className: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' };
-  return { label: 'Bran\u015F', className: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' };
+  return { label: 'Branş', className: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' };
 }
 
 export default function ExamsPage() {
@@ -135,8 +135,8 @@ export default function ExamsPage() {
         setExams(data);
       }
     } catch (err) {
-      console.error('Denemeler y\u00FCklenirken hata:', err);
-      toast.error('Denemeler y\u00FCklenirken hata olu\u015Ftu');
+      console.error('Denemeler yüklenirken hata:', err);
+      toast.error('Denemeler yüklenirken hata oluştu');
       setExams([]);
     } finally {
       setLoading(false);
@@ -152,8 +152,8 @@ export default function ExamsPage() {
         setExamTypes(data);
       }
     } catch (err) {
-      console.error('S\u0131nav t\u00FCrleri y\u00FCklenirken hata:', err);
-      toast.error('S\u0131nav t\u00FCrleri y\u00FCklenemedi');
+      console.error('Sınav türleri yüklenirken hata:', err);
+      toast.error('Sınav türleri yüklenemedi');
       setExamTypes([]);
     }
   }, []);
@@ -184,7 +184,7 @@ export default function ExamsPage() {
       );
       setView('wrong-questions');
     } catch {
-      toast.error('Deneme detaylar\u0131 y\u00FCklenemedi');
+      toast.error('Deneme detayları yüklenemedi');
       setView('list');
       fetchExams();
     }
@@ -193,7 +193,7 @@ export default function ExamsPage() {
   const handleWrongQuestionsComplete = () => {
     setView('list');
     fetchExams();
-    toast.success('Deneme ve yanl\u0131\u015F/bo\u015F bilgileri kaydedildi!');
+    toast.success('Deneme ve yanlış/boş bilgileri kaydedildi!');
   };
 
   const getTotalNet = (exam: ExamListItem) => {
@@ -294,7 +294,7 @@ export default function ExamsPage() {
                     : 'bg-white/[0.02] text-white/50 border-white/5 hover:bg-white/[0.04] hover:text-white/80'
                   }`}
               >
-                T\u00FCm\u00FC
+                Tümü
               </button>
               {examTypes.map((et) => (
                 <button
@@ -332,7 +332,7 @@ export default function ExamsPage() {
                   className="flex items-center gap-2 text-xs font-bold text-white/40 hover:text-white/60 transition-colors uppercase tracking-widest"
                 >
                   <BarChart3 size={14} />
-                  {showCharts ? 'Grafikleri Gizle' : 'Grafikleri G\u00F6ster'}
+                  {showCharts ? 'Grafikleri Gizle' : 'Grafikleri Göster'}
                 </button>
 
                 <AnimatePresence>
@@ -348,7 +348,7 @@ export default function ExamsPage() {
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {[
                           { icon: Hash, label: 'Toplam Deneme', value: stats.count, color: 'text-purple-400' },
-                          { icon: Award, label: 'En Y\u00FCksek Net', value: stats.maxNet, color: 'text-cyan-400' },
+                          { icon: Award, label: 'En Yüksek Net', value: stats.maxNet, color: 'text-cyan-400' },
                           { icon: TrendingUp, label: 'Ortalama Net', value: stats.avgNet, color: 'text-pink-400' },
                           { icon: Target, label: 'Son Deneme', value: stats.lastNet, color: 'text-amber-400' },
                         ].map((stat) => (
@@ -367,7 +367,7 @@ export default function ExamsPage() {
                           <div className="glass-panel p-5">
                             <h4 className="text-xs font-bold text-white/50 uppercase tracking-widest mb-4 flex items-center gap-2">
                               <TrendingUp size={14} className="text-pink-400" />
-                              Net Gidi\u015Fat\u0131
+                              Net Gidişatı
                             </h4>
                             <ResponsiveContainer width="100%" height={200}>
                               <AreaChart data={trendData}>
@@ -425,8 +425,8 @@ export default function ExamsPage() {
               <div className="glass-panel text-center py-20 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-pink-500/5 to-transparent pointer-events-none" />
                 <FileArchive className="mx-auto text-pink-500/50 mb-6 drop-shadow-[0_0_15px_rgba(255,42,133,0.3)]" size={64} />
-                <h3 className="text-2xl font-bold text-white mb-3">Hen\u00FCz deneme eklenmemi\u015F</h3>
-                <p className="text-base text-white/50 mb-0">Yeni bir deneme ekleyerek ba\u015Flayabilirsin</p>
+                <h3 className="text-2xl font-bold text-white mb-3">Henüz deneme eklenmemiş</h3>
+                <p className="text-base text-white/50 mb-0">Yeni bir deneme ekleyerek başlayabilirsin</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">

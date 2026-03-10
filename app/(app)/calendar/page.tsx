@@ -73,20 +73,20 @@ interface CalendarData {
 
 const MONTH_NAMES = [
   "Ocak",
-  "\u015Eubat",
+  "Şubat",
   "Mart",
   "Nisan",
-  "May\u0131s",
+  "Mayıs",
   "Haziran",
   "Temmuz",
-  "A\u011Fustos",
-  "Eyl\u00FCl",
+  "Ağustos",
+  "Eylül",
   "Ekim",
-  "Kas\u0131m",
-  "Aral\u0131k",
+  "Kasım",
+  "Aralık",
 ];
 
-const DAY_NAMES = ["Pzt", "Sal", "\u00C7ar", "Per", "Cum", "Cmt", "Paz"];
+const DAY_NAMES = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 
 // ---------- Helpers ----------
 
@@ -384,13 +384,13 @@ export default function CalendarPage() {
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-cyan-400" />
                 <span className="text-[11px] text-white/40 font-medium">
-                  \u00C7al\u0131\u015Fma
+                  Çalışma
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400" />
                 <span className="text-[11px] text-white/40 font-medium">
-                  Plan tamamland\u0131
+                  Plan tamamlandı
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -409,7 +409,7 @@ export default function CalendarPage() {
                     {calendarData.summary.totalStudyDays}
                   </span>
                   <p className="text-[10px] text-white/40 font-semibold uppercase tracking-wider mt-0.5">
-                    \u00C7al\u0131\u015Fma G\u00FCn\u00FC
+                    Çalışma Günü
                   </p>
                 </div>
                 <div className="bg-white/[0.03] rounded-xl p-3 text-center border border-white/5">
@@ -417,7 +417,7 @@ export default function CalendarPage() {
                     {formatDurationSec(calendarData.summary.totalDuration)}
                   </span>
                   <p className="text-[10px] text-white/40 font-semibold uppercase tracking-wider mt-0.5">
-                    Toplam S\u00FCre
+                    Toplam Süre
                   </p>
                 </div>
                 <div className="bg-white/[0.03] rounded-xl p-3 text-center border border-white/5">
@@ -469,7 +469,7 @@ export default function CalendarPage() {
                       size={48}
                     />
                     <p className="text-sm text-white/40 font-medium">
-                      Bu g\u00FCn i\u00E7in kay\u0131t yok
+                      Bu gün için kayıt yok
                     </p>
                   </div>
                 ) : (
@@ -479,7 +479,7 @@ export default function CalendarPage() {
                       <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
                         <h4 className="flex items-center gap-2 text-[11px] font-bold text-white/50 uppercase tracking-widest mb-3">
                           <BookOpen size={14} className="text-cyan-400" />
-                          G\u00FCnl\u00FCk \u00C7al\u0131\u015Fma
+                          Günlük Çalışma
                         </h4>
                         <div className="space-y-2.5">
                           {selectedDayData.studies.map((s, i) => (
@@ -493,7 +493,7 @@ export default function CalendarPage() {
                                 </p>
                                 <p className="text-[11px] text-white/40">
                                   {s.questionCount} soru, {s.correctCount}{" "}
-                                  do\u011Fru
+                                  doğru
                                 </p>
                               </div>
                               <span className="text-[11px] text-cyan-400/70 font-semibold ml-2 shrink-0">

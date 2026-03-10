@@ -50,7 +50,7 @@ const typeConfig: Record<
 > = {
   "mental-math": {
     icon: Brain,
-    label: "\u0130\u015Flem H\u0131z\u0131",
+    label: "İşlem Hızı",
     color: "text-cyan-400",
     bgColor: "bg-cyan-500/15",
     borderColor: "border-cyan-500/20",
@@ -66,7 +66,7 @@ const typeConfig: Record<
 
 const filters: { key: FilterType; label: string }[] = [
   { key: "all", label: "Hepsi" },
-  { key: "mental-math", label: "\u0130\u015Flem H\u0131z\u0131" },
+  { key: "mental-math", label: "İşlem Hızı" },
   { key: "paragraph-reading", label: "Paragraf" },
 ];
 
@@ -139,10 +139,10 @@ export default function TrainingHistory() {
       <div className="glass-panel text-center py-20">
         <History className="mx-auto text-white/20 mb-6" size={64} />
         <h3 className="text-2xl font-bold text-white mb-3">
-          Hen\u00FCz antrenman kayd\u0131 yok
+          Henüz antrenman kaydı yok
         </h3>
         <p className="text-base text-white/50">
-          Bir antrenman tamamlayarak ge\u00E7mi\u015Fini olu\u015Fturmaya ba\u015Fla.
+          Bir antrenman tamamlayarak geçmişini oluşturmaya başla.
         </p>
       </div>
     );
@@ -156,9 +156,9 @@ export default function TrainingHistory() {
           <History size={20} className="text-white/60" />
         </div>
         <div>
-          <h3 className="text-lg font-bold text-white">Antrenman Ge\u00E7mi\u015Fi</h3>
+          <h3 className="text-lg font-bold text-white">Antrenman Geçmişi</h3>
           <p className="text-xs text-white/40">
-            Tamamlanan egzersizlerin ve sonu\u00E7lar\u0131n
+            Tamamlanan egzersizlerin ve sonuçların
           </p>
         </div>
       </div>
@@ -181,7 +181,7 @@ export default function TrainingHistory() {
           {
             icon: Clock,
             value: formatDuration(totalDurationSeconds),
-            label: "Toplam S\u00FCre",
+            label: "Toplam Süre",
             color: "text-pink-400",
           },
         ].map((stat) => (
@@ -231,7 +231,7 @@ export default function TrainingHistory() {
       {/* Exercise List */}
       <div className="glass-panel p-5 space-y-4">
         <h4 className="text-sm font-medium text-white/60">
-          Kay\u0131tlar ({sortedExercises.length})
+          Kayıtlar ({sortedExercises.length})
         </h4>
 
         <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
@@ -312,7 +312,7 @@ export default function TrainingHistory() {
           {sortedExercises.length === 0 && (
             <div className="text-center py-10">
               <p className="text-sm text-white/30">
-                Bu kategoride kay\u0131t bulunamad\u0131.
+                Bu kategoride kayıt bulunamadı.
               </p>
             </div>
           )}
