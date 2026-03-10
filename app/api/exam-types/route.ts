@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
 
     const examTypes = await prisma.examType.findMany({
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching exam types:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }

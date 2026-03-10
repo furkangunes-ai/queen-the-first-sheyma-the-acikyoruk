@@ -9,7 +9,7 @@ export async function GET(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     const { id } = await params;
@@ -41,7 +41,7 @@ export async function GET(
 
     if (!exam) {
       return NextResponse.json(
-        { error: "Exam not found" },
+        { error: "Sınav bulunamadı" },
         { status: 404 }
       );
     }
@@ -50,7 +50,7 @@ export async function GET(
   } catch (error) {
     console.error("Error fetching exam:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }
@@ -63,7 +63,7 @@ export async function PATCH(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     const { id } = await params;
@@ -74,7 +74,7 @@ export async function PATCH(
 
     if (!existing) {
       return NextResponse.json(
-        { error: "Exam not found" },
+        { error: "Sınav bulunamadı" },
         { status: 404 }
       );
     }
@@ -100,7 +100,7 @@ export async function PATCH(
   } catch (error) {
     console.error("Error updating exam:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }
@@ -113,7 +113,7 @@ export async function DELETE(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     const { id } = await params;
@@ -124,7 +124,7 @@ export async function DELETE(
 
     if (!existing) {
       return NextResponse.json(
-        { error: "Exam not found" },
+        { error: "Sınav bulunamadı" },
         { status: 404 }
       );
     }
@@ -135,7 +135,7 @@ export async function DELETE(
   } catch (error) {
     console.error("Error deleting exam:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }

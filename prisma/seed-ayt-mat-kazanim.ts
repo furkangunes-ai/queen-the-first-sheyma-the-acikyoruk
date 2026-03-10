@@ -25,6 +25,65 @@ interface KazanimDef {
 // =====================================================================
 
 const KAZANIMLAR: Record<string, KazanimDef[]> = {
+  // ==================== SAYI BASAMAKLARI (9.3.1 kısmen) ====================
+  "Sayı Basamakları": [
+    {
+      code: "9.3.1.1",
+      subTopicName: "Sayı Kümeleri",
+      description: "Sayı kümelerini birbiriyle ilişkilendirir.",
+      details: [
+        "a) Doğal sayı, tam sayı, rasyonel sayı, irrasyonel sayı ve gerçek sayı kümelerinin sembolleri tanıtılarak bu sayı kümeleri arasındaki ilişki üzerinde durulur.",
+        "b) √2, √3, √5 gibi sayıların sayı doğrusundaki yeri belirlenir.",
+        "c) Gerçek sayılar kümesinde toplama ve çarpma işlemlerinin özellikleri üzerinde durulur.",
+      ].join("\n"),
+      isKeyKazanim: true,
+    },
+  ],
+
+  // ==================== RASYONEL SAYILAR (9.3.1 kısmen) ====================
+  "Rasyonel Sayılar": [
+    {
+      code: "9.3.1.1",
+      subTopicName: "Sayı Kümeleri",
+      description: "Sayı kümelerini birbiriyle ilişkilendirir.",
+      details: [
+        "a) Doğal sayı, tam sayı, rasyonel sayı, irrasyonel sayı ve gerçek sayı kümelerinin sembolleri tanıtılarak bu sayı kümeleri arasındaki ilişki üzerinde durulur.",
+        "b) √2, √3, √5 gibi sayıların sayı doğrusundaki yeri belirlenir.",
+        "c) Gerçek sayılar kümesinde toplama ve çarpma işlemlerinin özellikleri üzerinde durulur.",
+        "ç) ℝ nin geometrik temsilinin sayı doğrusu, ℝ×ℝ nin geometrik temsilinin de kartezyen koordinat sistemi olduğu vurgulanır.",
+      ].join("\n"),
+      isKeyKazanim: true,
+    },
+  ],
+
+  // ==================== ONDALIKLI SAYILAR (9.3.1 kısmen) ====================
+  "Ondalıklı Sayılar": [
+    {
+      code: "9.3.1.1",
+      subTopicName: "Sayı Kümeleri",
+      description: "Sayı kümelerini birbiriyle ilişkilendirir.",
+      details: [
+        "a) Doğal sayı, tam sayı, rasyonel sayı, irrasyonel sayı ve gerçek sayı kümelerinin sembolleri tanıtılarak bu sayı kümeleri arasındaki ilişki üzerinde durulur.",
+        "b) √2, √3, √5 gibi sayıların sayı doğrusundaki yeri belirlenir.",
+        "c) Gerçek sayılar kümesinde toplama ve çarpma işlemlerinin özellikleri üzerinde durulur.",
+      ].join("\n"),
+      isKeyKazanim: true,
+    },
+  ],
+
+  // ==================== MODÜLER ARİTMETİK (9.3.2.3) ====================
+  "Modüler Aritmetik": [
+    {
+      code: "9.3.2.3",
+      subTopicName: "Bölünebilme Kuralları",
+      description:
+        "Gerçek hayatta periyodik olarak tekrar eden durumları içeren problemleri çözer.",
+      details:
+        "Modüler aritmetiğe girilmeden periyodik durum içeren problemlere yer verilir.",
+      isKeyKazanim: true,
+    },
+  ],
+
   // ==================== MANTIK (9.1) ====================
   Mantık: [
     {

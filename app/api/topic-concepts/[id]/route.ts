@@ -9,12 +9,12 @@ export async function PATCH(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
 
     if ((session.user as any).role !== "admin") {
       return NextResponse.json(
-        { error: "Forbidden: Admin access required" },
+        { error: "Yetki hatası: Yönetici erişimi gerekli" },
         { status: 403 }
       );
     }
@@ -27,7 +27,7 @@ export async function PATCH(
 
     if (!existing) {
       return NextResponse.json(
-        { error: "Topic concept not found" },
+        { error: "Kavram bulunamadı" },
         { status: 404 }
       );
     }
@@ -49,7 +49,7 @@ export async function PATCH(
   } catch (error) {
     console.error("Error updating topic concept:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }
@@ -62,12 +62,12 @@ export async function DELETE(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
 
     if ((session.user as any).role !== "admin") {
       return NextResponse.json(
-        { error: "Forbidden: Admin access required" },
+        { error: "Yetki hatası: Yönetici erişimi gerekli" },
         { status: 403 }
       );
     }
@@ -80,7 +80,7 @@ export async function DELETE(
 
     if (!existing) {
       return NextResponse.json(
-        { error: "Topic concept not found" },
+        { error: "Kavram bulunamadı" },
         { status: 404 }
       );
     }
@@ -91,7 +91,7 @@ export async function DELETE(
   } catch (error) {
     console.error("Error deleting topic concept:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }

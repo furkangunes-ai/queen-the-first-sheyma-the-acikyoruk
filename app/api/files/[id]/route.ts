@@ -10,7 +10,7 @@ export async function DELETE(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     const { id } = await params;
@@ -37,7 +37,7 @@ export async function DELETE(
   } catch (error) {
     console.error("Error deleting file:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }

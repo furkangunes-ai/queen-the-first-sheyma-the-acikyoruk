@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(messages);
   } catch (error) {
     console.error("Error fetching chat history:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
 
@@ -36,6 +36,6 @@ export async function DELETE() {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error clearing chat history:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

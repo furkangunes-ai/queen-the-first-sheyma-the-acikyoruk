@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
 
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(reviews);
   } catch (error) {
     console.error("Error fetching topic reviews:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
 
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
 
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!subjectId || !topicId) {
-      return NextResponse.json({ error: "Subject and topic required" }, { status: 400 });
+      return NextResponse.json({ error: "Ders ve konu gerekli" }, { status: 400 });
     }
 
     const review = await prisma.topicReview.create({
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(review, { status: 201 });
   } catch (error) {
     console.error("Error creating topic review:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
 
@@ -97,21 +97,21 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
-    if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
+    if (!id) return NextResponse.json({ error: "ID gerekli" }, { status: 400 });
 
     const existing = await prisma.topicReview.findFirst({ where: { id, userId } });
-    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!existing) return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
 
     await prisma.topicReview.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting topic review:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

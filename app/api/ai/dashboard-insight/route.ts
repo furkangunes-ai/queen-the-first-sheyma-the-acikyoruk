@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { getOpenAI, AI_MODEL } from "@/lib/openai";
 import { checkAIAccess, isAIGuardError } from "@/lib/ai-guard";
-import { NextResponse } from "next/server";
+import { getTurkeyDayOfWeek } from "@/lib/utils";
+import { NextRequest, NextResponse } from "next/server";
 import { startOfDay, endOfDay, format, startOfWeek, addDays } from "date-fns";
 import { tr } from "date-fns/locale";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const guard = await checkAIAccess();
     if (isAIGuardError(guard)) return guard;
@@ -15,21 +16,26 @@ export async function GET() {
     const dayStart = startOfDay(today);
     const dayEnd = endOfDay(today);
 
-    // 1. Check if today's insight already exists (cache)
-    const existingInsight = await prisma.aIInsight.findFirst({
-      where: {
-        userId,
-        type: "dashboard",
-        createdAt: { gte: dayStart, lte: dayEnd },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const { searchParams } = new URL(request.url);
+    const forceRefresh = searchParams.get("refresh") === "true";
 
-    if (existingInsight) {
-      return NextResponse.json({
-        insight: existingInsight.content,
-        cached: true,
+    // 1. Check if today's insight already exists (cache)
+    if (!forceRefresh) {
+      const existingInsight = await prisma.aIInsight.findFirst({
+        where: {
+          userId,
+          type: "dashboard",
+          createdAt: { gte: dayStart, lte: dayEnd },
+        },
+        orderBy: { createdAt: "desc" },
       });
+
+      if (existingInsight) {
+        return NextResponse.json({
+          insight: existingInsight.content,
+          cached: true,
+        });
+      }
     }
 
     // 2. Gather minimal context (~400 tokens)
@@ -41,7 +47,7 @@ export async function GET() {
       // Today's plan items
       (async () => {
         const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-        const todayDayOfWeek = (today.getDay() + 6) % 7; // 0=Mon, 6=Sun
+        const todayDayOfWeek = getTurkeyDayOfWeek(today); // 0=Mon, 6=Sun
         const plan = await prisma.weeklyPlan.findFirst({
           where: {
             userId,
@@ -139,6 +145,6 @@ export async function GET() {
     return NextResponse.json({ insight: insightText, cached: false });
   } catch (error) {
     console.error("Error generating dashboard insight:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

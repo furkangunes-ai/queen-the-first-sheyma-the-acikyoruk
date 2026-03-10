@@ -9,7 +9,7 @@ export async function PATCH(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id as string;
     const { id } = await params;
@@ -20,7 +20,7 @@ export async function PATCH(
     });
 
     if (!plan) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
     }
 
     const { itemId, newDayOfWeek, newSortOrder } = await request.json();
@@ -28,7 +28,7 @@ export async function PATCH(
     // Validate required fields
     if (!itemId || newDayOfWeek === undefined || newSortOrder === undefined) {
       return NextResponse.json(
-        { error: "Missing required fields: itemId, newDayOfWeek, newSortOrder" },
+        { error: "Zorunlu alanlar eksik: itemId, newDayOfWeek, newSortOrder" },
         { status: 400 }
       );
     }
@@ -41,7 +41,7 @@ export async function PATCH(
       newDayOfWeek > 6
     ) {
       return NextResponse.json(
-        { error: "dayOfWeek must be an integer between 0 and 6" },
+        { error: "dayOfWeek 0 ile 6 arasında bir tam sayı olmalı" },
         { status: 400 }
       );
     }
@@ -53,7 +53,7 @@ export async function PATCH(
       newSortOrder < 0
     ) {
       return NextResponse.json(
-        { error: "sortOrder must be a non-negative integer" },
+        { error: "sortOrder negatif olmayan bir tam sayı olmalı" },
         { status: 400 }
       );
     }
@@ -65,7 +65,7 @@ export async function PATCH(
 
     if (!item) {
       return NextResponse.json(
-        { error: "Item not found in this plan" },
+        { error: "Bu planda öğe bulunamadı" },
         { status: 404 }
       );
     }
@@ -97,7 +97,7 @@ export async function PATCH(
   } catch (error) {
     console.error("Error reordering weekly plan item:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }

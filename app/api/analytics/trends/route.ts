@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
 
@@ -42,6 +42,8 @@ export async function GET(request: NextRequest) {
     });
 
     // Build trends data: for each exam, show total net and per-subject nets
+    // When a subjectId filter is active, totalNet shows only the filtered subject's net
+    const isFiltered = !!subjectId;
     const trends = exams.map((exam) => {
       const subjectNets = exam.subjectResults.map((sr) => ({
         subjectId: sr.subjectId,
@@ -63,6 +65,7 @@ export async function GET(request: NextRequest) {
         date: exam.date,
         examTypeName: exam.examType.name,
         totalNet,
+        isFilteredTotal: isFiltered,
         subjectNets,
       };
     });
@@ -71,7 +74,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching exam trends:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }

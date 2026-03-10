@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
 
     const { message, metadata } = await request.json();
     if (!message) {
-      return new Response(JSON.stringify({ error: "message required" }), { status: 400 });
+      return new Response(JSON.stringify({ error: "Mesaj gerekli" }), { status: 400 });
     }
 
     // 1. Save user message
@@ -20,13 +20,23 @@ export async function POST(request: NextRequest) {
       data: { userId, role: "user", content: message, metadata: metadata || undefined },
     });
 
-    // 2. Load conversation history (last 20 messages)
-    const history = await prisma.aIChatMessage.findMany({
+    // 2. Load conversation history (last 20 messages, max ~8000 chars to control token usage)
+    const rawHistory = await prisma.aIChatMessage.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
       take: 20,
     });
-    history.reverse();
+    rawHistory.reverse();
+
+    // Trim history to stay within token budget (~8000 chars ≈ ~2000 tokens)
+    const MAX_HISTORY_CHARS = 8000;
+    let totalChars = 0;
+    const history = [];
+    for (let i = rawHistory.length - 1; i >= 0; i--) {
+      totalChars += rawHistory[i].content.length;
+      if (totalChars > MAX_HISTORY_CHARS) break;
+      history.unshift(rawHistory[i]);
+    }
 
     // 3. Build user context summary (parallel queries for efficiency)
     const [knowledgeSummary, recentExams, currentPlan, recentInsights] = await Promise.all([
@@ -94,7 +104,7 @@ ${recentInsights}
     });
   } catch (error) {
     console.error("Error in AI chat:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500 });
+    return new Response(JSON.stringify({ error: "Sunucu hatası" }), { status: 500 });
   }
 }
 

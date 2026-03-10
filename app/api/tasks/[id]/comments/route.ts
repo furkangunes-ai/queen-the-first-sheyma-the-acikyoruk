@@ -9,7 +9,7 @@ export async function GET(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     const { id } = await params;
@@ -21,7 +21,7 @@ export async function GET(
 
     if (!task) {
       return NextResponse.json(
-        { error: "Task not found" },
+        { error: "Görev bulunamadı" },
         { status: 404 }
       );
     }
@@ -36,7 +36,7 @@ export async function GET(
   } catch (error) {
     console.error("Error fetching comments:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }
@@ -49,7 +49,7 @@ export async function POST(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     const { id } = await params;
@@ -62,7 +62,7 @@ export async function POST(
 
     if (!task) {
       return NextResponse.json(
-        { error: "Task not found" },
+        { error: "Görev bulunamadı" },
         { status: 404 }
       );
     }
@@ -75,7 +75,7 @@ export async function POST(
 
     if (!isTaskAssigner && !isTaskOwner && !isAdmin) {
       return NextResponse.json(
-        { error: "Not authorized to comment on this task" },
+        { error: "Bu göreve yorum yapma yetkiniz yok" },
         { status: 403 }
       );
     }
@@ -85,7 +85,7 @@ export async function POST(
 
     if (!content) {
       return NextResponse.json(
-        { error: "Comment content is required" },
+        { error: "Yorum içeriği gerekli" },
         { status: 400 }
       );
     }
@@ -104,7 +104,7 @@ export async function POST(
   } catch (error) {
     console.error("Error creating comment:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }

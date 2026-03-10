@@ -9,7 +9,7 @@ export async function POST(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     const { id } = await params;
@@ -20,7 +20,7 @@ export async function POST(
 
     if (!exam) {
       return NextResponse.json(
-        { error: "Exam not found" },
+        { error: "Sınav bulunamadı" },
         { status: 404 }
       );
     }
@@ -30,7 +30,7 @@ export async function POST(
 
     if (!Array.isArray(results) || results.length === 0) {
       return NextResponse.json(
-        { error: "Results array is required" },
+        { error: "Sonuç dizisi gerekli" },
         { status: 400 }
       );
     }
@@ -39,10 +39,25 @@ export async function POST(
     for (const result of results) {
       if (!result.subjectId || result.correctCount === undefined || result.wrongCount === undefined || result.emptyCount === undefined) {
         return NextResponse.json(
-          { error: "Each result must have subjectId, correctCount, wrongCount, and emptyCount" },
+          { error: "Her sonuçta subjectId, correctCount, wrongCount ve emptyCount olmalı" },
           { status: 400 }
         );
       }
+    }
+
+    // Validate all subjectIds exist and belong to the exam's examType
+    const subjectIds = results.map((r: any) => r.subjectId);
+    const validSubjects = await prisma.subject.findMany({
+      where: { id: { in: subjectIds }, examTypeId: exam.examTypeId },
+      select: { id: true },
+    });
+    const validSubjectIds = new Set(validSubjects.map((s) => s.id));
+    const invalidIds = subjectIds.filter((id: string) => !validSubjectIds.has(id));
+    if (invalidIds.length > 0) {
+      return NextResponse.json(
+        { error: "Geçersiz ders seçimi: bazı dersler bu sınav türüne ait değil" },
+        { status: 400 }
+      );
     }
 
     // Delete existing results for this exam, then create new ones
@@ -82,7 +97,7 @@ export async function POST(
   } catch (error) {
     console.error("Error saving exam results:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }

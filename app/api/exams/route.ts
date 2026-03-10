@@ -6,12 +6,13 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
 
     const { searchParams } = new URL(request.url);
     const examTypeId = searchParams.get("examTypeId");
+    const limit = searchParams.get("limit");
 
     const exams = await prisma.exam.findMany({
       where: {
@@ -27,13 +28,14 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: { date: "desc" },
+      ...(limit && { take: parseInt(limit, 10) }),
     });
 
     return NextResponse.json(exams);
   } catch (error) {
     console.error("Error fetching exams:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }
@@ -43,7 +45,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
 
@@ -52,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     if (!title || !examTypeId) {
       return NextResponse.json(
-        { error: "Title and exam type are required" },
+        { error: "Başlık ve sınav türü gerekli" },
         { status: 400 }
       );
     }
@@ -75,7 +77,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error creating exam:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }

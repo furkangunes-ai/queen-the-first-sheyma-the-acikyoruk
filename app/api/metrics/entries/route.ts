@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
 
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching metric entries:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
 
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     if (!metricId || value === undefined) {
       return NextResponse.json(
-        { error: "Metric ID and value are required" },
+        { error: "Metrik ve değer gerekli" },
         { status: 400 }
       );
     }
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     if (!definition) {
       return NextResponse.json(
-        { error: "Metric definition not found" },
+        { error: "Metrik tanımı bulunamadı" },
         { status: 404 }
       );
     }
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error creating metric entry:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }

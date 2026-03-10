@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
 
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(plans);
   } catch (error) {
     console.error("Error fetching weekly plans:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
 
@@ -54,14 +54,35 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
 
     const { title, startDate, endDate, notes, items } = await request.json();
 
     if (!title || !startDate || !endDate) {
-      return NextResponse.json({ error: "title, startDate, endDate required" }, { status: 400 });
+      return NextResponse.json({ error: "Başlık, başlangıç ve bitiş tarihi gerekli" }, { status: 400 });
+    }
+
+    // Validate topic belongs to subject
+    if (items && items.length > 0) {
+      const topicItems = items.filter((item: any) => item.topicId);
+      if (topicItems.length > 0) {
+        const topics = await prisma.topic.findMany({
+          where: { id: { in: topicItems.map((item: any) => item.topicId) } },
+          select: { id: true, subjectId: true },
+        });
+        const topicSubjectMap = new Map(topics.map((t) => [t.id, t.subjectId]));
+        for (const item of topicItems) {
+          const topicSubjectId = topicSubjectMap.get(item.topicId);
+          if (topicSubjectId && topicSubjectId !== item.subjectId) {
+            return NextResponse.json(
+              { error: "Konu seçilen derse ait değil" },
+              { status: 400 }
+            );
+          }
+        }
+      }
     }
 
     const plan = await prisma.weeklyPlan.create({
@@ -97,6 +118,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(plan, { status: 201 });
   } catch (error) {
     console.error("Error creating weekly plan:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

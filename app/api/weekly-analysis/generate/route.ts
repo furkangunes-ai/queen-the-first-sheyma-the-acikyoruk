@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
 
     const { weekStartDate, weekEndDate } = await request.json();
     if (!weekStartDate || !weekEndDate) {
-      return NextResponse.json({ error: "weekStartDate and weekEndDate required" }, { status: 400 });
+      return NextResponse.json({ error: "Hafta başlangıç ve bitiş tarihi gerekli" }, { status: 400 });
     }
 
     const start = new Date(weekStartDate);
@@ -191,6 +191,6 @@ Toplam çalışma: ${totalStudyMinutes} dakika, ${totalQuestions} soru
     return NextResponse.json(analysis);
   } catch (error) {
     console.error("Error generating weekly analysis:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

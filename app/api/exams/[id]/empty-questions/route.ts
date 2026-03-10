@@ -9,7 +9,7 @@ export async function GET(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     const { id } = await params;
@@ -20,7 +20,7 @@ export async function GET(
 
     if (!exam) {
       return NextResponse.json(
-        { error: "Exam not found" },
+        { error: "Sınav bulunamadı" },
         { status: 404 }
       );
     }
@@ -38,7 +38,7 @@ export async function GET(
   } catch (error) {
     console.error("Error fetching empty questions:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }
@@ -51,7 +51,7 @@ export async function POST(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     const { id } = await params;
@@ -62,7 +62,7 @@ export async function POST(
 
     if (!exam) {
       return NextResponse.json(
-        { error: "Exam not found" },
+        { error: "Sınav bulunamadı" },
         { status: 404 }
       );
     }
@@ -72,7 +72,7 @@ export async function POST(
 
     if (!subjectId) {
       return NextResponse.json(
-        { error: "Subject is required" },
+        { error: "Ders seçimi gerekli" },
         { status: 400 }
       );
     }
@@ -95,7 +95,7 @@ export async function POST(
   } catch (error) {
     console.error("Error creating empty question:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }

@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching question bank:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
 
     const userId = (session.user as any).id as string;
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error creating question bank:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }
@@ -145,7 +145,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
 
     const userRole = (session.user as any).role;
@@ -157,7 +157,7 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json({ error: "id is required" }, { status: 400 });
+      return NextResponse.json({ error: "ID gerekli" }, { status: 400 });
     }
 
     await prisma.questionBank.delete({ where: { id } });
@@ -166,7 +166,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error("Error deleting question bank:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }

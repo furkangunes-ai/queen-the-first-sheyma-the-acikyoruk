@@ -9,7 +9,7 @@ export async function POST(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     const { id } = await params;
@@ -20,7 +20,7 @@ export async function POST(
 
     if (!task) {
       return NextResponse.json(
-        { error: "Task not found" },
+        { error: "Görev bulunamadı" },
         { status: 404 }
       );
     }
@@ -85,7 +85,7 @@ export async function POST(
   } catch (error) {
     console.error("Error toggling task:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }

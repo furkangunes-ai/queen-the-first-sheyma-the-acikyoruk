@@ -9,7 +9,7 @@ export async function GET(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     const { id } = await params;
@@ -28,13 +28,13 @@ export async function GET(
     });
 
     if (!plan) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
     }
 
     return NextResponse.json(plan);
   } catch (error) {
     console.error("Error fetching weekly plan:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
 
@@ -45,14 +45,14 @@ export async function PUT(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     const { id } = await params;
 
     const existing = await prisma.weeklyPlan.findFirst({ where: { id, userId } });
     if (!existing) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
     }
 
     const { title, notes, items } = await request.json();
@@ -93,7 +93,7 @@ export async function PUT(
     return NextResponse.json(plan);
   } catch (error) {
     console.error("Error updating weekly plan:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
 
@@ -104,20 +104,20 @@ export async function DELETE(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     const { id } = await params;
 
     const existing = await prisma.weeklyPlan.findFirst({ where: { id, userId } });
     if (!existing) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
     }
 
     await prisma.weeklyPlan.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting weekly plan:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching topic concepts:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }
@@ -43,12 +43,12 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
 
     if ((session.user as any).role !== "admin") {
       return NextResponse.json(
-        { error: "Forbidden: Admin access required" },
+        { error: "Yetki hatası: Yönetici erişimi gerekli" },
         { status: 403 }
       );
     }
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error creating topic concept:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }

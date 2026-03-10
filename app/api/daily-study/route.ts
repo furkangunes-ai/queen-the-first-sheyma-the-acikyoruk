@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
 
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(studies);
   } catch (error) {
     console.error("Error fetching daily studies:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
 
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
 
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!subjectId || !questionCount) {
-      return NextResponse.json({ error: "Subject and question count required" }, { status: 400 });
+      return NextResponse.json({ error: "Ders ve soru sayısı gerekli" }, { status: 400 });
     }
 
     const study = await prisma.dailyStudy.create({
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(study, { status: 201 });
   } catch (error) {
     console.error("Error creating daily study:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
 
@@ -103,21 +103,21 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
-    if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
+    if (!id) return NextResponse.json({ error: "ID gerekli" }, { status: 400 });
 
     const existing = await prisma.dailyStudy.findFirst({ where: { id, userId } });
-    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!existing) return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
 
     await prisma.dailyStudy.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting daily study:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

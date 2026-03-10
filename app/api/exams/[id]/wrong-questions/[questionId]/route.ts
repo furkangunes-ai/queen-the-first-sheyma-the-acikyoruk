@@ -9,7 +9,7 @@ export async function PATCH(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     const { id, questionId } = await params;
@@ -20,7 +20,7 @@ export async function PATCH(
     });
 
     if (!exam) {
-      return NextResponse.json({ error: "Exam not found" }, { status: 404 });
+      return NextResponse.json({ error: "Sınav bulunamadı" }, { status: 404 });
     }
 
     // Verify question belongs to this exam
@@ -29,7 +29,7 @@ export async function PATCH(
     });
 
     if (!existingQuestion) {
-      return NextResponse.json({ error: "Question not found" }, { status: 404 });
+      return NextResponse.json({ error: "Soru bulunamadı" }, { status: 404 });
     }
 
     const body = await request.json();
@@ -71,7 +71,7 @@ export async function PATCH(
   } catch (error) {
     console.error("Error updating wrong question:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }
@@ -84,7 +84,7 @@ export async function DELETE(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     const { id, questionId } = await params;
@@ -95,7 +95,7 @@ export async function DELETE(
     });
 
     if (!exam) {
-      return NextResponse.json({ error: "Exam not found" }, { status: 404 });
+      return NextResponse.json({ error: "Sınav bulunamadı" }, { status: 404 });
     }
 
     await prisma.examWrongQuestion.delete({
@@ -106,7 +106,7 @@ export async function DELETE(
   } catch (error) {
     console.error("Error deleting wrong question:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }

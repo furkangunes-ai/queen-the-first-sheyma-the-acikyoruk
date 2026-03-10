@@ -10,7 +10,7 @@ export async function GET() {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id as string;
 
@@ -72,7 +72,7 @@ export async function GET() {
   } catch (error) {
     console.error("Error fetching target scores:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id as string;
 
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
 
     if (!targets.length || targets.some((t) => !t.subjectId || t.targetNet === undefined)) {
       return NextResponse.json(
-        { error: "subjectId and targetNet are required" },
+        { error: "Ders ve hedef net gerekli" },
         { status: 400 }
       );
     }
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     for (const t of targets) {
       if (typeof t.targetNet !== "number" || t.targetNet < 0) {
         return NextResponse.json(
-          { error: "targetNet must be a non-negative number" },
+          { error: "Hedef net negatif olmayan bir sayı olmalı" },
           { status: 400 }
         );
       }
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error saving target scores:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }
@@ -156,7 +156,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id as string;
 
@@ -164,7 +164,7 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json({ error: "id is required" }, { status: 400 });
+      return NextResponse.json({ error: "ID gerekli" }, { status: 400 });
     }
 
     // Verify ownership
@@ -173,7 +173,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!target) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
     }
 
     await prisma.targetScore.delete({ where: { id } });
@@ -182,7 +182,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error("Error deleting target score:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }

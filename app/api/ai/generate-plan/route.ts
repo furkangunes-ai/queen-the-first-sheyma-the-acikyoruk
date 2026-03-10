@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
     const { weekStartDate, weekEndDate, preferences, wizardContext } = await request.json();
     if (!weekStartDate || !weekEndDate) {
       return NextResponse.json(
-        { error: "weekStartDate and weekEndDate required" },
+        { error: "Hafta başlangıç ve bitiş tarihi gerekli" },
         { status: 400 }
       );
     }
@@ -586,7 +586,7 @@ ${wizardStr}`.trim();
     return NextResponse.json(plan);
   } catch (error) {
     console.error("Error generating AI plan:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
 

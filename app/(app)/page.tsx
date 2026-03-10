@@ -138,8 +138,8 @@ export default function DashboardPage() {
         const res = await fetch('/api/ai/dashboard-insight');
         if (res.ok) {
           const data = await res.json();
-          if (data.content) {
-            setAiInsight(data.content);
+          if (data.insight) {
+            setAiInsight(data.insight);
           }
         }
         // 403 = AI not enabled — silently ignore
@@ -170,8 +170,9 @@ export default function DashboardPage() {
   // ─── Weekly Plan: Today & Upcoming ───
   const DAY_NAMES_TR = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
 
-  // JS getDay: 0=Sunday..6=Saturday => convert to 0=Monday..6=Sunday
-  const todayDayOfWeek = (new Date().getDay() + 6) % 7;
+  // Türkiye saatine göre bugünün gününü hesapla (0=Pazartesi..6=Pazar)
+  const turkeyNow = new Date(getTurkeyDateString() + 'T12:00:00+03:00');
+  const todayDayOfWeek = (turkeyNow.getDay() + 6) % 7;
   const todayPlanItems = weeklyPlan?.items?.filter(i => i.dayOfWeek === todayDayOfWeek) || [];
   const todayPlanCompleted = todayPlanItems.filter(i => i.completed).length;
 

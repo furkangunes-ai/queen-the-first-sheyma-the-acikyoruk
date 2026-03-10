@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
 
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching speed reading sessions:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
 
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       duration === undefined
     ) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Zorunlu alanlar eksik" },
         { status: 400 }
       );
     }
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error creating speed reading session:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }
@@ -94,21 +94,21 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     if (!id) {
-      return NextResponse.json({ error: "ID required" }, { status: 400 });
+      return NextResponse.json({ error: "ID gerekli" }, { status: 400 });
     }
 
     const existing = await prisma.speedReadingSession.findFirst({
       where: { id, userId },
     });
     if (!existing) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
     }
 
     await prisma.speedReadingSession.delete({ where: { id } });
@@ -116,7 +116,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error("Error deleting speed reading session:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Sunucu hatası" },
       { status: 500 }
     );
   }

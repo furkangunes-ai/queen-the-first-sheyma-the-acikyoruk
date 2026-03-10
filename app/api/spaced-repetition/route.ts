@@ -10,7 +10,7 @@ export async function GET() {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id as string;
 
@@ -58,7 +58,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Error fetching spaced repetition items:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
 
@@ -71,14 +71,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id as string;
 
     const { itemId, quality } = await request.json();
     if (!itemId || !quality) {
       return NextResponse.json(
-        { error: "itemId and quality required" },
+        { error: "Öğe ve kalite seçimi gerekli" },
         { status: 400 }
       );
     }
@@ -88,27 +88,39 @@ export async function POST(request: NextRequest) {
       where: { id: itemId, userId },
     });
     if (!item) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
     }
 
-    // SM-2 simplified algorithm
+    // SM-2 algorithm with proper initial intervals
     let newInterval = item.interval;
     let newEaseFactor = item.easeFactor;
     let newStatus = item.status;
+    const rep = item.repetitionCount; // 0-based: how many reviews done so far
 
     switch (quality) {
       case "easy":
-        // Correct + easy: interval * easeFactor, increase ease
-        newInterval = Math.round(item.interval * item.easeFactor);
+        // SM-2: first review → 1 day, second → 6 days, then interval * easeFactor
+        if (rep === 0) {
+          newInterval = 1;
+        } else if (rep === 1) {
+          newInterval = 6;
+        } else {
+          newInterval = Math.round(item.interval * item.easeFactor);
+        }
         newEaseFactor = Math.min(3.0, item.easeFactor + 0.15);
-        // Master if interval > 60 days
         if (newInterval > 60) {
           newStatus = "mastered";
         }
         break;
       case "hard":
-        // Correct but hard: interval * 1.5, decrease ease slightly
-        newInterval = Math.max(1, Math.round(item.interval * 1.5));
+        // Correct but hard: first review → 1 day, second → 3 days, then interval * 1.2
+        if (rep === 0) {
+          newInterval = 1;
+        } else if (rep === 1) {
+          newInterval = 3;
+        } else {
+          newInterval = Math.max(1, Math.round(item.interval * 1.2));
+        }
         newEaseFactor = Math.max(1.3, item.easeFactor - 0.1);
         break;
       case "wrong":
@@ -117,7 +129,7 @@ export async function POST(request: NextRequest) {
         newEaseFactor = Math.max(1.3, item.easeFactor - 0.2);
         break;
       default:
-        return NextResponse.json({ error: "Invalid quality" }, { status: 400 });
+        return NextResponse.json({ error: "Geçersiz kalite değeri" }, { status: 400 });
     }
 
     // Calculate next review date
@@ -142,7 +154,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(updated);
   } catch (error) {
     console.error("Error updating spaced repetition:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
 
@@ -155,13 +167,13 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id as string;
 
     const { examId } = await request.json();
     if (!examId) {
-      return NextResponse.json({ error: "examId required" }, { status: 400 });
+      return NextResponse.json({ error: "Sınav seçimi gerekli" }, { status: 400 });
     }
 
     // Get wrong questions from the exam
@@ -217,6 +229,6 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error enqueuing spaced repetition items:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

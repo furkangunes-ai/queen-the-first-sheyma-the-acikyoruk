@@ -7,6 +7,9 @@ async function main() {
   console.log("🌱 Seeding database...");
 
   // ==================== KULLANICILAR ====================
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD || "furkan123";
+  const userPassword = process.env.SEED_USER_PASSWORD || "seyda123";
+
   const furkan = await prisma.user.upsert({
     where: { username: "furkan" },
     update: {},
@@ -14,7 +17,7 @@ async function main() {
       username: "furkan",
       displayName: "Furkan K.",
       role: "admin",
-      passwordHash: await bcrypt.hash("furkan123", 10),
+      passwordHash: await bcrypt.hash(adminPassword, 10),
     },
   });
 
@@ -25,7 +28,7 @@ async function main() {
       username: "seyda",
       displayName: "Şeyda A.",
       role: "user",
-      passwordHash: await bcrypt.hash("seyda123", 10),
+      passwordHash: await bcrypt.hash(userPassword, 10),
       aiEnabled: true,
     },
   });

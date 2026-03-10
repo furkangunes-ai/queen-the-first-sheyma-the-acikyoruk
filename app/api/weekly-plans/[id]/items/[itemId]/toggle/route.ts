@@ -9,7 +9,7 @@ export async function PATCH(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     const { id, itemId } = await params;
@@ -17,7 +17,7 @@ export async function PATCH(
     // Verify plan belongs to user
     const plan = await prisma.weeklyPlan.findFirst({ where: { id, userId } });
     if (!plan) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
     }
 
     const { completed } = await request.json();
@@ -34,6 +34,6 @@ export async function PATCH(
     return NextResponse.json(item);
   } catch (error) {
     console.error("Error toggling plan item:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

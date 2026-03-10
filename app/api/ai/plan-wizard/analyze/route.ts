@@ -341,6 +341,6 @@ ${insightsStr ? `=== GEÇMİŞ AI ÖNERİLERİ ===\n${insightsStr}` : ""}`.trim(
     });
   } catch (error) {
     console.error("Error in plan wizard analyze:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

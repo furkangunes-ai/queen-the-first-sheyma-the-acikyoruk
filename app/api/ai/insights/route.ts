@@ -24,6 +24,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(insights);
   } catch (error) {
     console.error("Error fetching AI insights:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

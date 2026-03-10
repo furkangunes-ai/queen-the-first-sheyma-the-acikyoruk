@@ -7,14 +7,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
 
     const body = await request.json();
     const { name, subjectId } = body;
 
     if (!name || !subjectId) {
-      return NextResponse.json({ error: "Name and subjectId required" }, { status: 400 });
+      return NextResponse.json({ error: "Ad ve ders seçimi gerekli" }, { status: 400 });
     }
 
     // Check if topic already exists for this subject
@@ -43,6 +43,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(topic, { status: 201 });
   } catch (error) {
     console.error("Error creating topic:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

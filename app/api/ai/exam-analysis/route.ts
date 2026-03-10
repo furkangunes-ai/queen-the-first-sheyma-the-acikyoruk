@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     const { examId } = await request.json();
     if (!examId) {
-      return NextResponse.json({ error: "examId required" }, { status: 400 });
+      return NextResponse.json({ error: "Sınav seçimi gerekli" }, { status: 400 });
     }
 
     // Check if insight already exists for this exam
@@ -175,6 +175,6 @@ ${trendStr}`.trim();
     });
   } catch (error) {
     console.error("Error generating exam analysis:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

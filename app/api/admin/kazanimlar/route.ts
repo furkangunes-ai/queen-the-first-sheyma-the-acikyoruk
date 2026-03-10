@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(examTypes);
   } catch (error) {
     console.error("Admin kazanım GET error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
 
@@ -278,7 +278,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Admin kazanım POST error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
 
@@ -334,6 +334,6 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (error) {
     console.error("Admin kazanım DELETE error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
 
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(knowledge);
   } catch (error) {
     console.error("Error fetching topic knowledge:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
 
@@ -43,19 +43,22 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as any).id;
 
     const { topicId, level } = await request.json();
     if (!topicId || level === undefined) {
-      return NextResponse.json({ error: "topicId and level required" }, { status: 400 });
+      return NextResponse.json({ error: "Konu ve seviye gerekli" }, { status: 400 });
     }
+
+    // Validate level range (0-5)
+    const clampedLevel = Math.max(0, Math.min(5, Math.round(level)));
 
     const knowledge = await prisma.topicKnowledge.upsert({
       where: { userId_topicId: { userId, topicId } },
-      update: { level },
-      create: { userId, topicId, level },
+      update: { level: clampedLevel },
+      create: { userId, topicId, level: clampedLevel },
       include: {
         topic: {
           include: {
@@ -68,6 +71,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(knowledge);
   } catch (error) {
     console.error("Error updating topic knowledge:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
