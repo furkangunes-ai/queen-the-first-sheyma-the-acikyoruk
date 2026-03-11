@@ -104,6 +104,13 @@ interface Kazanim {
   progress: KazanimProgress | null;
 }
 
+interface TopicStats {
+  questionsSolved: number;
+  correctCount: number;
+  wrongCount: number;
+  examWrongCount: number;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -188,6 +195,7 @@ export default function TopicMap() {
   >(new Map());
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [conceptsMap, setConceptsMap] = useState<Map<string, TopicConcept[]>>(new Map());
+  const [topicStatsMap, setTopicStatsMap] = useState<Map<string, TopicStats>>(new Map());
 
   // UI state
   const [loading, setLoading] = useState(true);
@@ -210,6 +218,9 @@ export default function TopicMap() {
   const [expandedDetails, setExpandedDetails] = useState<Set<string>>(new Set());
   const noteTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
+  // Level picker state
+  const [editingLevelTopicId, setEditingLevelTopicId] = useState<string | null>(null);
+
   // ---------------------------------------------------------------------------
   // Data fetching
   // ---------------------------------------------------------------------------
@@ -217,12 +228,13 @@ export default function TopicMap() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [knowledgeRes, lastStudiedRes, recommendationsRes, examTypesRes] =
+      const [knowledgeRes, lastStudiedRes, recommendationsRes, examTypesRes, topicStatsRes] =
         await Promise.all([
           fetch("/api/topic-knowledge"),
           fetch("/api/strategy/last-studied"),
           fetch("/api/strategy/recommendations?limit=3"),
           fetch("/api/exam-types"),
+          fetch("/api/strategy/topic-stats"),
         ]);
 
       // Parse all responses
@@ -295,6 +307,18 @@ export default function TopicMap() {
       } catch {
         // concepts are optional, fail silently
       }
+
+      // Parse topic stats
+      try {
+        const topicStatsData: Record<string, TopicStats> = await topicStatsRes.json();
+        const tsMap = new Map<string, TopicStats>();
+        for (const [topicId, stats] of Object.entries(topicStatsData)) {
+          tsMap.set(topicId, stats);
+        }
+        setTopicStatsMap(tsMap);
+      } catch {
+        // topic stats are optional
+      }
     } catch (error) {
       console.error("TopicMap: failed to fetch data", error);
     } finally {
@@ -305,6 +329,20 @@ export default function TopicMap() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Close level picker on outside click
+  useEffect(() => {
+    if (!editingLevelTopicId) return;
+    const handleClick = () => setEditingLevelTopicId(null);
+    // Small delay to avoid closing immediately
+    const timer = setTimeout(() => {
+      document.addEventListener("click", handleClick);
+    }, 100);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("click", handleClick);
+    };
+  }, [editingLevelTopicId]);
 
   // ---------------------------------------------------------------------------
   // Actions
@@ -851,6 +889,31 @@ export default function TopicMap() {
                                                 ) : null}
                                               </div>
 
+                                              {/* Question stats mini badges */}
+                                              {(() => {
+                                                const ts = topicStatsMap.get(topic.id);
+                                                if (!ts || (ts.questionsSolved === 0 && ts.examWrongCount === 0)) return null;
+                                                return (
+                                                  <div className="flex items-center gap-1.5 shrink-0">
+                                                    {ts.questionsSolved > 0 && (
+                                                      <span className="text-[10px] text-cyan-400/70 bg-cyan-400/10 px-1.5 py-0.5 rounded-md font-medium">
+                                                        {ts.questionsSolved} soru
+                                                      </span>
+                                                    )}
+                                                    {ts.correctCount > 0 && (
+                                                      <span className="text-[10px] text-emerald-400/70 font-medium">
+                                                        {ts.correctCount}D
+                                                      </span>
+                                                    )}
+                                                    {(ts.wrongCount > 0 || ts.examWrongCount > 0) && (
+                                                      <span className="text-[10px] text-rose-400/70 font-medium">
+                                                        {ts.wrongCount + ts.examWrongCount}Y
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                );
+                                              })()}
+
                                               {/* Last studied badge */}
                                               <div className="flex items-center gap-1 shrink-0">
                                                 <Clock className="w-3 h-3 text-white/20" />
@@ -866,17 +929,45 @@ export default function TopicMap() {
                                                 </span>
                                               )}
 
-                                              {/* Auto-calculated level badge */}
-                                              <span
-                                                className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold shrink-0 ${
-                                                  level > 0
-                                                    ? `${LEVEL_COLORS[level]} text-slate-950`
-                                                    : "bg-white/10 text-white/40"
-                                                }`}
-                                                title={LEVEL_LABELS[level]}
-                                              >
-                                                {level}/5
-                                              </span>
+                                              {/* Clickable level badge */}
+                                              <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setEditingLevelTopicId(editingLevelTopicId === topic.id ? null : topic.id);
+                                                  }}
+                                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-all hover:ring-2 hover:ring-white/20 cursor-pointer ${
+                                                    level > 0
+                                                      ? `${LEVEL_COLORS[level]} text-slate-950`
+                                                      : "bg-white/10 text-white/40"
+                                                  }`}
+                                                  title={`${LEVEL_LABELS[level]} - Tıkla ve seviye değiştir`}
+                                                >
+                                                  {level}/5
+                                                </button>
+                                                {editingLevelTopicId === topic.id && (
+                                                  <div className="absolute right-0 top-full mt-1 z-20 bg-[#1a1a2e]/95 backdrop-blur-xl border border-white/10 rounded-xl p-2 shadow-xl flex items-center gap-1.5">
+                                                    {[0, 1, 2, 3, 4, 5].map((lvl) => (
+                                                      <button
+                                                        key={lvl}
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          updateKnowledgeLevel(topic.id, lvl);
+                                                          setEditingLevelTopicId(null);
+                                                        }}
+                                                        className={`w-7 h-7 rounded-lg text-[11px] font-bold transition-all hover:scale-110 ${
+                                                          lvl === level
+                                                            ? `${LEVEL_COLORS[lvl]} text-slate-950 ring-2 ring-white/30`
+                                                            : "bg-white/10 text-white/50 hover:bg-white/20 hover:text-white"
+                                                        }`}
+                                                        title={LEVEL_LABELS[lvl]}
+                                                      >
+                                                        {lvl}
+                                                      </button>
+                                                    ))}
+                                                  </div>
+                                                )}
+                                              </div>
                                             </motion.button>
 
                                             {/* Inline Kazanım Section */}

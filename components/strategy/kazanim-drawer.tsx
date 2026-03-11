@@ -48,12 +48,12 @@ interface KazanimDrawerProps {
 // ---------------------------------------------------------------------------
 
 const DRAWER_LEVEL_LABELS: Record<number, string> = {
-  0: "Hic bilmiyorum",
-  1: "Cok az",
+  0: "Hiç bilmiyorum",
+  1: "Çok az",
   2: "Temel",
   3: "Orta",
-  4: "Iyi",
-  5: "Cok iyi",
+  4: "İyi",
+  5: "Çok iyi",
 };
 
 const DRAWER_LEVEL_COLORS: Record<number, string> = {
@@ -105,7 +105,7 @@ export default function KazanimDrawer({
 
     try {
       const res = await fetch(`/api/topic-kazanims?topicId=${topicId}`);
-      if (!res.ok) throw new Error("Kazanimlar yuklenemedi");
+      if (!res.ok) throw new Error("Kazanımlar yüklenemedi");
       const data: Kazanim[] = await res.json();
       setKazanimlar(data);
 
@@ -119,7 +119,7 @@ export default function KazanimDrawer({
       setLocalNotes(notesMap);
     } catch (err) {
       console.error("KazanimDrawer: fetch failed", err);
-      setError("Kazanimlar yuklenirken bir hata olustu.");
+      setError("Kazanımlar yüklenirken bir hata oluştu.");
     } finally {
       setLoading(false);
     }
@@ -472,7 +472,7 @@ export default function KazanimDrawer({
                 <div className="flex items-center justify-center py-20">
                   <Loader2 className="w-6 h-6 text-pink-400 animate-spin" />
                   <span className="ml-3 text-sm text-white/50">
-                    Kazanimlar yukleniyor...
+                    Kazanımlar yükleniyor...
                   </span>
                 </div>
               )}
@@ -494,7 +494,7 @@ export default function KazanimDrawer({
               {!loading && !error && kazanimlar.length === 0 && (
                 <div className="text-center py-16 text-white/30">
                   <p className="text-sm">
-                    Bu konu icin kazanim bulunamadi.
+                    Bu konu için kazanım bulunamadı.
                   </p>
                 </div>
               )}
@@ -683,7 +683,7 @@ export default function KazanimDrawer({
                                               e.target.value
                                             )
                                           }
-                                          placeholder="Notlarini buraya yaz..."
+                                          placeholder="Notlarını buraya yaz..."
                                           rows={2}
                                           className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/20 resize-none focus:outline-none focus:border-pink-500/30 transition-colors"
                                         />
@@ -716,7 +716,7 @@ export default function KazanimDrawer({
                 {/* Progress text */}
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-white/50">
-                    {checkedCount}/{totalCount} kazanim tamamlandi
+                    {checkedCount}/{totalCount} kazanım tamamlandı
                   </span>
                   <span className="text-xs font-medium text-pink-400">
                     %{percentage}
