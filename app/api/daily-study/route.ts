@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { updateDailyStudyStreak } from "@/lib/streak-engine";
 import { recordStudyForTopic } from "@/lib/cognitive-engine";
+import { logApiError } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(studies);
   } catch (error) {
-    console.error("Error fetching daily studies:", error);
+    logApiError("daily-study", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
@@ -90,20 +91,20 @@ export async function POST(request: NextRequest) {
 
     // Update streak & check badges (fire and forget)
     updateDailyStudyStreak(userId).catch((err) =>
-      console.error("Streak update error:", err)
+      logApiError("daily-study", err)
     );
 
     // Bilişsel çizge güncelleme: çalışma başarı oranına göre mastery güncelle
     if (topicId && questionCount > 0) {
       const correctRatio = (correctCount || 0) / questionCount;
       recordStudyForTopic(userId, topicId, correctRatio).catch((err) =>
-        console.error("Cognitive engine update error:", err)
+        logApiError("daily-study", err)
       );
     }
 
     return NextResponse.json(study, { status: 201 });
   } catch (error) {
-    console.error("Error creating daily study:", error);
+    logApiError("daily-study", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
@@ -126,7 +127,7 @@ export async function DELETE(request: NextRequest) {
     await prisma.dailyStudy.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting daily study:", error);
+    logApiError("daily-study", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

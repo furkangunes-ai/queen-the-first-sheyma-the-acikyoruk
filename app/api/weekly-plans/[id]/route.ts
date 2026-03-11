@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
@@ -33,7 +34,7 @@ export async function GET(
 
     return NextResponse.json(plan);
   } catch (error) {
-    console.error("Error fetching weekly plan:", error);
+    logApiError("weekly-plans/:id", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
@@ -92,7 +93,7 @@ export async function PUT(
 
     return NextResponse.json(plan);
   } catch (error) {
-    console.error("Error updating weekly plan:", error);
+    logApiError("weekly-plans/:id", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
@@ -117,7 +118,7 @@ export async function DELETE(
     await prisma.weeklyPlan.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting weekly plan:", error);
+    logApiError("weekly-plans/:id", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

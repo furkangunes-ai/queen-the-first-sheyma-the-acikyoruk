@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
@@ -32,7 +33,7 @@ export async function GET(
 
     return NextResponse.json(folder);
   } catch (error) {
-    console.error("Error fetching folder:", error);
+    logApiError("folders/:id", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }
@@ -76,7 +77,7 @@ export async function PATCH(
 
     return NextResponse.json(folder);
   } catch (error) {
-    console.error("Error updating folder:", error);
+    logApiError("folders/:id", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }
@@ -111,7 +112,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Folder deleted" });
   } catch (error) {
-    console.error("Error deleting folder:", error);
+    logApiError("folders/:id", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }

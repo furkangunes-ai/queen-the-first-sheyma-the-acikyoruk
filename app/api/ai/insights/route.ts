@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { checkAIAccess, isAIGuardError } from "@/lib/ai-guard";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(insights);
   } catch (error) {
-    console.error("Error fetching AI insights:", error);
+    logApiError("ai/insights", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

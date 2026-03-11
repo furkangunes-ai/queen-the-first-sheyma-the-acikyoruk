@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 export async function PATCH(
   request: NextRequest,
@@ -47,7 +48,7 @@ export async function PATCH(
 
     return NextResponse.json(concept);
   } catch (error) {
-    console.error("Error updating topic concept:", error);
+    logApiError("topic-concepts/:id", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }
@@ -89,7 +90,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Topic concept deleted" });
   } catch (error) {
-    console.error("Error deleting topic concept:", error);
+    logApiError("topic-concepts/:id", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }

@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getTurkeyDateString } from "@/lib/utils";
+import { logApiError } from "@/lib/logger";
 
 /**
  * GET /api/analytics/topic-progress
@@ -369,7 +370,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ summary, topics: result });
   } catch (error) {
-    console.error("Error fetching topic progress:", error);
+    logApiError("analytics/topic-progress", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }

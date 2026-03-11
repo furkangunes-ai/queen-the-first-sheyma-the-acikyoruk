@@ -5,6 +5,7 @@ import { getTurkeyDayOfWeek } from "@/lib/utils";
 import { NextRequest, NextResponse } from "next/server";
 import { startOfDay, endOfDay, format, startOfWeek, addDays } from "date-fns";
 import { tr } from "date-fns/locale";
+import { logApiError } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
       });
       insightText = completion.choices[0]?.message?.content || "";
     } catch (aiError) {
-      console.error("Dashboard AI error:", aiError);
+      logApiError("ai/dashboard-insight", aiError);
       // Fallback: return without AI
       return NextResponse.json({ insight: null, cached: false });
     }
@@ -144,7 +145,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ insight: insightText, cached: false });
   } catch (error) {
-    console.error("Error generating dashboard insight:", error);
+    logApiError("ai/dashboard-insight", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

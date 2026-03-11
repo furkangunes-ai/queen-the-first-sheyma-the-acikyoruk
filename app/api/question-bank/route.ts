@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 /**
  * GET /api/question-bank
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(questionBanks);
   } catch (error) {
-    console.error("Error fetching question bank:", error);
+    logApiError("question-bank", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }
@@ -129,7 +130,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(questionBank);
   } catch (error) {
-    console.error("Error creating question bank:", error);
+    logApiError("question-bank", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }
@@ -164,7 +165,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting question bank:", error);
+    logApiError("question-bank", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }

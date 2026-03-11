@@ -4,6 +4,7 @@ import { checkAIAccess, isAIGuardError } from "@/lib/ai-guard";
 import { NextResponse } from "next/server";
 import { format, subDays } from "date-fns";
 import { tr } from "date-fns/locale";
+import { logApiError } from "@/lib/logger";
 
 const SYSTEM_PROMPT_ANALYZE_BASE = `Sen bir YKS stratejistisin. Öğrencinin verilerini analiz et. Türkçe konuş. Öğrenciye "sen" diye hitap et.
 
@@ -312,7 +313,7 @@ ${insightsStr ? `=== GEÇMİŞ AI ÖNERİLERİ ===\n${insightsStr}` : ""}`.trim(
       }
       parsed = JSON.parse(jsonMatch[0]);
     } catch (parseError) {
-      console.error("Failed to parse AI analyze response:", rawResponse);
+      logApiError("ai/plan-wizard/analyze", rawResponse);
       return NextResponse.json(
         { error: "AI yanıtı işlenemedi. Lütfen tekrar deneyin." },
         { status: 500 }
@@ -340,7 +341,7 @@ ${insightsStr ? `=== GEÇMİŞ AI ÖNERİLERİ ===\n${insightsStr}` : ""}`.trim(
       })),
     });
   } catch (error) {
-    console.error("Error in plan wizard analyze:", error);
+    logApiError("ai/plan-wizard/analyze", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

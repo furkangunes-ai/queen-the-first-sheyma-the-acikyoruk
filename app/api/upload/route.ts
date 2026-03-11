@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { getUploadUrl, getPublicUrl } from "@/lib/r2";
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { logApiError } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
       r2Key,
     });
   } catch (error) {
-    console.error("Error generating upload URL:", error);
+    logApiError("upload", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }

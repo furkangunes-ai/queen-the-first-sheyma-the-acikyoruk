@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 export async function POST(
   request: NextRequest,
@@ -32,7 +33,7 @@ export async function POST(
 
     return NextResponse.json(updated);
   } catch (error) {
-    console.error("Error marking notification as read:", error);
+    logApiError("notifications/:id/read", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }

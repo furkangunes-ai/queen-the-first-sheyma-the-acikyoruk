@@ -4,6 +4,7 @@ import { checkAIAccess, isAIGuardError } from "@/lib/ai-guard";
 import { NextRequest, NextResponse } from "next/server";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
+import { logApiError } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -133,7 +134,7 @@ Toplam çalışma: ${totalStudyMinutes} dakika, ${totalQuestions} soru
       aiSummary = parts[0]?.trim() || response;
       aiRecommendations = parts.slice(1).join("\n").trim() || "";
     } catch (aiError) {
-      console.error("OpenAI error:", aiError);
+      logApiError("weekly-analysis/generate", aiError);
       aiSummary = "AI analizi şu an kullanılamıyor. Veriler aşağıda özetlenmiştir.";
       aiRecommendations = "";
     }
@@ -184,13 +185,13 @@ Toplam çalışma: ${totalStudyMinutes} dakika, ${totalQuestions} soru
         });
       } catch (insightError) {
         // Insight kaydetme hatası ana akışı bozmasın
-        console.error("Error saving AI insight:", insightError);
+        logApiError("weekly-analysis/generate", insightError);
       }
     }
 
     return NextResponse.json(analysis);
   } catch (error) {
-    console.error("Error generating weekly analysis:", error);
+    logApiError("weekly-analysis/generate", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

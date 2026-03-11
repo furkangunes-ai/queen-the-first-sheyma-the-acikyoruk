@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -177,7 +178,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error fetching calendar activities:", error);
+    logApiError("calendar/activities", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

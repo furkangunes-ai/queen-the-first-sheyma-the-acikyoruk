@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 export async function PATCH(
   request: NextRequest,
@@ -95,7 +96,7 @@ export async function PATCH(
 
     return NextResponse.json(updatedPlan);
   } catch (error) {
-    console.error("Error reordering weekly plan item:", error);
+    logApiError("weekly-plans/:id/reorder", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }

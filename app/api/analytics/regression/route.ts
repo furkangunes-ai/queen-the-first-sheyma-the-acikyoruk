@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getTurkeyDateString } from "@/lib/utils";
+import { logApiError } from "@/lib/logger";
 
 // ─── OLS Linear Regression (pure TypeScript) ───────────────────────
 
@@ -289,7 +290,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error computing regression:", error);
+    logApiError("analytics/regression", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }

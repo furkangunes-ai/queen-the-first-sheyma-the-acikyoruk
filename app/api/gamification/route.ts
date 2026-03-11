@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { getUserGamificationData, updateDailyStudyStreak } from "@/lib/streak-engine";
+import { logApiError } from "@/lib/logger";
 
 /**
  * GET /api/gamification
@@ -17,7 +18,7 @@ export async function GET() {
     const data = await getUserGamificationData(userId);
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Error fetching gamification data:", error);
+    logApiError("gamification", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }
@@ -40,7 +41,7 @@ export async function POST() {
     const result = await updateDailyStudyStreak(userId);
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error updating streak:", error);
+    logApiError("gamification", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }

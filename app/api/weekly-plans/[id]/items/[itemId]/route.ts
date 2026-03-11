@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 /**
  * PATCH — Edit a single plan item (subject, topic, duration, dayOfWeek, notes)
@@ -43,7 +44,7 @@ export async function PATCH(
 
     return NextResponse.json(item);
   } catch (error) {
-    console.error("Error updating plan item:", error);
+    logApiError("weekly-plans/:id/items/:itemId", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
@@ -73,7 +74,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting plan item:", error);
+    logApiError("weekly-plans/:id/items/:itemId", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

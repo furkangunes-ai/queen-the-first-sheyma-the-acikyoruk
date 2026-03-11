@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -127,7 +128,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(examTypes);
   } catch (error) {
-    console.error("Admin kazanım GET error:", error);
+    logApiError("admin/kazanimlar", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
@@ -283,7 +284,7 @@ export async function POST(request: NextRequest) {
       message: `${created} kazanım eklendi${skipped > 0 ? `, ${skipped} duplicate atlandı` : ""}${notFound.length > 0 ? `, ${notFound.length} topic bulunamadı` : ""}`,
     });
   } catch (error) {
-    console.error("Admin kazanım POST error:", error);
+    logApiError("admin/kazanimlar", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
@@ -339,7 +340,7 @@ export async function DELETE(request: NextRequest) {
       message: `${deleted.count} kazanım silindi`,
     });
   } catch (error) {
-    console.error("Admin kazanım DELETE error:", error);
+    logApiError("admin/kazanimlar", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

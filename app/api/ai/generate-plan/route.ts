@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { generateWeeklyPlan } from "@/lib/cognitive-engine";
 import type { ConceptNodeData, DependencyEdgeData, CognitiveStateData, WeeklyPlanResult } from "@/lib/cognitive-engine";
+import { logApiError } from "@/lib/logger";
 
 const SYSTEM_PROMPT_PLAN_BASE = `Sen bir YKS haftalık plan oluşturma asistanısın. Türkçe konuş.
 Öğrencinin zayıf konularına, son deneme sonuçlarına ve geçmiş çalışma verilerine göre
@@ -527,7 +528,7 @@ Bu motor önerisini ciddiye al ve planına dahil et. Motor, öğrencinin bilişs
         }
       }
     } catch (engineErr) {
-      console.error("Cognitive engine plan error (non-blocking):", engineErr);
+      logApiError("ai/generate-plan", engineErr);
     }
 
     // 4b. Call OpenAI
@@ -551,7 +552,7 @@ Bu motor önerisini ciddiye al ve planına dahil et. Motor, öğrencinin bilişs
       }
       parsed = JSON.parse(jsonMatch[0]);
     } catch (parseError) {
-      console.error("Failed to parse AI plan response:", rawResponse);
+      logApiError("ai/generate-plan", rawResponse);
       return NextResponse.json(
         { error: "AI yanıtı işlenemedi. Lütfen tekrar deneyin." },
         { status: 500 }
@@ -642,7 +643,7 @@ Bu motor önerisini ciddiye al ve planına dahil et. Motor, öğrencinin bilişs
 
     return NextResponse.json(plan);
   } catch (error) {
-    console.error("Error generating AI plan:", error);
+    logApiError("ai/generate-plan", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

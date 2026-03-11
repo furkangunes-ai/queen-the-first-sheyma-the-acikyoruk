@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(folders);
   } catch (error) {
-    console.error("Error fetching folders:", error);
+    logApiError("folders", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(folder, { status: 201 });
   } catch (error) {
-    console.error("Error creating folder:", error);
+    logApiError("folders", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }

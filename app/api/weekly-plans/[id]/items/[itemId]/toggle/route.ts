@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 export async function PATCH(
   request: NextRequest,
@@ -33,7 +34,7 @@ export async function PATCH(
 
     return NextResponse.json(item);
   } catch (error) {
-    console.error("Error toggling plan item:", error);
+    logApiError("weekly-plans/:id/items/:itemId/toggle", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

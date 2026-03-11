@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 /**
  * GET /api/target-scores
@@ -70,7 +71,7 @@ export async function GET() {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error fetching target scores:", error);
+    logApiError("target-scores", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }
@@ -140,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(results);
   } catch (error) {
-    console.error("Error saving target scores:", error);
+    logApiError("target-scores", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }
@@ -180,7 +181,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting target score:", error);
+    logApiError("target-scores", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }

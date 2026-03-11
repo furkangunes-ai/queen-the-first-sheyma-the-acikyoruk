@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 // Kullanicinin kendi konu eklemesi
 export async function POST(request: NextRequest) {
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(topic, { status: 201 });
   } catch (error) {
-    console.error("Error creating topic:", error);
+    logApiError("topics", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

@@ -4,6 +4,7 @@ import { checkPremiumAIAccess, isAIGuardError } from "@/lib/ai-guard";
 import { NextRequest, NextResponse } from "next/server";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
+import { logApiError } from "@/lib/logger";
 
 const SYSTEM_PROMPT_EXAM = `Sen bir YKS deneme sınavı analisti. Türkçe konuş.
 Deneme sonuçlarını detaylı analiz et:
@@ -174,7 +175,7 @@ ${trendStr}`.trim();
       cached: false,
     });
   } catch (error) {
-    console.error("Error generating exam analysis:", error);
+    logApiError("ai/exam-analysis", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

@@ -1,11 +1,42 @@
-// ==================== Basit In-Memory Rate Limiter ====================
+// ==================== Rate Limiter (Upstash Redis + In-Memory Fallback) ====================
 //
-// IP bazlı sliding window rate limiter.
-// Railway tek container çalıştırdığı için in-memory yeterli.
-// 10K+ kullanıcı / çoklu instance durumunda Redis'e geçilmeli.
+// Upstash Redis varsa distributed rate limiting kullanır (çoklu instance uyumlu).
+// UPSTASH_REDIS_REST_URL ve UPSTASH_REDIS_REST_TOKEN yoksa in-memory fallback çalışır.
+// 10K+ kullanıcı senaryosunda Redis önerilir.
 
-const windowMs = 60 * 1000; // 1 dakika
-const maxRequests = 60; // 60 istek/dakika/IP
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
+// ---------------------------------------------------------------------------
+// Config
+// ---------------------------------------------------------------------------
+
+const WINDOW_MS = 60 * 1000; // 1 dakika
+const MAX_REQUESTS = 60; // 60 istek/dakika/IP
+
+// ---------------------------------------------------------------------------
+// Redis-backed rate limiter (Upstash)
+// ---------------------------------------------------------------------------
+
+let redisRatelimit: Ratelimit | null = null;
+
+if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+  const redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  });
+
+  redisRatelimit = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(MAX_REQUESTS, "60 s"),
+    prefix: "rl:",
+    analytics: true,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// In-memory fallback (tek instance için)
+// ---------------------------------------------------------------------------
 
 interface RateLimitEntry {
   count: number;
@@ -14,7 +45,6 @@ interface RateLimitEntry {
 
 const store = new Map<string, RateLimitEntry>();
 
-// Her 5 dakikada süresi dolmuş kayıtları temizle
 setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of store) {
@@ -24,19 +54,45 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
-/**
- * IP bazlı rate limit kontrolü.
- * Limit aşılmışsa true döner.
- */
-export function isRateLimited(ip: string): boolean {
+function isRateLimitedInMemory(ip: string): boolean {
   const now = Date.now();
   const entry = store.get(ip);
 
   if (!entry || entry.resetAt < now) {
-    store.set(ip, { count: 1, resetAt: now + windowMs });
+    store.set(ip, { count: 1, resetAt: now + WINDOW_MS });
     return false;
   }
 
   entry.count++;
-  return entry.count > maxRequests;
+  return entry.count > MAX_REQUESTS;
+}
+
+// ---------------------------------------------------------------------------
+// Public API — Redis varsa Redis, yoksa in-memory
+// ---------------------------------------------------------------------------
+
+/**
+ * IP bazlı rate limit kontrolü.
+ * Redis bağlantısı varsa Upstash sliding window kullanır.
+ * Yoksa in-memory fallback çalışır.
+ * Limit aşılmışsa true döner.
+ */
+export async function isRateLimited(ip: string): Promise<boolean> {
+  if (redisRatelimit) {
+    try {
+      const { success } = await redisRatelimit.limit(ip);
+      return !success; // success=false → rate limited
+    } catch {
+      // Redis hatası → in-memory fallback
+      return isRateLimitedInMemory(ip);
+    }
+  }
+  return isRateLimitedInMemory(ip);
+}
+
+/**
+ * Rate limiter durumu: Redis mi yoksa in-memory mi kullanılıyor?
+ */
+export function getRateLimitMode(): "redis" | "memory" {
+  return redisRatelimit ? "redis" : "memory";
 }

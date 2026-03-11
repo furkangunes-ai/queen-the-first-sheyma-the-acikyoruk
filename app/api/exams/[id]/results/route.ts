@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 export async function POST(
   request: NextRequest,
@@ -115,7 +116,7 @@ export async function POST(
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error saving exam results:", error);
+    logApiError("exams/:id/results", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }

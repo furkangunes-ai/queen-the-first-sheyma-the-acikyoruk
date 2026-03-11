@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(errorReasons);
   } catch (error) {
-    console.error("Error fetching error reasons:", error);
+    logApiError("error-reasons", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(errorReason, { status: 201 });
   } catch (error) {
-    console.error("Error creating error reason:", error);
+    logApiError("error-reasons", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }

@@ -3,6 +3,7 @@ import { getOpenAI, AI_MODEL, SYSTEM_PROMPT_CHAT } from "@/lib/openai";
 import { checkChatAccess, isAIGuardError } from "@/lib/ai-guard";
 import { NextRequest } from "next/server";
 import { format } from "date-fns";
+import { logApiError } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -89,7 +90,7 @@ ${recentInsights}
 
           controller.close();
         } catch (error) {
-          console.error("Stream error:", error);
+          logApiError("ai/chat", error);
           controller.error(error);
         }
       },
@@ -103,7 +104,7 @@ ${recentInsights}
       },
     });
   } catch (error) {
-    console.error("Error in AI chat:", error);
+    logApiError("ai/chat", error);
     return new Response(JSON.stringify({ error: "Sunucu hatası" }), { status: 500 });
   }
 }

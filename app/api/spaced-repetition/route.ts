@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { recordStudyForTopic } from "@/lib/cognitive-engine";
+import { logApiError } from "@/lib/logger";
 
 /**
  * GET /api/spaced-repetition
@@ -58,7 +59,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error("Error fetching spaced repetition items:", error);
+    logApiError("spaced-repetition", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
@@ -156,13 +157,13 @@ export async function POST(request: NextRequest) {
     if (updated.topicId) {
       const correctRatio = quality === "easy" ? 1.0 : quality === "hard" ? 0.6 : 0.0;
       recordStudyForTopic(userId, updated.topicId, correctRatio).catch((err) =>
-        console.error("Cognitive engine update error:", err)
+        logApiError("spaced-repetition", err)
       );
     }
 
     return NextResponse.json(updated);
   } catch (error) {
-    console.error("Error updating spaced repetition:", error);
+    logApiError("spaced-repetition", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
@@ -237,7 +238,7 @@ export async function PUT(request: NextRequest) {
       alreadyExists: existingIds.size,
     });
   } catch (error) {
-    console.error("Error enqueuing spaced repetition items:", error);
+    logApiError("spaced-repetition", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

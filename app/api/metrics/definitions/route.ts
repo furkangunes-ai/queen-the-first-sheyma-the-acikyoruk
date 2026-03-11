@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(definitions);
   } catch (error) {
-    console.error("Error fetching metric definitions:", error);
+    logApiError("metrics/definitions", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(definition, { status: 201 });
   } catch (error) {
-    console.error("Error creating metric definition:", error);
+    logApiError("metrics/definitions", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }

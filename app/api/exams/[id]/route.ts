@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
@@ -48,7 +49,7 @@ export async function GET(
 
     return NextResponse.json(exam);
   } catch (error) {
-    console.error("Error fetching exam:", error);
+    logApiError("exams/:id", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }
@@ -98,7 +99,7 @@ export async function PATCH(
 
     return NextResponse.json(exam);
   } catch (error) {
-    console.error("Error updating exam:", error);
+    logApiError("exams/:id", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }
@@ -133,7 +134,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Exam deleted" });
   } catch (error) {
-    console.error("Error deleting exam:", error);
+    logApiError("exams/:id", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }

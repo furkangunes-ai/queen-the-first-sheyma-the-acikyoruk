@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
@@ -36,7 +37,7 @@ export async function GET(
 
     return NextResponse.json(emptyQuestions);
   } catch (error) {
-    console.error("Error fetching empty questions:", error);
+    logApiError("exams/:id/empty-questions", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }
@@ -93,7 +94,7 @@ export async function POST(
 
     return NextResponse.json(emptyQuestion, { status: 201 });
   } catch (error) {
-    console.error("Error creating empty question:", error);
+    logApiError("exams/:id/empty-questions", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }

@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteFile } from "@/lib/r2";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 export async function DELETE(
   request: NextRequest,
@@ -35,7 +36,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting file:", error);
+    logApiError("files/:id", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }

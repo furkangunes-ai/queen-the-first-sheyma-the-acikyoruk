@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { checkAIAccess, isAIGuardError } from "@/lib/ai-guard";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiError } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(messages);
   } catch (error) {
-    console.error("Error fetching chat history:", error);
+    logApiError("ai/chat/history", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
@@ -35,7 +36,7 @@ export async function DELETE() {
     await prisma.aIChatMessage.deleteMany({ where: { userId } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error clearing chat history:", error);
+    logApiError("ai/chat/history", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

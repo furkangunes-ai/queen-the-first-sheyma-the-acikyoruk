@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { setAbsoluteMasteryForTopic } from "@/lib/cognitive-engine";
+import { logApiError } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(knowledge);
   } catch (error) {
-    console.error("Error fetching topic knowledge:", error);
+    logApiError("topic-knowledge", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
@@ -73,12 +74,12 @@ export async function POST(request: NextRequest) {
     // Seviye 0→0.0, 1→0.2, 2→0.4, 3→0.6, 4→0.8, 5→1.0
     const mastery = clampedLevel / 5;
     setAbsoluteMasteryForTopic(userId, topicId, mastery).catch((err) =>
-      console.error("Cognitive engine sync error:", err)
+      logApiError("topic-knowledge", err)
     );
 
     return NextResponse.json(knowledge);
   } catch (error) {
-    console.error("Error updating topic knowledge:", error);
+    logApiError("topic-knowledge", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

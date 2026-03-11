@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { recordStudyForTopic } from "@/lib/cognitive-engine";
+import { logApiError } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
@@ -38,7 +39,7 @@ export async function GET(
 
     return NextResponse.json(wrongQuestions);
   } catch (error) {
-    console.error("Error fetching wrong questions:", error);
+    logApiError("exams/:id/wrong-questions", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }
@@ -101,13 +102,13 @@ export async function POST(
     // Bilişsel çizge güncelleme: yanlış soru → ilgili kavram mastery düşür
     if (topicId) {
       recordStudyForTopic(userId, topicId, 0.0).catch((err) =>
-        console.error("Cognitive engine update error:", err)
+        logApiError("exams/:id/wrong-questions", err)
       );
     }
 
     return NextResponse.json(wrongQuestion, { status: 201 });
   } catch (error) {
-    console.error("Error creating wrong question:", error);
+    logApiError("exams/:id/wrong-questions", error);
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }
