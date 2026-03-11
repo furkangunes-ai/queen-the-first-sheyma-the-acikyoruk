@@ -1,0 +1,367 @@
+{
+  "nodes": [
+    { "name": "Dogal Sayilar", "slug": "dogal-sayilar", "domain": "Matematik", "examType": "tyt", "complexityScore": 1 },
+    { "name": "Tam Sayilar", "slug": "tam-sayilar", "domain": "Matematik", "examType": "tyt", "complexityScore": 2 },
+    { "name": "Rasyonel Sayilar", "slug": "rasyonel-sayilar", "domain": "Matematik", "examType": "tyt", "complexityScore": 3 },
+    { "name": "Ondalikli Sayilar", "slug": "ondalikli-sayilar", "domain": "Matematik", "examType": "tyt", "complexityScore": 2 },
+
+    { "name": "Sayi Basamaklari", "slug": "sayi-basamaklari", "domain": "Matematik", "examType": "tyt", "complexityScore": 2 },
+    { "name": "Basamak Kavrami", "slug": "basamak-kavrami", "domain": "Matematik", "examType": "tyt", "complexityScore": 1 },
+    { "name": "Basamak Analizi ve Problemleri", "slug": "basamak-analizi-ve-problemleri", "domain": "Matematik", "examType": "tyt", "complexityScore": 3 },
+
+    { "name": "Bolme Kurallari", "slug": "bolme-kurallari", "domain": "Matematik", "examType": "tyt", "complexityScore": 2 },
+    { "name": "Bolunebilme Kurallari", "slug": "bolunebilme-kurallari", "domain": "Matematik", "examType": "tyt", "complexityScore": 3 },
+    { "name": "Asal Sayilar", "slug": "asal-sayilar", "domain": "Matematik", "examType": "tyt", "complexityScore": 2 },
+    { "name": "Asal Carpanlara Ayirma", "slug": "asal-carpanlara-ayirma", "domain": "Matematik", "examType": "tyt", "complexityScore": 3 },
+
+    { "name": "EBOB", "slug": "ebob", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+    { "name": "EKOK", "slug": "ekok", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+    { "name": "EBOB-EKOK Problemleri", "slug": "ebob-ekok-problemleri", "domain": "Matematik", "examType": "tyt", "complexityScore": 5 },
+
+    { "name": "Rasyonel Sayi Islemleri", "slug": "rasyonel-sayi-islemleri", "domain": "Matematik", "examType": "tyt", "complexityScore": 3 },
+    { "name": "Kesirlerle Islemler", "slug": "kesirlerle-islemler", "domain": "Matematik", "examType": "tyt", "complexityScore": 3 },
+    { "name": "Sayi Dogrusu ve Siralama", "slug": "sayi-dogrusu-ve-siralama", "domain": "Matematik", "examType": "tyt", "complexityScore": 2 },
+
+    { "name": "Basit Esitsizlikler", "slug": "basit-esitsizlikler", "domain": "Matematik", "examType": "tyt", "complexityScore": 3 },
+    { "name": "Esitsizlik Kurallari", "slug": "esitsizlik-kurallari", "domain": "Matematik", "examType": "tyt", "complexityScore": 3 },
+    { "name": "Esitsizlik Cozumleri", "slug": "esitsizlik-cozumleri", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+
+    { "name": "Mutlak Deger Kavrami", "slug": "mutlak-deger-kavrami", "domain": "Matematik", "examType": "tyt", "complexityScore": 3 },
+    { "name": "Mutlak Degerli Denklemler", "slug": "mutlak-degerli-denklemler", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+    { "name": "Mutlak Degerli Esitsizlikler", "slug": "mutlak-degerli-esitsizlikler", "domain": "Matematik", "examType": "tyt", "complexityScore": 5 },
+
+    { "name": "Uslu Ifadeler", "slug": "uslu-ifadeler", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+    { "name": "Us Kurallari", "slug": "us-kurallari", "domain": "Matematik", "examType": "tyt", "complexityScore": 3 },
+    { "name": "Negatif ve Kesirli Usler", "slug": "negatif-ve-kesirli-usler", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+
+    { "name": "Koklu Ifadeler", "slug": "koklu-ifadeler", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+    { "name": "Kok Kurallari ve Donusumleri", "slug": "kok-kurallari-ve-donusumleri", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+    { "name": "Koklu Ifadelerde Sadelestirme", "slug": "koklu-ifadelerde-sadelestirme", "domain": "Matematik", "examType": "tyt", "complexityScore": 5 },
+
+    { "name": "Carpanlara Ayirma", "slug": "carpanlara-ayirma", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+    { "name": "Ortak Carpan ve Gruplama", "slug": "ortak-carpan-ve-gruplama", "domain": "Matematik", "examType": "tyt", "complexityScore": 3 },
+    { "name": "Ozdes Carpanlar", "slug": "ozdes-carpanlar", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+    { "name": "Ikinci Derece Carpanlara Ayirma", "slug": "ikinci-derece-carpanlara-ayirma", "domain": "Matematik", "examType": "tyt", "complexityScore": 5 },
+
+    { "name": "Oran ve Oranti", "slug": "oran-oranti", "domain": "Matematik", "examType": "tyt", "complexityScore": 3 },
+    { "name": "Dogrudan Oranti", "slug": "dogrudan-oranti", "domain": "Matematik", "examType": "tyt", "complexityScore": 3 },
+    { "name": "Ters Oranti", "slug": "ters-oranti", "domain": "Matematik", "examType": "tyt", "complexityScore": 3 },
+    { "name": "Bileşik Oranti", "slug": "bilesik-oranti", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+
+    { "name": "Birinci Dereceden Denklemler", "slug": "birinci-dereceden-denklemler", "domain": "Matematik", "examType": "tyt", "complexityScore": 3 },
+    { "name": "Denklem Kurma ve Cozme", "slug": "denklem-kurma-ve-cozme", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+    { "name": "Denklem Sistemleri", "slug": "denklem-sistemleri", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+
+    { "name": "Yas Problemleri", "slug": "yas-problemleri", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+    { "name": "Isci-Havuz Problemleri", "slug": "isci-havuz-problemleri", "domain": "Matematik", "examType": "tyt", "complexityScore": 5 },
+    { "name": "Hareket Problemleri", "slug": "hareket-problemleri", "domain": "Matematik", "examType": "tyt", "complexityScore": 5 },
+    { "name": "Karisim Problemleri", "slug": "karisim-problemleri", "domain": "Matematik", "examType": "tyt", "complexityScore": 5 },
+    { "name": "Yuzde Problemleri", "slug": "yuzde-problemleri", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+    { "name": "Kar-Zarar Problemleri", "slug": "kar-zarar-problemleri", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+
+    { "name": "Kume Kavrami", "slug": "kume-kavrami", "domain": "Matematik", "examType": "tyt", "complexityScore": 3 },
+    { "name": "Kume Islemleri", "slug": "kume-islemleri", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+    { "name": "Venn Semalari", "slug": "venn-semalari", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+    { "name": "Kartezyen Carpim", "slug": "kartezyen-carpim", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+
+    { "name": "Fonksiyon Kavrami", "slug": "fonksiyon-kavrami", "domain": "Matematik", "examType": "both", "complexityScore": 5 },
+    { "name": "Fonksiyon Turleri", "slug": "fonksiyon-turleri", "domain": "Matematik", "examType": "both", "complexityScore": 5 },
+    { "name": "Fonksiyon Bileskeleri", "slug": "fonksiyon-bileskeleri", "domain": "Matematik", "examType": "both", "complexityScore": 6 },
+    { "name": "Ters Fonksiyon", "slug": "ters-fonksiyon", "domain": "Matematik", "examType": "both", "complexityScore": 6 },
+
+    { "name": "Permutasyon", "slug": "permutasyon", "domain": "Matematik", "examType": "tyt", "complexityScore": 5 },
+    { "name": "Faktoriyel", "slug": "faktoriyel", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+    { "name": "Tekrarli Permutasyon", "slug": "tekrarli-permutasyon", "domain": "Matematik", "examType": "tyt", "complexityScore": 5 },
+
+    { "name": "Kombinasyon", "slug": "kombinasyon", "domain": "Matematik", "examType": "tyt", "complexityScore": 5 },
+    { "name": "Kombinasyon Problemleri", "slug": "kombinasyon-problemleri", "domain": "Matematik", "examType": "tyt", "complexityScore": 6 },
+
+    { "name": "Binom Acilimi", "slug": "binom-acilimi", "domain": "Matematik", "examType": "tyt", "complexityScore": 6 },
+    { "name": "Binom Katsayilari", "slug": "binom-katsayilari", "domain": "Matematik", "examType": "tyt", "complexityScore": 6 },
+    { "name": "Pascal Ucgeni", "slug": "pascal-ucgeni", "domain": "Matematik", "examType": "tyt", "complexityScore": 5 },
+
+    { "name": "Olasilik Kavrami", "slug": "olasilik-kavrami", "domain": "Matematik", "examType": "tyt", "complexityScore": 5 },
+    { "name": "Kosullu Olasilik", "slug": "kosullu-olasilik", "domain": "Matematik", "examType": "tyt", "complexityScore": 6 },
+    { "name": "Bagimsiz Olaylar", "slug": "bagimsiz-olaylar", "domain": "Matematik", "examType": "tyt", "complexityScore": 6 },
+
+    { "name": "Veri Analizi", "slug": "veri-analizi", "domain": "Matematik", "examType": "tyt", "complexityScore": 3 },
+    { "name": "Merkezi Egilim Olculeri", "slug": "merkezi-egilim-olculeri", "domain": "Matematik", "examType": "tyt", "complexityScore": 4 },
+    { "name": "Yayilim Olculeri", "slug": "yayilim-olculeri", "domain": "Matematik", "examType": "tyt", "complexityScore": 5 },
+
+    { "name": "Ikinci Dereceden Denklemler", "slug": "ikinci-dereceden-denklemler", "domain": "Matematik", "examType": "both", "complexityScore": 6 },
+    { "name": "Diskriminant", "slug": "diskriminant", "domain": "Matematik", "examType": "both", "complexityScore": 5 },
+    { "name": "Kok-Katsayi Iliskileri", "slug": "kok-katsayi-iliskileri", "domain": "Matematik", "examType": "both", "complexityScore": 6 },
+
+    { "name": "Karmasik Sayi Kavrami", "slug": "karmasik-sayi-kavrami", "domain": "Matematik", "examType": "both", "complexityScore": 6 },
+    { "name": "Karmasik Sayi Islemleri", "slug": "karmasik-sayi-islemleri", "domain": "Matematik", "examType": "both", "complexityScore": 6 },
+    { "name": "Karmasik Sayilarin Kutupsal Bicimi", "slug": "karmasik-sayilarin-kutupsal-bicimi", "domain": "Matematik", "examType": "both", "complexityScore": 7 },
+
+    { "name": "Parabol Kavrami", "slug": "parabol-kavrami", "domain": "Matematik", "examType": "both", "complexityScore": 6 },
+    { "name": "Parabol Grafigi ve Ozellikleri", "slug": "parabol-grafigi-ve-ozellikleri", "domain": "Matematik", "examType": "both", "complexityScore": 7 },
+    { "name": "Parabol Problemleri", "slug": "parabol-problemleri", "domain": "Matematik", "examType": "both", "complexityScore": 7 },
+
+    { "name": "Polinom Kavrami", "slug": "polinom-kavrami", "domain": "Matematik", "examType": "both", "complexityScore": 5 },
+    { "name": "Polinom Islemleri", "slug": "polinom-islemleri", "domain": "Matematik", "examType": "both", "complexityScore": 6 },
+    { "name": "Polinom Bolmesi ve Kalan", "slug": "polinom-bolmesi-ve-kalan", "domain": "Matematik", "examType": "both", "complexityScore": 7 },
+    { "name": "Polinom Kokleri", "slug": "polinom-kokleri", "domain": "Matematik", "examType": "both", "complexityScore": 7 },
+
+    { "name": "Mantik Onermeler", "slug": "mantik-onermeler", "domain": "Matematik", "examType": "ayt", "complexityScore": 4 },
+    { "name": "Bilesik Onermeler", "slug": "bilesik-onermeler", "domain": "Matematik", "examType": "ayt", "complexityScore": 5 },
+    { "name": "Acik Onermeler ve Niceleme", "slug": "acik-onermeler-ve-niceleme", "domain": "Matematik", "examType": "ayt", "complexityScore": 5 },
+
+    { "name": "Moduler Aritmetik", "slug": "moduler-aritmetik", "domain": "Matematik", "examType": "ayt", "complexityScore": 5 },
+    { "name": "Mod Islemleri", "slug": "mod-islemleri", "domain": "Matematik", "examType": "ayt", "complexityScore": 5 },
+    { "name": "Moduler Denklemler", "slug": "moduler-denklemler", "domain": "Matematik", "examType": "ayt", "complexityScore": 6 },
+
+    { "name": "Ikinci Derece Esitsizlikler", "slug": "ikinci-derece-esitsizlikler", "domain": "Matematik", "examType": "ayt", "complexityScore": 6 },
+    { "name": "Isaret Tablosu ve Cozum", "slug": "isaret-tablosu-ve-cozum", "domain": "Matematik", "examType": "ayt", "complexityScore": 6 },
+    { "name": "Esitsizlik Sistemleri", "slug": "esitsizlik-sistemleri", "domain": "Matematik", "examType": "ayt", "complexityScore": 7 },
+
+    { "name": "Logaritma Kavrami", "slug": "logaritma-kavrami", "domain": "Matematik", "examType": "ayt", "complexityScore": 6 },
+    { "name": "Logaritma Kurallari", "slug": "logaritma-kurallari", "domain": "Matematik", "examType": "ayt", "complexityScore": 7 },
+    { "name": "Logaritmik Denklemler", "slug": "logaritmik-denklemler", "domain": "Matematik", "examType": "ayt", "complexityScore": 7 },
+
+    { "name": "Aritmetik Dizi", "slug": "aritmetik-dizi", "domain": "Matematik", "examType": "ayt", "complexityScore": 5 },
+    { "name": "Geometrik Dizi", "slug": "geometrik-dizi", "domain": "Matematik", "examType": "ayt", "complexityScore": 6 },
+    { "name": "Genel Terim ve Toplam Formulleri", "slug": "genel-terim-ve-toplam-formulleri", "domain": "Matematik", "examType": "ayt", "complexityScore": 6 },
+
+    { "name": "Seriler", "slug": "seriler", "domain": "Matematik", "examType": "ayt", "complexityScore": 7 },
+    { "name": "Geometrik Seri", "slug": "geometrik-seri", "domain": "Matematik", "examType": "ayt", "complexityScore": 7 },
+    { "name": "Seri Yakinsakligi", "slug": "seri-yakinsakligi", "domain": "Matematik", "examType": "ayt", "complexityScore": 8 },
+
+    { "name": "Limit Kavrami", "slug": "limit-kavrami", "domain": "Matematik", "examType": "ayt", "complexityScore": 7 },
+    { "name": "Limit Hesaplama Teknikleri", "slug": "limit-hesaplama-teknikleri", "domain": "Matematik", "examType": "ayt", "complexityScore": 7 },
+    { "name": "Sureklilik", "slug": "sureklilik", "domain": "Matematik", "examType": "ayt", "complexityScore": 7 },
+
+    { "name": "Turev Kavrami ve Kurallari", "slug": "turev-kavrami-ve-kurallari", "domain": "Matematik", "examType": "ayt", "complexityScore": 8 },
+    { "name": "Zincir Kurali", "slug": "zincir-kurali", "domain": "Matematik", "examType": "ayt", "complexityScore": 8 },
+    { "name": "Turev Uygulamalari Max-Min", "slug": "turev-uygulamalari-max-min", "domain": "Matematik", "examType": "ayt", "complexityScore": 9 },
+    { "name": "Turev ile Grafik Cizimi", "slug": "turev-ile-grafik-cizimi", "domain": "Matematik", "examType": "ayt", "complexityScore": 9 },
+    { "name": "LHopital Kurali", "slug": "lhopital-kurali", "domain": "Matematik", "examType": "ayt", "complexityScore": 8 },
+
+    { "name": "Belirsiz Integral", "slug": "belirsiz-integral", "domain": "Matematik", "examType": "ayt", "complexityScore": 8 },
+    { "name": "Integral Alma Teknikleri", "slug": "integral-alma-teknikleri", "domain": "Matematik", "examType": "ayt", "complexityScore": 9 },
+    { "name": "Belirli Integral", "slug": "belirli-integral", "domain": "Matematik", "examType": "ayt", "complexityScore": 9 },
+    { "name": "Integral Uygulamalari Alan", "slug": "integral-uygulamalari-alan", "domain": "Matematik", "examType": "ayt", "complexityScore": 10 },
+
+    { "name": "Trigonometrik Oranlar", "slug": "trigonometrik-oranlar", "domain": "Matematik", "examType": "ayt", "complexityScore": 5 },
+    { "name": "Trigonometrik Ozdeslikler", "slug": "trigonometrik-ozdeslikler", "domain": "Matematik", "examType": "ayt", "complexityScore": 6 },
+    { "name": "Toplam-Fark Formulleri", "slug": "toplam-fark-formulleri", "domain": "Matematik", "examType": "ayt", "complexityScore": 7 },
+    { "name": "Trigonometrik Denklemler", "slug": "trigonometrik-denklemler", "domain": "Matematik", "examType": "ayt", "complexityScore": 7 },
+    { "name": "Ters Trigonometrik Fonksiyonlar", "slug": "ters-trigonometrik-fonksiyonlar", "domain": "Matematik", "examType": "ayt", "complexityScore": 8 }
+  ],
+  "edges": [
+
+    { "parentSlug": "dogal-sayilar", "childSlug": "tam-sayilar", "dependencyWeight": 0.9 },
+    { "parentSlug": "tam-sayilar", "childSlug": "rasyonel-sayilar", "dependencyWeight": 0.9 },
+    { "parentSlug": "rasyonel-sayilar", "childSlug": "ondalikli-sayilar", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "dogal-sayilar", "childSlug": "basamak-kavrami", "dependencyWeight": 0.9 },
+    { "parentSlug": "basamak-kavrami", "childSlug": "sayi-basamaklari", "dependencyWeight": 0.9 },
+    { "parentSlug": "sayi-basamaklari", "childSlug": "basamak-analizi-ve-problemleri", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "dogal-sayilar", "childSlug": "bolme-kurallari", "dependencyWeight": 0.9 },
+    { "parentSlug": "bolme-kurallari", "childSlug": "bolunebilme-kurallari", "dependencyWeight": 0.9 },
+    { "parentSlug": "bolunebilme-kurallari", "childSlug": "asal-sayilar", "dependencyWeight": 0.7 },
+    { "parentSlug": "asal-sayilar", "childSlug": "asal-carpanlara-ayirma", "dependencyWeight": 0.9 },
+
+    { "parentSlug": "asal-carpanlara-ayirma", "childSlug": "ebob", "dependencyWeight": 0.9 },
+    { "parentSlug": "asal-carpanlara-ayirma", "childSlug": "ekok", "dependencyWeight": 0.9 },
+    { "parentSlug": "ebob", "childSlug": "ekok", "dependencyWeight": 0.5 },
+    { "parentSlug": "ebob", "childSlug": "ebob-ekok-problemleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "ekok", "childSlug": "ebob-ekok-problemleri", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "rasyonel-sayilar", "childSlug": "rasyonel-sayi-islemleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "rasyonel-sayi-islemleri", "childSlug": "kesirlerle-islemler", "dependencyWeight": 0.7 },
+    { "parentSlug": "rasyonel-sayilar", "childSlug": "sayi-dogrusu-ve-siralama", "dependencyWeight": 0.7 },
+    { "parentSlug": "ondalikli-sayilar", "childSlug": "sayi-dogrusu-ve-siralama", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "rasyonel-sayi-islemleri", "childSlug": "basit-esitsizlikler", "dependencyWeight": 0.7 },
+    { "parentSlug": "basit-esitsizlikler", "childSlug": "esitsizlik-kurallari", "dependencyWeight": 0.9 },
+    { "parentSlug": "esitsizlik-kurallari", "childSlug": "esitsizlik-cozumleri", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "tam-sayilar", "childSlug": "mutlak-deger-kavrami", "dependencyWeight": 0.7 },
+    { "parentSlug": "sayi-dogrusu-ve-siralama", "childSlug": "mutlak-deger-kavrami", "dependencyWeight": 0.5 },
+    { "parentSlug": "mutlak-deger-kavrami", "childSlug": "mutlak-degerli-denklemler", "dependencyWeight": 0.9 },
+    { "parentSlug": "birinci-dereceden-denklemler", "childSlug": "mutlak-degerli-denklemler", "dependencyWeight": 0.7 },
+    { "parentSlug": "mutlak-deger-kavrami", "childSlug": "mutlak-degerli-esitsizlikler", "dependencyWeight": 0.7 },
+    { "parentSlug": "esitsizlik-kurallari", "childSlug": "mutlak-degerli-esitsizlikler", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "rasyonel-sayilar", "childSlug": "us-kurallari", "dependencyWeight": 0.7 },
+    { "parentSlug": "bolme-kurallari", "childSlug": "us-kurallari", "dependencyWeight": 0.5 },
+    { "parentSlug": "us-kurallari", "childSlug": "uslu-ifadeler", "dependencyWeight": 0.9 },
+    { "parentSlug": "us-kurallari", "childSlug": "negatif-ve-kesirli-usler", "dependencyWeight": 0.7 },
+    { "parentSlug": "rasyonel-sayi-islemleri", "childSlug": "negatif-ve-kesirli-usler", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "uslu-ifadeler", "childSlug": "kok-kurallari-ve-donusumleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "negatif-ve-kesirli-usler", "childSlug": "kok-kurallari-ve-donusumleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "kok-kurallari-ve-donusumleri", "childSlug": "koklu-ifadeler", "dependencyWeight": 0.9 },
+    { "parentSlug": "koklu-ifadeler", "childSlug": "koklu-ifadelerde-sadelestirme", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "uslu-ifadeler", "childSlug": "ortak-carpan-ve-gruplama", "dependencyWeight": 0.5 },
+    { "parentSlug": "rasyonel-sayi-islemleri", "childSlug": "ortak-carpan-ve-gruplama", "dependencyWeight": 0.7 },
+    { "parentSlug": "ortak-carpan-ve-gruplama", "childSlug": "carpanlara-ayirma", "dependencyWeight": 0.9 },
+    { "parentSlug": "ortak-carpan-ve-gruplama", "childSlug": "ozdes-carpanlar", "dependencyWeight": 0.7 },
+    { "parentSlug": "ozdes-carpanlar", "childSlug": "carpanlara-ayirma", "dependencyWeight": 0.7 },
+    { "parentSlug": "carpanlara-ayirma", "childSlug": "ikinci-derece-carpanlara-ayirma", "dependencyWeight": 0.9 },
+
+    { "parentSlug": "rasyonel-sayilar", "childSlug": "dogrudan-oranti", "dependencyWeight": 0.7 },
+    { "parentSlug": "kesirlerle-islemler", "childSlug": "dogrudan-oranti", "dependencyWeight": 0.5 },
+    { "parentSlug": "dogrudan-oranti", "childSlug": "oran-oranti", "dependencyWeight": 0.9 },
+    { "parentSlug": "rasyonel-sayilar", "childSlug": "ters-oranti", "dependencyWeight": 0.7 },
+    { "parentSlug": "ters-oranti", "childSlug": "oran-oranti", "dependencyWeight": 0.7 },
+    { "parentSlug": "oran-oranti", "childSlug": "bilesik-oranti", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "rasyonel-sayi-islemleri", "childSlug": "birinci-dereceden-denklemler", "dependencyWeight": 0.9 },
+    { "parentSlug": "birinci-dereceden-denklemler", "childSlug": "denklem-kurma-ve-cozme", "dependencyWeight": 0.9 },
+    { "parentSlug": "birinci-dereceden-denklemler", "childSlug": "denklem-sistemleri", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "denklem-kurma-ve-cozme", "childSlug": "yas-problemleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "denklem-kurma-ve-cozme", "childSlug": "isci-havuz-problemleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "oran-oranti", "childSlug": "isci-havuz-problemleri", "dependencyWeight": 0.5 },
+    { "parentSlug": "denklem-kurma-ve-cozme", "childSlug": "hareket-problemleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "oran-oranti", "childSlug": "hareket-problemleri", "dependencyWeight": 0.5 },
+    { "parentSlug": "denklem-kurma-ve-cozme", "childSlug": "karisim-problemleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "oran-oranti", "childSlug": "karisim-problemleri", "dependencyWeight": 0.5 },
+    { "parentSlug": "denklem-kurma-ve-cozme", "childSlug": "yuzde-problemleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "oran-oranti", "childSlug": "yuzde-problemleri", "dependencyWeight": 0.5 },
+    { "parentSlug": "yuzde-problemleri", "childSlug": "kar-zarar-problemleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "denklem-kurma-ve-cozme", "childSlug": "kar-zarar-problemleri", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "dogal-sayilar", "childSlug": "kume-kavrami", "dependencyWeight": 0.5 },
+    { "parentSlug": "kume-kavrami", "childSlug": "kume-islemleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "kume-islemleri", "childSlug": "venn-semalari", "dependencyWeight": 0.7 },
+    { "parentSlug": "kume-islemleri", "childSlug": "kartezyen-carpim", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "kartezyen-carpim", "childSlug": "fonksiyon-kavrami", "dependencyWeight": 0.7 },
+    { "parentSlug": "kume-islemleri", "childSlug": "fonksiyon-kavrami", "dependencyWeight": 0.9 },
+    { "parentSlug": "birinci-dereceden-denklemler", "childSlug": "fonksiyon-kavrami", "dependencyWeight": 0.7 },
+    { "parentSlug": "fonksiyon-kavrami", "childSlug": "fonksiyon-turleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "fonksiyon-kavrami", "childSlug": "fonksiyon-bileskeleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "fonksiyon-turleri", "childSlug": "ters-fonksiyon", "dependencyWeight": 0.7 },
+    { "parentSlug": "fonksiyon-bileskeleri", "childSlug": "ters-fonksiyon", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "dogal-sayilar", "childSlug": "faktoriyel", "dependencyWeight": 0.7 },
+    { "parentSlug": "faktoriyel", "childSlug": "permutasyon", "dependencyWeight": 0.9 },
+    { "parentSlug": "permutasyon", "childSlug": "tekrarli-permutasyon", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "permutasyon", "childSlug": "kombinasyon", "dependencyWeight": 0.9 },
+    { "parentSlug": "kombinasyon", "childSlug": "kombinasyon-problemleri", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "kombinasyon", "childSlug": "binom-acilimi", "dependencyWeight": 0.9 },
+    { "parentSlug": "uslu-ifadeler", "childSlug": "binom-acilimi", "dependencyWeight": 0.5 },
+    { "parentSlug": "binom-acilimi", "childSlug": "binom-katsayilari", "dependencyWeight": 0.7 },
+    { "parentSlug": "binom-acilimi", "childSlug": "pascal-ucgeni", "dependencyWeight": 0.5 },
+    { "parentSlug": "kombinasyon", "childSlug": "pascal-ucgeni", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "kombinasyon-problemleri", "childSlug": "olasilik-kavrami", "dependencyWeight": 0.7 },
+    { "parentSlug": "kume-islemleri", "childSlug": "olasilik-kavrami", "dependencyWeight": 0.5 },
+    { "parentSlug": "olasilik-kavrami", "childSlug": "kosullu-olasilik", "dependencyWeight": 0.9 },
+    { "parentSlug": "olasilik-kavrami", "childSlug": "bagimsiz-olaylar", "dependencyWeight": 0.7 },
+    { "parentSlug": "kosullu-olasilik", "childSlug": "bagimsiz-olaylar", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "dogal-sayilar", "childSlug": "veri-analizi", "dependencyWeight": 0.5 },
+    { "parentSlug": "oran-oranti", "childSlug": "veri-analizi", "dependencyWeight": 0.3 },
+    { "parentSlug": "veri-analizi", "childSlug": "merkezi-egilim-olculeri", "dependencyWeight": 0.9 },
+    { "parentSlug": "merkezi-egilim-olculeri", "childSlug": "yayilim-olculeri", "dependencyWeight": 0.7 },
+    { "parentSlug": "koklu-ifadeler", "childSlug": "yayilim-olculeri", "dependencyWeight": 0.3 },
+
+    { "parentSlug": "ikinci-derece-carpanlara-ayirma", "childSlug": "ikinci-dereceden-denklemler", "dependencyWeight": 0.9 },
+    { "parentSlug": "birinci-dereceden-denklemler", "childSlug": "ikinci-dereceden-denklemler", "dependencyWeight": 0.7 },
+    { "parentSlug": "ikinci-dereceden-denklemler", "childSlug": "diskriminant", "dependencyWeight": 0.9 },
+    { "parentSlug": "ikinci-dereceden-denklemler", "childSlug": "kok-katsayi-iliskileri", "dependencyWeight": 0.7 },
+    { "parentSlug": "diskriminant", "childSlug": "kok-katsayi-iliskileri", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "tam-sayilar", "childSlug": "karmasik-sayi-kavrami", "dependencyWeight": 0.5 },
+    { "parentSlug": "koklu-ifadeler", "childSlug": "karmasik-sayi-kavrami", "dependencyWeight": 0.7 },
+    { "parentSlug": "ikinci-dereceden-denklemler", "childSlug": "karmasik-sayi-kavrami", "dependencyWeight": 0.7 },
+    { "parentSlug": "karmasik-sayi-kavrami", "childSlug": "karmasik-sayi-islemleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "karmasik-sayi-islemleri", "childSlug": "karmasik-sayilarin-kutupsal-bicimi", "dependencyWeight": 0.7 },
+    { "parentSlug": "trigonometrik-oranlar", "childSlug": "karmasik-sayilarin-kutupsal-bicimi", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "ikinci-dereceden-denklemler", "childSlug": "parabol-kavrami", "dependencyWeight": 0.9 },
+    { "parentSlug": "fonksiyon-kavrami", "childSlug": "parabol-kavrami", "dependencyWeight": 0.7 },
+    { "parentSlug": "parabol-kavrami", "childSlug": "parabol-grafigi-ve-ozellikleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "diskriminant", "childSlug": "parabol-grafigi-ve-ozellikleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "parabol-grafigi-ve-ozellikleri", "childSlug": "parabol-problemleri", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "carpanlara-ayirma", "childSlug": "polinom-kavrami", "dependencyWeight": 0.7 },
+    { "parentSlug": "fonksiyon-kavrami", "childSlug": "polinom-kavrami", "dependencyWeight": 0.7 },
+    { "parentSlug": "polinom-kavrami", "childSlug": "polinom-islemleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "polinom-islemleri", "childSlug": "polinom-bolmesi-ve-kalan", "dependencyWeight": 0.7 },
+    { "parentSlug": "polinom-islemleri", "childSlug": "polinom-kokleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "ikinci-dereceden-denklemler", "childSlug": "polinom-kokleri", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "kume-kavrami", "childSlug": "mantik-onermeler", "dependencyWeight": 0.5 },
+    { "parentSlug": "mantik-onermeler", "childSlug": "bilesik-onermeler", "dependencyWeight": 0.9 },
+    { "parentSlug": "bilesik-onermeler", "childSlug": "acik-onermeler-ve-niceleme", "dependencyWeight": 0.7 },
+    { "parentSlug": "kume-islemleri", "childSlug": "acik-onermeler-ve-niceleme", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "bolunebilme-kurallari", "childSlug": "mod-islemleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "bolme-kurallari", "childSlug": "mod-islemleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "mod-islemleri", "childSlug": "moduler-aritmetik", "dependencyWeight": 0.9 },
+    { "parentSlug": "moduler-aritmetik", "childSlug": "moduler-denklemler", "dependencyWeight": 0.7 },
+    { "parentSlug": "birinci-dereceden-denklemler", "childSlug": "moduler-denklemler", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "ikinci-dereceden-denklemler", "childSlug": "ikinci-derece-esitsizlikler", "dependencyWeight": 0.9 },
+    { "parentSlug": "esitsizlik-cozumleri", "childSlug": "ikinci-derece-esitsizlikler", "dependencyWeight": 0.7 },
+    { "parentSlug": "ikinci-derece-esitsizlikler", "childSlug": "isaret-tablosu-ve-cozum", "dependencyWeight": 0.9 },
+    { "parentSlug": "isaret-tablosu-ve-cozum", "childSlug": "esitsizlik-sistemleri", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "uslu-ifadeler", "childSlug": "logaritma-kavrami", "dependencyWeight": 0.9 },
+    { "parentSlug": "fonksiyon-kavrami", "childSlug": "logaritma-kavrami", "dependencyWeight": 0.7 },
+    { "parentSlug": "logaritma-kavrami", "childSlug": "logaritma-kurallari", "dependencyWeight": 0.9 },
+    { "parentSlug": "logaritma-kurallari", "childSlug": "logaritmik-denklemler", "dependencyWeight": 0.7 },
+    { "parentSlug": "birinci-dereceden-denklemler", "childSlug": "logaritmik-denklemler", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "fonksiyon-kavrami", "childSlug": "aritmetik-dizi", "dependencyWeight": 0.5 },
+    { "parentSlug": "birinci-dereceden-denklemler", "childSlug": "aritmetik-dizi", "dependencyWeight": 0.7 },
+    { "parentSlug": "aritmetik-dizi", "childSlug": "geometrik-dizi", "dependencyWeight": 0.7 },
+    { "parentSlug": "uslu-ifadeler", "childSlug": "geometrik-dizi", "dependencyWeight": 0.5 },
+    { "parentSlug": "aritmetik-dizi", "childSlug": "genel-terim-ve-toplam-formulleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "geometrik-dizi", "childSlug": "genel-terim-ve-toplam-formulleri", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "genel-terim-ve-toplam-formulleri", "childSlug": "seriler", "dependencyWeight": 0.9 },
+    { "parentSlug": "seriler", "childSlug": "geometrik-seri", "dependencyWeight": 0.7 },
+    { "parentSlug": "geometrik-dizi", "childSlug": "geometrik-seri", "dependencyWeight": 0.7 },
+    { "parentSlug": "seriler", "childSlug": "seri-yakinsakligi", "dependencyWeight": 0.7 },
+    { "parentSlug": "limit-kavrami", "childSlug": "seri-yakinsakligi", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "fonksiyon-kavrami", "childSlug": "limit-kavrami", "dependencyWeight": 0.9 },
+    { "parentSlug": "polinom-islemleri", "childSlug": "limit-kavrami", "dependencyWeight": 0.5 },
+    { "parentSlug": "limit-kavrami", "childSlug": "limit-hesaplama-teknikleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "carpanlara-ayirma", "childSlug": "limit-hesaplama-teknikleri", "dependencyWeight": 0.5 },
+    { "parentSlug": "limit-kavrami", "childSlug": "sureklilik", "dependencyWeight": 0.9 },
+
+    { "parentSlug": "limit-kavrami", "childSlug": "turev-kavrami-ve-kurallari", "dependencyWeight": 0.9 },
+    { "parentSlug": "polinom-islemleri", "childSlug": "turev-kavrami-ve-kurallari", "dependencyWeight": 0.7 },
+    { "parentSlug": "turev-kavrami-ve-kurallari", "childSlug": "zincir-kurali", "dependencyWeight": 0.9 },
+    { "parentSlug": "fonksiyon-bileskeleri", "childSlug": "zincir-kurali", "dependencyWeight": 0.7 },
+    { "parentSlug": "turev-kavrami-ve-kurallari", "childSlug": "turev-uygulamalari-max-min", "dependencyWeight": 0.9 },
+    { "parentSlug": "ikinci-derece-esitsizlikler", "childSlug": "turev-uygulamalari-max-min", "dependencyWeight": 0.5 },
+    { "parentSlug": "turev-kavrami-ve-kurallari", "childSlug": "turev-ile-grafik-cizimi", "dependencyWeight": 0.9 },
+    { "parentSlug": "turev-uygulamalari-max-min", "childSlug": "turev-ile-grafik-cizimi", "dependencyWeight": 0.7 },
+    { "parentSlug": "turev-kavrami-ve-kurallari", "childSlug": "lhopital-kurali", "dependencyWeight": 0.7 },
+    { "parentSlug": "limit-hesaplama-teknikleri", "childSlug": "lhopital-kurali", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "turev-kavrami-ve-kurallari", "childSlug": "belirsiz-integral", "dependencyWeight": 0.9 },
+    { "parentSlug": "carpanlara-ayirma", "childSlug": "belirsiz-integral", "dependencyWeight": 0.5 },
+    { "parentSlug": "belirsiz-integral", "childSlug": "integral-alma-teknikleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "zincir-kurali", "childSlug": "integral-alma-teknikleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "belirsiz-integral", "childSlug": "belirli-integral", "dependencyWeight": 0.9 },
+    { "parentSlug": "limit-kavrami", "childSlug": "belirli-integral", "dependencyWeight": 0.5 },
+    { "parentSlug": "belirli-integral", "childSlug": "integral-uygulamalari-alan", "dependencyWeight": 0.9 },
+    { "parentSlug": "parabol-grafigi-ve-ozellikleri", "childSlug": "integral-uygulamalari-alan", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "oran-oranti", "childSlug": "trigonometrik-oranlar", "dependencyWeight": 0.7 },
+    { "parentSlug": "koklu-ifadeler", "childSlug": "trigonometrik-oranlar", "dependencyWeight": 0.5 },
+    { "parentSlug": "trigonometrik-oranlar", "childSlug": "trigonometrik-ozdeslikler", "dependencyWeight": 0.9 },
+    { "parentSlug": "ozdes-carpanlar", "childSlug": "trigonometrik-ozdeslikler", "dependencyWeight": 0.3 },
+    { "parentSlug": "trigonometrik-ozdeslikler", "childSlug": "toplam-fark-formulleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "trigonometrik-ozdeslikler", "childSlug": "trigonometrik-denklemler", "dependencyWeight": 0.7 },
+    { "parentSlug": "birinci-dereceden-denklemler", "childSlug": "trigonometrik-denklemler", "dependencyWeight": 0.5 },
+    { "parentSlug": "toplam-fark-formulleri", "childSlug": "trigonometrik-denklemler", "dependencyWeight": 0.5 },
+    { "parentSlug": "trigonometrik-denklemler", "childSlug": "ters-trigonometrik-fonksiyonlar", "dependencyWeight": 0.7 },
+    { "parentSlug": "ters-fonksiyon", "childSlug": "ters-trigonometrik-fonksiyonlar", "dependencyWeight": 0.7 }
+  ]
+}

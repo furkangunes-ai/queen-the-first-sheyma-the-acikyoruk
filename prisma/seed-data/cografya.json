@@ -1,0 +1,296 @@
+{
+  "nodes": [
+    { "name": "Cografyanin Konusu ve Bolmeleri", "slug": "cografyanin-konusu-ve-bolmeleri", "domain": "Coğrafya", "examType": "tyt", "complexityScore": 1 },
+    { "name": "Harita Turleri", "slug": "harita-turleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 2 },
+    { "name": "Olcek Hesaplamalari", "slug": "olcek-hesaplamalari", "domain": "Coğrafya", "examType": "both", "complexityScore": 3 },
+    { "name": "Koordinat Sistemi", "slug": "koordinat-sistemi", "domain": "Coğrafya", "examType": "both", "complexityScore": 3 },
+    { "name": "Izohips ve Profil Cikarma", "slug": "izohips-ve-profil-cikarma", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Cografi Konum", "slug": "cografi-konum", "domain": "Coğrafya", "examType": "both", "complexityScore": 3 },
+    { "name": "Ozel Konum", "slug": "ozel-konum", "domain": "Coğrafya", "examType": "both", "complexityScore": 3 },
+    { "name": "Matematik Konum", "slug": "matematik-konum", "domain": "Coğrafya", "examType": "both", "complexityScore": 3 },
+    { "name": "Dunyanin Sekli ve Boyutlari", "slug": "dunyanin-sekli-ve-boyutlari", "domain": "Coğrafya", "examType": "both", "complexityScore": 2 },
+    { "name": "Dunyanin Eksen Hareketi", "slug": "dunyanin-eksen-hareketi", "domain": "Coğrafya", "examType": "both", "complexityScore": 3 },
+    { "name": "Dunyanin Yillik Hareketi", "slug": "dunyanin-yillik-hareketi", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Yerel Saat ve Ulke Saati", "slug": "yerel-saat-ve-ulke-saati", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Mevsimlerin Olusumu", "slug": "mevsimlerin-olusumu", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Atmosfer ve Yapisi", "slug": "atmosfer-ve-yapisi", "domain": "Coğrafya", "examType": "both", "complexityScore": 2 },
+    { "name": "Sicaklik", "slug": "sicaklik", "domain": "Coğrafya", "examType": "both", "complexityScore": 3 },
+    { "name": "Basinc ve Ruzgarlar", "slug": "basinc-ve-ruzgarlar", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Nem ve Yagis", "slug": "nem-ve-yagis", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Iklim Tipleri", "slug": "iklim-tipleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Iklim Grafikleri Yorumlama", "slug": "iklim-grafikleri-yorumlama", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Dunya Iklim Kusaklari", "slug": "dunya-iklim-kusaklari", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Levha Tektonigi", "slug": "levha-tektonigi", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Depremler", "slug": "depremler", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Volkanizma ve Volkanik Sekiller", "slug": "volkanizma-ve-volkanik-sekiller", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Orojenez Epirojenez ve Izostazi", "slug": "orojenez-epirojenez-ve-izostazi", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Dis Kuvvetler Genel", "slug": "dis-kuvvetler-genel", "domain": "Coğrafya", "examType": "both", "complexityScore": 3 },
+    { "name": "Akarsu Asinma ve Birikim Sekilleri", "slug": "akarsu-asinma-ve-birikim-sekilleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Ruzgar Asinma ve Birikim Sekilleri", "slug": "ruzgar-asinma-ve-birikim-sekilleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Buzul Asinma ve Birikim Sekilleri", "slug": "buzul-asinma-ve-birikim-sekilleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Dalga Asinma ve Birikim Sekilleri", "slug": "dalga-asinma-ve-birikim-sekilleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Karstik Sekiller", "slug": "karstik-sekiller", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Toprak Olusumu ve Cesitleri", "slug": "toprak-olusumu-ve-cesitleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Toprak Tipleri", "slug": "toprak-tipleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Toprak Erozyonu ve Koruma", "slug": "toprak-erozyonu-ve-koruma", "domain": "Coğrafya", "examType": "both", "complexityScore": 3 },
+    { "name": "Su Kaynaklari ve Hidroloji", "slug": "su-kaynaklari-ve-hidroloji", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Goller ve Denizler", "slug": "goller-ve-denizler", "domain": "Coğrafya", "examType": "both", "complexityScore": 3 },
+    { "name": "Bitki Ortuleri", "slug": "bitki-ortuleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Doganin Varliklari", "slug": "doganin-varliklari", "domain": "Coğrafya", "examType": "ayt", "complexityScore": 5 },
+    { "name": "Turkiye Yer Sekilleri", "slug": "turkiye-yer-sekilleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Turkiye Akarsu Havzalari", "slug": "turkiye-akarsu-havzalari", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Turkiye Iklimi", "slug": "turkiye-iklimi", "domain": "Coğrafya", "examType": "both", "complexityScore": 6 },
+    { "name": "Turkiye Iklim Bolgelerinin Ozellikleri", "slug": "turkiye-iklim-bolgelerinin-ozellikleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 6 },
+    { "name": "Turkiye Bitki Ortuleri", "slug": "turkiye-bitki-ortuleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Turkiye Toprak Tipleri", "slug": "turkiye-toprak-tipleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Turkiye Dogal Varliklari", "slug": "turkiye-dogal-varliklari", "domain": "Coğrafya", "examType": "ayt", "complexityScore": 6 },
+    { "name": "Nufus Sayimi ve Kavramlar", "slug": "nufus-sayimi-ve-kavramlar", "domain": "Coğrafya", "examType": "both", "complexityScore": 2 },
+    { "name": "Nufus Artisi ve Politikalari", "slug": "nufus-artisi-ve-politikalari", "domain": "Coğrafya", "examType": "both", "complexityScore": 3 },
+    { "name": "Nufus Piramitleri", "slug": "nufus-piramitleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Nufusun Dagilis ve Yogunlugu", "slug": "nufusun-dagilis-ve-yogunlugu", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Nufusun Nitelikleri", "slug": "nufusun-nitelikleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Goclerin Nedenleri ve Sonuclari", "slug": "goclerin-nedenleri-ve-sonuclari", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Goc Turleri", "slug": "goc-turleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Turkiye Nufusu ve Gelisimi", "slug": "turkiye-nufusu-ve-gelisimi", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Turkiye Gocleri", "slug": "turkiye-gocleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Yerlesme Turleri ve Ozellikleri", "slug": "yerlesme-turleri-ve-ozellikleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Turkiye Yerlesme Tipleri", "slug": "turkiye-yerlesme-tipleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Beseri Yapi", "slug": "beseri-yapi", "domain": "Coğrafya", "examType": "ayt", "complexityScore": 5 },
+    { "name": "Gecim Tarzlari ve Ekonomik Faaliyetler", "slug": "gecim-tarzlari-ve-ekonomik-faaliyetler", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Tarim Sektorleri ve Urunleri", "slug": "tarim-sektorleri-ve-urunleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Hayvancilik ve Su Urunleri", "slug": "hayvancilik-ve-su-urunleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Madencilik ve Enerji Kaynaklari", "slug": "madencilik-ve-enerji-kaynaklari", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Sanayi ve Turizm", "slug": "sanayi-ve-turizm", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Ulasim Yollari ve Ticaret", "slug": "ulasim-yollari-ve-ticaret", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Bolge Kavrami ve Turleri", "slug": "bolge-kavrami-ve-turleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Bolge Sinirlari ve Ozellikleri", "slug": "bolge-sinirlari-ve-ozellikleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Turkiye Cografi Bolgeleri", "slug": "turkiye-cografi-bolgeleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 6 },
+    { "name": "Konum ve Etkilesim", "slug": "konum-ve-etkilesim", "domain": "Coğrafya", "examType": "ayt", "complexityScore": 5 },
+    { "name": "Cografi Kesifler", "slug": "cografi-kesifler", "domain": "Coğrafya", "examType": "ayt", "complexityScore": 4 },
+    { "name": "Doga ve Insan Etkilesimi", "slug": "doga-ve-insan-etkilesimi", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Cevre Sorunlari", "slug": "cevre-sorunlari", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Kuresel Iklim Degisikligi", "slug": "kuresel-iklim-degisikligi", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Dogal Afetler Genel", "slug": "dogal-afetler-genel", "domain": "Coğrafya", "examType": "both", "complexityScore": 3 },
+    { "name": "Yer Kaynakli Afetler", "slug": "yer-kaynakli-afetler", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Iklim Kaynakli Afetler", "slug": "iklim-kaynakli-afetler", "domain": "Coğrafya", "examType": "both", "complexityScore": 4 },
+    { "name": "Afet Yonetimi ve Korunma", "slug": "afet-yonetimi-ve-korunma", "domain": "Coğrafya", "examType": "both", "complexityScore": 3 },
+    { "name": "Turkiye Dogal Afetleri", "slug": "turkiye-dogal-afetleri", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Doga ve Insan (AYT)", "slug": "doga-ve-insan-ayt", "domain": "Coğrafya", "examType": "ayt", "complexityScore": 3 },
+    { "name": "Turkiye Ekonomik Cografyasi", "slug": "turkiye-ekonomik-cografyasi", "domain": "Coğrafya", "examType": "both", "complexityScore": 6 },
+    { "name": "Turkiye Dis Ticareti", "slug": "turkiye-dis-ticareti", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Dunya Ulkeleri ve Bolgeleri", "slug": "dunya-ulkeleri-ve-bolgeleri", "domain": "Coğrafya", "examType": "ayt", "complexityScore": 6 },
+    { "name": "Cografi Bilgi Sistemleri", "slug": "cografi-bilgi-sistemleri", "domain": "Coğrafya", "examType": "ayt", "complexityScore": 4 },
+    { "name": "Turkiye Ulasim Aglari", "slug": "turkiye-ulasim-aglari", "domain": "Coğrafya", "examType": "both", "complexityScore": 5 },
+    { "name": "Nufusun Gelisimi ve Demografik Gecis", "slug": "nufusun-gelisimi-ve-demografik-gecis", "domain": "Coğrafya", "examType": "ayt", "complexityScore": 6 }
+  ],
+  "edges": [
+    { "parentSlug": "cografyanin-konusu-ve-bolmeleri", "childSlug": "harita-turleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "cografyanin-konusu-ve-bolmeleri", "childSlug": "doga-ve-insan-ayt", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "harita-turleri", "childSlug": "olcek-hesaplamalari", "dependencyWeight": 0.9 },
+    { "parentSlug": "harita-turleri", "childSlug": "koordinat-sistemi", "dependencyWeight": 0.9 },
+    { "parentSlug": "harita-turleri", "childSlug": "izohips-ve-profil-cikarma", "dependencyWeight": 0.9 },
+    { "parentSlug": "harita-turleri", "childSlug": "cografi-bilgi-sistemleri", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "olcek-hesaplamalari", "childSlug": "izohips-ve-profil-cikarma", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "koordinat-sistemi", "childSlug": "cografi-konum", "dependencyWeight": 0.9 },
+    { "parentSlug": "koordinat-sistemi", "childSlug": "matematik-konum", "dependencyWeight": 0.9 },
+    { "parentSlug": "koordinat-sistemi", "childSlug": "yerel-saat-ve-ulke-saati", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "cografi-konum", "childSlug": "ozel-konum", "dependencyWeight": 0.7 },
+    { "parentSlug": "cografi-konum", "childSlug": "matematik-konum", "dependencyWeight": 0.7 },
+    { "parentSlug": "cografi-konum", "childSlug": "konum-ve-etkilesim", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "ozel-konum", "childSlug": "turkiye-yer-sekilleri", "dependencyWeight": 0.5 },
+    { "parentSlug": "matematik-konum", "childSlug": "turkiye-iklimi", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "dunyanin-sekli-ve-boyutlari", "childSlug": "dunyanin-eksen-hareketi", "dependencyWeight": 0.9 },
+    { "parentSlug": "dunyanin-sekli-ve-boyutlari", "childSlug": "dunyanin-yillik-hareketi", "dependencyWeight": 0.9 },
+    { "parentSlug": "dunyanin-sekli-ve-boyutlari", "childSlug": "koordinat-sistemi", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "dunyanin-eksen-hareketi", "childSlug": "yerel-saat-ve-ulke-saati", "dependencyWeight": 0.9 },
+    { "parentSlug": "dunyanin-eksen-hareketi", "childSlug": "dunyanin-yillik-hareketi", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "dunyanin-yillik-hareketi", "childSlug": "mevsimlerin-olusumu", "dependencyWeight": 0.9 },
+    { "parentSlug": "dunyanin-yillik-hareketi", "childSlug": "sicaklik", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "mevsimlerin-olusumu", "childSlug": "sicaklik", "dependencyWeight": 0.7 },
+    { "parentSlug": "mevsimlerin-olusumu", "childSlug": "iklim-tipleri", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "atmosfer-ve-yapisi", "childSlug": "sicaklik", "dependencyWeight": 0.9 },
+    { "parentSlug": "atmosfer-ve-yapisi", "childSlug": "basinc-ve-ruzgarlar", "dependencyWeight": 0.9 },
+    { "parentSlug": "atmosfer-ve-yapisi", "childSlug": "nem-ve-yagis", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "sicaklik", "childSlug": "basinc-ve-ruzgarlar", "dependencyWeight": 0.9 },
+    { "parentSlug": "sicaklik", "childSlug": "nem-ve-yagis", "dependencyWeight": 0.7 },
+    { "parentSlug": "sicaklik", "childSlug": "dunya-iklim-kusaklari", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "basinc-ve-ruzgarlar", "childSlug": "nem-ve-yagis", "dependencyWeight": 0.7 },
+    { "parentSlug": "basinc-ve-ruzgarlar", "childSlug": "iklim-tipleri", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "nem-ve-yagis", "childSlug": "iklim-tipleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "nem-ve-yagis", "childSlug": "iklim-grafikleri-yorumlama", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "iklim-tipleri", "childSlug": "dunya-iklim-kusaklari", "dependencyWeight": 0.7 },
+    { "parentSlug": "iklim-tipleri", "childSlug": "iklim-grafikleri-yorumlama", "dependencyWeight": 0.9 },
+    { "parentSlug": "iklim-tipleri", "childSlug": "turkiye-iklimi", "dependencyWeight": 0.7 },
+    { "parentSlug": "iklim-tipleri", "childSlug": "bitki-ortuleri", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "dunya-iklim-kusaklari", "childSlug": "dunya-ulkeleri-ve-bolgeleri", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "iklim-grafikleri-yorumlama", "childSlug": "turkiye-iklim-bolgelerinin-ozellikleri", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "levha-tektonigi", "childSlug": "depremler", "dependencyWeight": 0.9 },
+    { "parentSlug": "levha-tektonigi", "childSlug": "volkanizma-ve-volkanik-sekiller", "dependencyWeight": 0.9 },
+    { "parentSlug": "levha-tektonigi", "childSlug": "orojenez-epirojenez-ve-izostazi", "dependencyWeight": 0.9 },
+
+    { "parentSlug": "depremler", "childSlug": "yer-kaynakli-afetler", "dependencyWeight": 0.9 },
+    { "parentSlug": "depremler", "childSlug": "turkiye-dogal-afetleri", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "volkanizma-ve-volkanik-sekiller", "childSlug": "yer-kaynakli-afetler", "dependencyWeight": 0.7 },
+    { "parentSlug": "volkanizma-ve-volkanik-sekiller", "childSlug": "turkiye-yer-sekilleri", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "orojenez-epirojenez-ve-izostazi", "childSlug": "turkiye-yer-sekilleri", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "levha-tektonigi", "childSlug": "dis-kuvvetler-genel", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "dis-kuvvetler-genel", "childSlug": "akarsu-asinma-ve-birikim-sekilleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "dis-kuvvetler-genel", "childSlug": "ruzgar-asinma-ve-birikim-sekilleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "dis-kuvvetler-genel", "childSlug": "buzul-asinma-ve-birikim-sekilleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "dis-kuvvetler-genel", "childSlug": "dalga-asinma-ve-birikim-sekilleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "dis-kuvvetler-genel", "childSlug": "karstik-sekiller", "dependencyWeight": 0.9 },
+
+    { "parentSlug": "akarsu-asinma-ve-birikim-sekilleri", "childSlug": "turkiye-yer-sekilleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "akarsu-asinma-ve-birikim-sekilleri", "childSlug": "su-kaynaklari-ve-hidroloji", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "nem-ve-yagis", "childSlug": "su-kaynaklari-ve-hidroloji", "dependencyWeight": 0.7 },
+    { "parentSlug": "su-kaynaklari-ve-hidroloji", "childSlug": "goller-ve-denizler", "dependencyWeight": 0.7 },
+    { "parentSlug": "su-kaynaklari-ve-hidroloji", "childSlug": "turkiye-akarsu-havzalari", "dependencyWeight": 0.7 },
+    { "parentSlug": "su-kaynaklari-ve-hidroloji", "childSlug": "doganin-varliklari", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "goller-ve-denizler", "childSlug": "turkiye-akarsu-havzalari", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "iklim-tipleri", "childSlug": "toprak-olusumu-ve-cesitleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "dis-kuvvetler-genel", "childSlug": "toprak-olusumu-ve-cesitleri", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "toprak-olusumu-ve-cesitleri", "childSlug": "toprak-tipleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "toprak-olusumu-ve-cesitleri", "childSlug": "toprak-erozyonu-ve-koruma", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "toprak-tipleri", "childSlug": "turkiye-toprak-tipleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "toprak-tipleri", "childSlug": "tarim-sektorleri-ve-urunleri", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "toprak-erozyonu-ve-koruma", "childSlug": "cevre-sorunlari", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "bitki-ortuleri", "childSlug": "turkiye-bitki-ortuleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "bitki-ortuleri", "childSlug": "doganin-varliklari", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "turkiye-yer-sekilleri", "childSlug": "turkiye-iklimi", "dependencyWeight": 0.7 },
+    { "parentSlug": "turkiye-yer-sekilleri", "childSlug": "turkiye-akarsu-havzalari", "dependencyWeight": 0.7 },
+    { "parentSlug": "turkiye-yer-sekilleri", "childSlug": "turkiye-cografi-bolgeleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "turkiye-yer-sekilleri", "childSlug": "turkiye-yerlesme-tipleri", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "turkiye-iklimi", "childSlug": "turkiye-iklim-bolgelerinin-ozellikleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "turkiye-iklimi", "childSlug": "turkiye-bitki-ortuleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "turkiye-iklimi", "childSlug": "turkiye-toprak-tipleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "turkiye-iklimi", "childSlug": "turkiye-cografi-bolgeleri", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "turkiye-iklim-bolgelerinin-ozellikleri", "childSlug": "turkiye-cografi-bolgeleri", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "turkiye-bitki-ortuleri", "childSlug": "turkiye-dogal-varliklari", "dependencyWeight": 0.7 },
+    { "parentSlug": "turkiye-toprak-tipleri", "childSlug": "turkiye-dogal-varliklari", "dependencyWeight": 0.7 },
+    { "parentSlug": "turkiye-akarsu-havzalari", "childSlug": "turkiye-dogal-varliklari", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "turkiye-dogal-varliklari", "childSlug": "turkiye-ekonomik-cografyasi", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "nufus-sayimi-ve-kavramlar", "childSlug": "nufus-artisi-ve-politikalari", "dependencyWeight": 0.9 },
+    { "parentSlug": "nufus-sayimi-ve-kavramlar", "childSlug": "nufus-piramitleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "nufus-sayimi-ve-kavramlar", "childSlug": "nufusun-dagilis-ve-yogunlugu", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "nufus-artisi-ve-politikalari", "childSlug": "nufus-piramitleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "nufus-artisi-ve-politikalari", "childSlug": "nufusun-nitelikleri", "dependencyWeight": 0.5 },
+    { "parentSlug": "nufus-artisi-ve-politikalari", "childSlug": "nufusun-gelisimi-ve-demografik-gecis", "dependencyWeight": 0.9 },
+
+    { "parentSlug": "nufusun-dagilis-ve-yogunlugu", "childSlug": "goclerin-nedenleri-ve-sonuclari", "dependencyWeight": 0.7 },
+    { "parentSlug": "nufusun-dagilis-ve-yogunlugu", "childSlug": "yerlesme-turleri-ve-ozellikleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "nufusun-dagilis-ve-yogunlugu", "childSlug": "turkiye-nufusu-ve-gelisimi", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "nufusun-nitelikleri", "childSlug": "beseri-yapi", "dependencyWeight": 0.7 },
+    { "parentSlug": "nufusun-nitelikleri", "childSlug": "gecim-tarzlari-ve-ekonomik-faaliyetler", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "goclerin-nedenleri-ve-sonuclari", "childSlug": "goc-turleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "goclerin-nedenleri-ve-sonuclari", "childSlug": "turkiye-gocleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "goclerin-nedenleri-ve-sonuclari", "childSlug": "beseri-yapi", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "goc-turleri", "childSlug": "turkiye-gocleri", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "turkiye-nufusu-ve-gelisimi", "childSlug": "turkiye-gocleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "turkiye-nufusu-ve-gelisimi", "childSlug": "turkiye-yerlesme-tipleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "turkiye-nufusu-ve-gelisimi", "childSlug": "turkiye-ekonomik-cografyasi", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "turkiye-gocleri", "childSlug": "turkiye-yerlesme-tipleri", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "yerlesme-turleri-ve-ozellikleri", "childSlug": "turkiye-yerlesme-tipleri", "dependencyWeight": 0.9 },
+
+    { "parentSlug": "beseri-yapi", "childSlug": "gecim-tarzlari-ve-ekonomik-faaliyetler", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "gecim-tarzlari-ve-ekonomik-faaliyetler", "childSlug": "tarim-sektorleri-ve-urunleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "gecim-tarzlari-ve-ekonomik-faaliyetler", "childSlug": "hayvancilik-ve-su-urunleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "gecim-tarzlari-ve-ekonomik-faaliyetler", "childSlug": "madencilik-ve-enerji-kaynaklari", "dependencyWeight": 0.7 },
+    { "parentSlug": "gecim-tarzlari-ve-ekonomik-faaliyetler", "childSlug": "sanayi-ve-turizm", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "tarim-sektorleri-ve-urunleri", "childSlug": "turkiye-ekonomik-cografyasi", "dependencyWeight": 0.7 },
+    { "parentSlug": "hayvancilik-ve-su-urunleri", "childSlug": "turkiye-ekonomik-cografyasi", "dependencyWeight": 0.5 },
+    { "parentSlug": "madencilik-ve-enerji-kaynaklari", "childSlug": "turkiye-ekonomik-cografyasi", "dependencyWeight": 0.7 },
+    { "parentSlug": "sanayi-ve-turizm", "childSlug": "turkiye-ekonomik-cografyasi", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "turkiye-ekonomik-cografyasi", "childSlug": "turkiye-dis-ticareti", "dependencyWeight": 0.9 },
+
+    { "parentSlug": "ulasim-yollari-ve-ticaret", "childSlug": "turkiye-ulasim-aglari", "dependencyWeight": 0.9 },
+    { "parentSlug": "ulasim-yollari-ve-ticaret", "childSlug": "turkiye-dis-ticareti", "dependencyWeight": 0.5 },
+    { "parentSlug": "sanayi-ve-turizm", "childSlug": "ulasim-yollari-ve-ticaret", "dependencyWeight": 0.5 },
+    { "parentSlug": "nufusun-dagilis-ve-yogunlugu", "childSlug": "ulasim-yollari-ve-ticaret", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "turkiye-ulasim-aglari", "childSlug": "turkiye-cografi-bolgeleri", "dependencyWeight": 0.3 },
+
+    { "parentSlug": "bolge-kavrami-ve-turleri", "childSlug": "bolge-sinirlari-ve-ozellikleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "bolge-sinirlari-ve-ozellikleri", "childSlug": "turkiye-cografi-bolgeleri", "dependencyWeight": 0.9 },
+    { "parentSlug": "bolge-kavrami-ve-turleri", "childSlug": "dunya-ulkeleri-ve-bolgeleri", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "konum-ve-etkilesim", "childSlug": "cografi-kesifler", "dependencyWeight": 0.7 },
+    { "parentSlug": "konum-ve-etkilesim", "childSlug": "dunya-ulkeleri-ve-bolgeleri", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "doga-ve-insan-ayt", "childSlug": "doga-ve-insan-etkilesimi", "dependencyWeight": 0.9 },
+
+    { "parentSlug": "doga-ve-insan-etkilesimi", "childSlug": "cevre-sorunlari", "dependencyWeight": 0.9 },
+    { "parentSlug": "doga-ve-insan-etkilesimi", "childSlug": "dogal-afetler-genel", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "cevre-sorunlari", "childSlug": "kuresel-iklim-degisikligi", "dependencyWeight": 0.9 },
+
+    { "parentSlug": "dogal-afetler-genel", "childSlug": "yer-kaynakli-afetler", "dependencyWeight": 0.9 },
+    { "parentSlug": "dogal-afetler-genel", "childSlug": "iklim-kaynakli-afetler", "dependencyWeight": 0.9 },
+    { "parentSlug": "dogal-afetler-genel", "childSlug": "afet-yonetimi-ve-korunma", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "yer-kaynakli-afetler", "childSlug": "turkiye-dogal-afetleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "iklim-kaynakli-afetler", "childSlug": "turkiye-dogal-afetleri", "dependencyWeight": 0.7 },
+    { "parentSlug": "afet-yonetimi-ve-korunma", "childSlug": "turkiye-dogal-afetleri", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "kuresel-iklim-degisikligi", "childSlug": "iklim-kaynakli-afetler", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "doganin-varliklari", "childSlug": "turkiye-dogal-varliklari", "dependencyWeight": 0.7 },
+
+    { "parentSlug": "cografi-kesifler", "childSlug": "dunya-ulkeleri-ve-bolgeleri", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "nufusun-gelisimi-ve-demografik-gecis", "childSlug": "turkiye-nufusu-ve-gelisimi", "dependencyWeight": 0.7 },
+    { "parentSlug": "nufusun-gelisimi-ve-demografik-gecis", "childSlug": "beseri-yapi", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "olcek-hesaplamalari", "childSlug": "cografi-bilgi-sistemleri", "dependencyWeight": 0.3 },
+
+    { "parentSlug": "turkiye-cografi-bolgeleri", "childSlug": "turkiye-ekonomik-cografyasi", "dependencyWeight": 0.5 },
+
+    { "parentSlug": "ruzgar-asinma-ve-birikim-sekilleri", "childSlug": "turkiye-yer-sekilleri", "dependencyWeight": 0.3 },
+    { "parentSlug": "karstik-sekiller", "childSlug": "turkiye-yer-sekilleri", "dependencyWeight": 0.5 },
+    { "parentSlug": "buzul-asinma-ve-birikim-sekilleri", "childSlug": "turkiye-yer-sekilleri", "dependencyWeight": 0.3 },
+    { "parentSlug": "dalga-asinma-ve-birikim-sekilleri", "childSlug": "goller-ve-denizler", "dependencyWeight": 0.3 }
+  ]
+}
