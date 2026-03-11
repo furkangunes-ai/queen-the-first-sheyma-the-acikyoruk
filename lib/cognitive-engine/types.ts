@@ -1,30 +1,23 @@
 // ==================== Bilişsel Çizge Motoru — Tip Tanımları ====================
 
-/** Atomik kavram düğümü (DB'den gelen haliyle) */
+/** Atomik kavram düğümü (motor hesaplamaları için gerekli alanlar) */
 export interface ConceptNodeData {
   id: string;
   name: string;
-  slug: string;
   domain: string;
   examType: string;
   complexityScore: number;
-  parentTopicId: string | null;
-  sortOrder: number;
 }
 
-/** DAG kenarı */
+/** DAG kenarı (motor hesaplamaları için gerekli alanlar) */
 export interface DependencyEdgeData {
-  id: string;
   parentNodeId: string;
   childNodeId: string;
   dependencyWeight: number; // W: 0.0-1.0
-  isAdaptive: boolean;
 }
 
-/** Kullanıcının bir düğümdeki bilişsel durumu */
+/** Kullanıcının bir düğümdeki bilişsel durumu (motor hesaplamaları için) */
 export interface CognitiveStateData {
-  id: string;
-  userId: string;
   nodeId: string;
   masteryLevel: number;  // M: 0.0-1.0
   strength: number;      // S: Ebbinghaus sağlamlık gücü
@@ -62,7 +55,6 @@ export interface PlanItem {
 
 /** Planlama bağlamı (Knapsack girdisi) */
 export interface PlanningContext {
-  userId: string;
   nodes: ConceptNodeData[];
   edges: DependencyEdgeData[];
   states: CognitiveStateData[];
