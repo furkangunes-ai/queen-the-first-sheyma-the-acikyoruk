@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { logAdminAction } from "@/lib/audit-log";
 import { logApiError } from "@/lib/logger";
 
 // ---------------------------------------------------------------------------
@@ -276,6 +277,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    await logAdminAction((session!.user as any).id, "bulk_create_kazanim", "TopicKazanim", null, {
+      created, skipped, notFound: notFound.length,
+    });
+
     return NextResponse.json({
       success: true,
       created,
@@ -315,6 +320,7 @@ export async function DELETE(request: NextRequest) {
       // Delete single kazanım
       await prisma.kazanimProgress.deleteMany({ where: { kazanimId } });
       await prisma.topicKazanim.delete({ where: { id: kazanimId } });
+      await logAdminAction((session!.user as any).id, "delete_kazanim", "TopicKazanim", kazanimId);
       return NextResponse.json({ success: true, message: "1 kazanım silindi" });
     }
 
@@ -332,6 +338,10 @@ export async function DELETE(request: NextRequest) {
     }
     const deleted = await prisma.topicKazanim.deleteMany({
       where: { topicId: topicId! },
+    });
+
+    await logAdminAction((session!.user as any).id, "bulk_delete_kazanim", "TopicKazanim", topicId, {
+      deletedCount: deleted.count,
     });
 
     return NextResponse.json({

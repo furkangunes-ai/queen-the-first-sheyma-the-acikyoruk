@@ -788,3 +788,19 @@ model UserSubscription {
 
   user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+// ==================== ADMIN AUDIT LOG ====================
+
+model AdminAuditLog {
+  id          String   @id @default(cuid())
+  adminId     String
+  action      String   // "reset_password" | "delete_kazanim" | "update_subscription" | ...
+  entityType  String   // "User" | "TopicKazanim" | "ConceptNode" | ...
+  entityId    String?  // Etkilenen kaydın ID'si
+  details     Json?    // Ek bilgiler (eski değer, yeni değer vb.)
+  createdAt   DateTime @default(now())
+
+  @@index([adminId])
+  @@index([createdAt])
+  @@index([action])
+}

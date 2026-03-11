@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getUserTier } from "@/lib/tier-guard";
+import { logAdminAction } from "@/lib/audit-log";
 
 // GET /api/subscription — Kullanıcının abonelik bilgisi
 export async function GET() {
@@ -43,6 +44,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // userId DB'de var mı?
+  const targetUser = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+  if (!targetUser) {
+    return NextResponse.json({ error: "Kullanıcı bulunamadı" }, { status: 404 });
+  }
+
   const subscription = await prisma.userSubscription.upsert({
     where: { userId },
     update: {
@@ -54,6 +61,10 @@ export async function POST(req: NextRequest) {
       tier,
       endDate: endDate ? new Date(endDate) : null,
     },
+  });
+
+  await logAdminAction((session.user as any).id, "update_subscription", "UserSubscription", userId, {
+    tier, endDate: endDate || null,
   });
 
   return NextResponse.json(subscription);
