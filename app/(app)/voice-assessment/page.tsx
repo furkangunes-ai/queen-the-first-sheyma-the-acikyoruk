@@ -35,6 +35,8 @@ import {
 
 type Step = "select" | "record" | "processing" | "review" | "done";
 
+const AI_FETCH_TIMEOUT = 90_000; // 90 seconds
+
 interface TopicWithKazanim {
   id: string;
   name: string;
@@ -69,9 +71,30 @@ export default function VoiceAssessmentPage() {
   const [assessmentData, setAssessmentData] = useState<AssessmentData | null>(null);
   const [saving, setSaving] = useState(false);
   const [correctionMode, setCorrectionMode] = useState(false);
+  const [processingElapsed, setProcessingElapsed] = useState(0);
+  const abortRef = React.useRef<AbortController | null>(null);
 
   // Voice hook
   const voice = useContinuousVoiceInput();
+
+  // ------ Elapsed timer for processing ------
+
+  useEffect(() => {
+    if (step !== "processing") {
+      setProcessingElapsed(0);
+      return;
+    }
+    const t0 = Date.now();
+    const id = setInterval(() => setProcessingElapsed(Math.floor((Date.now() - t0) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [step]);
+
+  const handleCancelProcessing = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    toast.info("İşlem iptal edildi");
+    setStep("record");
+  }, []);
 
   // ------ Data fetching ------
 
@@ -186,11 +209,18 @@ export default function VoiceAssessmentPage() {
         })),
       }));
 
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const timeoutId = setTimeout(() => controller.abort(), AI_FETCH_TIMEOUT);
+
       const res = await fetch("/api/ai/voice-assessment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transcript, curriculum }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
+      abortRef.current = null;
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -201,7 +231,12 @@ export default function VoiceAssessmentPage() {
       setAssessmentData(result);
       setStep("review");
     } catch (err: any) {
-      toast.error(err.message || "Değerlendirme işlenirken hata oluştu");
+      if (err.name === "AbortError") return; // user cancelled
+      toast.error(
+        err.message?.includes("timeout") || err.name === "AbortError"
+          ? "AI yanıt vermedi (zaman aşımı). Tekrar deneyin."
+          : err.message || "Değerlendirme işlenirken hata oluştu"
+      );
       setStep("record");
     }
   };
@@ -224,6 +259,10 @@ export default function VoiceAssessmentPage() {
     setStep("processing");
 
     try {
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const timeoutId = setTimeout(() => controller.abort(), AI_FETCH_TIMEOUT);
+
       const res = await fetch("/api/ai/voice-correction", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -231,7 +270,10 @@ export default function VoiceAssessmentPage() {
           transcript,
           currentAssessment: assessmentData,
         }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
+      abortRef.current = null;
 
       if (!res.ok) throw new Error("Düzeltme işlenemedi");
 
@@ -240,6 +282,7 @@ export default function VoiceAssessmentPage() {
       setStep("review");
       toast.success("Düzeltmeler uygulandı");
     } catch (err: any) {
+      if (err.name === "AbortError") return; // user cancelled
       toast.error(err.message || "Düzeltme işlenirken hata oluştu");
       setStep("review");
     }
@@ -493,9 +536,19 @@ export default function VoiceAssessmentPage() {
               <p className="text-sm text-zinc-400">
                 Değerlendirme AI tarafından işleniyor...
               </p>
-              <p className="text-xs text-zinc-600">
-                Bu birkaç saniye sürebilir
+              <p className="text-xs text-zinc-600 tabular-nums">
+                {processingElapsed < 10
+                  ? "Bu birkaç saniye sürebilir"
+                  : processingElapsed < 30
+                  ? `${processingElapsed}s — hâlâ işleniyor...`
+                  : `${processingElapsed}s — biraz uzun sürüyor ama çalışıyor`}
               </p>
+              <button
+                onClick={handleCancelProcessing}
+                className="mt-4 px-4 py-2 text-xs text-zinc-500 hover:text-zinc-300 border border-zinc-700 rounded-lg hover:bg-zinc-800 transition-colors"
+              >
+                İptal Et
+              </button>
             </div>
           )}
 

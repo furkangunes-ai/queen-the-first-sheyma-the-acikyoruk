@@ -199,9 +199,7 @@ function TopicCard({
   return (
     <div
       className={`rounded-lg border transition-colors ${
-        LEVEL_BORDER_COLORS[level]
-          ? `border-${LEVEL_BORDER_COLORS[level].split(" ")[0].replace("border-", "")}`
-          : "border-zinc-700"
+        LEVEL_BORDER_COLORS[level] || "border-zinc-700"
       } bg-zinc-800/30`}
     >
       {/* Main row */}

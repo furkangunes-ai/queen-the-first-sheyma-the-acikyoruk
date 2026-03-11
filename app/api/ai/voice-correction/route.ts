@@ -113,7 +113,10 @@ Düzeltmeleri uygula ve güncellenmiş değerlendirmeyi aynı JSON formatında d
 
         return NextResponse.json(sanitized);
       } catch (aiError) {
-        throw aiError;
+        // Network/API errors - log and continue to fallback
+        logApiError("voice-correction-api-error", { attempt, error: String(aiError) });
+        lastError = aiError instanceof Error ? aiError.message : "AI servisi hatası";
+        if (attempt < MAX_RETRIES) continue;
       }
     }
 

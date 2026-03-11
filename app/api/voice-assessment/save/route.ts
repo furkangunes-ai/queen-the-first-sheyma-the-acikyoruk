@@ -84,10 +84,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const hasErrors = results.errors.length > 0;
+    const totalExpected = topics.length;
+    const allFailed = results.topicKnowledgeUpdated === 0 && totalExpected > 0;
+
     return NextResponse.json({
-      success: true,
+      success: !allFailed,
       ...results,
-    });
+    }, { status: allFailed ? 500 : 200 });
   } catch (error) {
     logApiError("voice-assessment-save", error);
     return NextResponse.json(
