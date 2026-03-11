@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const userId = (session.user as any).id;
 
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get("limit") || "30", 10);
+    const limit = Math.min(Math.max(1, parseInt(searchParams.get("limit") || "30", 10)), 365);
 
     const checkIns = await prisma.dailyCheckIn.findMany({
       where: { userId },

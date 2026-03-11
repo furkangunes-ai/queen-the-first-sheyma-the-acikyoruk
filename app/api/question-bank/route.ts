@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type") || "paragraph";
     const difficulty = searchParams.get("difficulty");
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const limit = Math.min(Math.max(1, parseInt(searchParams.get("limit") || "20")), 100);
     const random = searchParams.get("random") === "true";
 
     const where: any = { type };

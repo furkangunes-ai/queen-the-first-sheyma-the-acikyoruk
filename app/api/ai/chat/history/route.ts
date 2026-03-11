@@ -9,8 +9,8 @@ export async function GET(request: NextRequest) {
     const { userId } = guard;
 
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get("limit") || "50");
-    const offset = parseInt(searchParams.get("offset") || "0");
+    const limit = Math.min(Math.max(1, parseInt(searchParams.get("limit") || "50")), 100);
+    const offset = Math.max(0, parseInt(searchParams.get("offset") || "0"));
 
     const messages = await prisma.aIChatMessage.findMany({
       where: { userId },

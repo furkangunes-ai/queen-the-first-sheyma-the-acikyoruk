@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { getUserTier, checkChatLimit, type TierLevel } from "@/lib/tier-guard";
+import { getUserTier, checkChatLimit, checkPremiumAILimit, type TierLevel } from "@/lib/tier-guard";
 
 export interface AIGuardResult {
   authorized: boolean;
@@ -55,6 +55,15 @@ export async function checkPremiumAIAccess(): Promise<
     return NextResponse.json(
       { error: "Bu özellik Premium abonelik gerektirir.", tierRequired: "premium" },
       { status: 403 }
+    );
+  }
+
+  // Premium kullanıcılar da günlük AI limit kontrolü (maliyet koruması)
+  const aiLimit = await checkPremiumAILimit(result.userId);
+  if (!aiLimit.allowed) {
+    return NextResponse.json(
+      { error: "Günlük AI kullanım limitine ulaştınız (20/gün). Yarın tekrar deneyin.", remaining: 0 },
+      { status: 429 }
     );
   }
 

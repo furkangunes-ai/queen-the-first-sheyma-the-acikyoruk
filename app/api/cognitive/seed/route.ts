@@ -42,6 +42,18 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
+  if (nodes.length > 500) {
+    return NextResponse.json(
+      { error: "En fazla 500 node gönderilebilir" },
+      { status: 400 }
+    );
+  }
+  if (edges && Array.isArray(edges) && edges.length > 2000) {
+    return NextResponse.json(
+      { error: "En fazla 2000 edge gönderilebilir" },
+      { status: 400 }
+    );
+  }
 
   const result = {
     nodesCreated: 0,

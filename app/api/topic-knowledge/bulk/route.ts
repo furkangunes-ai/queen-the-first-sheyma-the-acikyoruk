@@ -14,6 +14,9 @@ export async function POST(request: NextRequest) {
     if (!Array.isArray(updates) || updates.length === 0) {
       return NextResponse.json({ error: "Güncelleme dizisi gerekli" }, { status: 400 });
     }
+    if (updates.length > 500) {
+      return NextResponse.json({ error: "En fazla 500 kayıt gönderilebilir" }, { status: 400 });
+    }
 
     // Clamp all levels to 0-5
     const safeUpdates = updates.map((u: { topicId: string; level: number }) => ({

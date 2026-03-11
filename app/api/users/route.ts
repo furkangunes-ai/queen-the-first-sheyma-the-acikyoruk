@@ -8,6 +8,9 @@ export async function GET(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
+    if ((session.user as any).role !== "admin") {
+      return NextResponse.json({ error: "Sadece admin" }, { status: 403 });
+    }
 
     const users = await prisma.user.findMany({
       select: {

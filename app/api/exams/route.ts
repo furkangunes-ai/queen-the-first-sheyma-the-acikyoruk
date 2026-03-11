@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: { date: "desc" },
-      ...(limit && { take: parseInt(limit, 10) }),
+      take: limit ? Math.min(Math.max(1, parseInt(limit, 10)), 100) : 50,
     });
 
     return NextResponse.json(exams);

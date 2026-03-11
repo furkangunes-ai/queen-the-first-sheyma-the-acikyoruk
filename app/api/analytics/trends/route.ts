@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const examTypeId = searchParams.get("examTypeId");
     const subjectId = searchParams.get("subjectId");
-    const limit = parseInt(searchParams.get("limit") || "20", 10);
+    const limit = Math.min(Math.max(1, parseInt(searchParams.get("limit") || "20", 10)), 100);
 
     const exams = await prisma.exam.findMany({
       where: {

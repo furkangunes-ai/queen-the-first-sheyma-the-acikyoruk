@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const limit = Math.min(Math.max(1, parseInt(searchParams.get("limit") || "20")), 50);
 
     const insights = await prisma.aIInsight.findMany({
       where: {

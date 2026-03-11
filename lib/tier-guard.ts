@@ -95,3 +95,27 @@ export async function checkChatLimit(userId: string): Promise<{
     limit: DAILY_LIMIT,
   };
 }
+
+/**
+ * Premium AI özellik günlük limit kontrolü.
+ * Premium: 20 istek/gün (sınav analizi + dashboard insight).
+ * Maliyet kontrolü: OpenAI faturaları patlamasın.
+ */
+export async function checkPremiumAILimit(userId: string): Promise<{
+  allowed: boolean;
+  remaining: number;
+}> {
+  const PREMIUM_DAILY_LIMIT = 20;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const count = await prisma.aIInsight.count({
+    where: {
+      userId,
+      createdAt: { gte: todayStart },
+    },
+  });
+
+  const remaining = Math.max(0, PREMIUM_DAILY_LIMIT - count);
+  return { allowed: remaining > 0, remaining };
+}
