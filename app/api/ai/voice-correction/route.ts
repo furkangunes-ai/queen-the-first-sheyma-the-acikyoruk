@@ -61,12 +61,38 @@ Düzeltmeleri uygula ve güncellenmiş değerlendirmeyi aynı JSON formatında d
       );
     }
 
-    const parsed = JSON.parse(content);
+    let parsed;
+    try {
+      parsed = JSON.parse(content);
+    } catch (parseError) {
+      logApiError("voice-correction-json-parse", parseError);
+      return NextResponse.json(
+        { error: "AI yanıtı geçerli JSON formatında değil. Lütfen tekrar deneyin." },
+        { status: 500 }
+      );
+    }
+
+    if (!parsed.topics || !Array.isArray(parsed.topics)) {
+      return NextResponse.json(
+        { error: "AI yanıtı beklenen formatta değil. Lütfen tekrar deneyin." },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(parsed);
   } catch (error) {
     logApiError("voice-correction", error);
+
+    const message =
+      error instanceof Error ? error.message : "Bilinmeyen hata";
+    const isTimeout = message.includes("timeout") || message.includes("ETIMEDOUT");
+
     return NextResponse.json(
-      { error: "Düzeltme işlenirken hata oluştu" },
+      {
+        error: isTimeout
+          ? "AI yanıt vermedi (zaman aşımı). Lütfen tekrar deneyin."
+          : "Düzeltme işlenirken hata oluştu",
+      },
       { status: 500 }
     );
   }

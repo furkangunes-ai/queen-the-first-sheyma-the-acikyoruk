@@ -17,6 +17,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!transcript.trim() || transcript.trim().length < 5) {
+      return NextResponse.json(
+        { error: "Transkript çok kısa. Lütfen konuları hakkında daha fazla bilgi verin." },
+        { status: 400 }
+      );
+    }
+
     if (transcript.length > 50000) {
       return NextResponse.json(
         { error: "Transkript çok uzun. Lütfen daha kısa bir kayıt yapın." },
@@ -70,12 +77,42 @@ Aşağıdaki JSON formatında yanıt ver:
       );
     }
 
-    const parsed = JSON.parse(content);
+    let parsed;
+    try {
+      parsed = JSON.parse(content);
+    } catch (parseError) {
+      logApiError("voice-assessment-json-parse", parseError);
+      return NextResponse.json(
+        { error: "AI yanıtı geçerli JSON formatında değil. Lütfen tekrar deneyin." },
+        { status: 500 }
+      );
+    }
+
+    // Validate expected structure
+    if (!parsed.topics || !Array.isArray(parsed.topics)) {
+      return NextResponse.json(
+        { error: "AI yanıtı beklenen formatta değil. Lütfen tekrar deneyin." },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(parsed);
   } catch (error) {
     logApiError("voice-assessment", error);
+
+    const message =
+      error instanceof Error ? error.message : "Bilinmeyen hata";
+    const isTimeout = message.includes("timeout") || message.includes("ETIMEDOUT");
+    const isApiKey = message.includes("API key") || message.includes("auth");
+
     return NextResponse.json(
-      { error: "Sesli değerlendirme işlenirken hata oluştu" },
+      {
+        error: isTimeout
+          ? "AI yanıt vermedi (zaman aşımı). Lütfen tekrar deneyin."
+          : isApiKey
+          ? "AI servisi yapılandırma hatası. Yöneticiye başvurun."
+          : "Sesli değerlendirme işlenirken hata oluştu",
+      },
       { status: 500 }
     );
   }
