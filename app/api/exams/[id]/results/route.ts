@@ -34,12 +34,32 @@ export async function POST(
         { status: 400 }
       );
     }
+    if (results.length > 30) {
+      return NextResponse.json(
+        { error: "En fazla 30 ders sonucu gönderilebilir" },
+        { status: 400 }
+      );
+    }
 
     // Validate each result entry
     for (const result of results) {
       if (!result.subjectId || result.correctCount === undefined || result.wrongCount === undefined || result.emptyCount === undefined) {
         return NextResponse.json(
           { error: "Her sonuçta subjectId, correctCount, wrongCount ve emptyCount olmalı" },
+          { status: 400 }
+        );
+      }
+      // Sayısal validasyon
+      const { correctCount, wrongCount, emptyCount } = result;
+      if (!Number.isInteger(correctCount) || !Number.isInteger(wrongCount) || !Number.isInteger(emptyCount)) {
+        return NextResponse.json(
+          { error: "correctCount, wrongCount ve emptyCount tam sayı olmalı" },
+          { status: 400 }
+        );
+      }
+      if (correctCount < 0 || wrongCount < 0 || emptyCount < 0) {
+        return NextResponse.json(
+          { error: "Sayılar negatif olamaz" },
           { status: 400 }
         );
       }

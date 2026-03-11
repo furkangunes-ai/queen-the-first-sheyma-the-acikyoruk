@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         topic: true,
       },
       orderBy: { date: "desc" },
-      ...(limit ? { take: parseInt(limit) } : {}),
+      take: limit ? Math.min(Math.max(1, parseInt(limit)), 500) : 500,
     });
 
     return NextResponse.json(studies);

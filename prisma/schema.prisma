@@ -484,6 +484,7 @@ model AIChatMessage {
   metadata  Json?    // { voiceInput: boolean, tokens: number }
   createdAt DateTime @default(now())
 
+  @@index([userId, role, createdAt]) // Rate limit sorgusu için compound index
   @@index([userId])
   @@index([createdAt])
 }

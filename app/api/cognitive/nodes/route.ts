@@ -38,6 +38,7 @@ export async function GET(req: Request) {
         },
       },
     },
+    take: 1000,
   });
 
   return NextResponse.json(nodes);

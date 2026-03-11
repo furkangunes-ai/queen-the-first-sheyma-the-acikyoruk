@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
         topic: true,
       },
       orderBy: { createdAt: "desc" },
+      take: 500,
     });
 
     return NextResponse.json(reviews);

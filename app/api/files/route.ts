@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const files = await prisma.userFile.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
+      take: 200,
     });
 
     return NextResponse.json(files);

@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
         ...(type ? { exerciseType: type } : {}),
       },
       orderBy: { createdAt: "desc" },
-      ...(limit ? { take: parseInt(limit) } : {}),
+      take: limit ? Math.min(Math.max(1, parseInt(limit)), 100) : 50,
     });
 
     return NextResponse.json(exercises);

@@ -166,6 +166,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    if (body.length > 200) {
+      return NextResponse.json(
+        { error: "En fazla 200 kayıt gönderilebilir" },
+        { status: 400 }
+      );
+    }
 
     // Validate structure
     const errors: string[] = [];

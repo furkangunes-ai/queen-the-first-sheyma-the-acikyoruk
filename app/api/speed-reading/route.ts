@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const sessions = await prisma.speedReadingSession.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
-      ...(limit ? { take: parseInt(limit) } : {}),
+      take: limit ? Math.min(Math.max(1, parseInt(limit)), 100) : 50,
     });
 
     return NextResponse.json(sessions);

@@ -34,6 +34,7 @@ export async function GET(req: Request) {
       },
     },
     orderBy: { updatedAt: "desc" },
+    take: 1000,
   });
 
   return NextResponse.json(states);
