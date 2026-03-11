@@ -47,6 +47,8 @@ model User {
   questionBanks  QuestionBank[]
   studentProfile StudentProfile?
   kazanimProgress KazanimProgress[]
+  cognitiveStates UserCognitiveState[]
+  subscription    UserSubscription?
 }
 
 // ==================== KLASÖRLER & GÖREVLER ====================
@@ -168,6 +170,7 @@ model Topic {
   prerequisiteOf   TopicPrerequisite[] @relation("PrereqOf")
   concepts         TopicConcept[]
   kazanimlar       TopicKazanim[]
+  conceptNodes     ConceptNode[]
   sortOrder       Int      @default(0)
 
   @@index([subjectId])
@@ -713,4 +716,69 @@ model TopicConcept {
   createdAt   DateTime @default(now())
 
   @@index([topicId])
+}
+
+// ==================== BİLİŞSEL ÇİZGE MOTORU ====================
+
+model ConceptNode {
+  id              String   @id @default(cuid())
+  name            String                            // "Zincir Kuralı", "Yarım Açı Formülleri"
+  slug            String   @unique                  // "zincir-kurali"
+  domain          String                            // "Matematik", "Fizik", "Kimya" vb.
+  examType        String   @default("both")         // "tyt" | "ayt" | "both"
+  complexityScore Int      @default(5)              // 1-10 zorluk (yüksek = hızlı unutulur)
+  parentTopicId   String?                           // Eski Topic tablosuna UI bağlantısı
+  parentTopic     Topic?   @relation(fields: [parentTopicId], references: [id])
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  // DAG kenarları: bu node'un parent'ları ve child'ları
+  parentEdges     DependencyEdge[]     @relation("ChildNode")   // Bu node'a giren kenarlar (parent → this)
+  childEdges      DependencyEdge[]     @relation("ParentNode")  // Bu node'dan çıkan kenarlar (this → child)
+  cognitiveStates UserCognitiveState[]
+
+  @@index([domain])
+  @@index([parentTopicId])
+}
+
+model DependencyEdge {
+  id               String      @id @default(cuid())
+  parentNodeId     String                            // Önkoşul düğüm
+  childNodeId      String                            // Hedef düğüm
+  dependencyWeight Float       @default(0.7)         // W: 0.0-1.0 (bağımlılık şiddeti)
+  isAdaptive       Boolean     @default(false)       // Sistem tarafından otomatik güncellendi mi?
+
+  parentNode       ConceptNode @relation("ParentNode", fields: [parentNodeId], references: [id], onDelete: Cascade)
+  childNode        ConceptNode @relation("ChildNode", fields: [childNodeId], references: [id], onDelete: Cascade)
+
+  @@unique([parentNodeId, childNodeId])
+  @@index([childNodeId])
+}
+
+model UserCognitiveState {
+  id            String    @id @default(cuid())
+  userId        String
+  nodeId        String
+  masteryLevel  Float     @default(0.0)              // M: 0.0-1.0 (efektif hakimiyet)
+  strength      Float     @default(2.0)              // S: Ebbinghaus sağlamlık gücü
+  successCount  Int       @default(0)                // Başarılı tekrar sayısı (S büyümesi için)
+  lastTestedAt  DateTime?                            // Son test/çalışma tarihi (R hesabı için)
+  updatedAt     DateTime  @updatedAt
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  node          ConceptNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, nodeId])
+  @@index([userId])
+  @@index([nodeId])
+}
+
+model UserSubscription {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  tier      String    @default("basic")              // "basic" | "premium"
+  startDate DateTime  @default(now())
+  endDate   DateTime?
+
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
