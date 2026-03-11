@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Map, CalendarDays, Bot, RotateCw } from "lucide-react";
+import { Map, CalendarDays, Bot, RotateCw, Mic } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import Link from "next/link";
 import TopicMap from "@/components/strategy/topic-map";
 import WeeklyPlan from "@/components/strategy/weekly-plan";
 import AIAssistant from "@/components/strategy/ai-assistant";
@@ -31,6 +32,25 @@ export default function StrategyPage() {
           Konu hakimiyetini değerlendir, haftalık plan oluştur ve AI destekli analiz al
         </p>
       </div>
+
+      {/* Voice Assessment CTA */}
+      <Link
+        href="/voice-assessment"
+        className="flex items-center gap-3 p-4 rounded-xl border border-cyan-500/20 bg-cyan-500/5 hover:bg-cyan-500/10 transition-colors group"
+      >
+        <div className="p-2 rounded-lg bg-cyan-500/20 group-hover:bg-cyan-500/30 transition-colors">
+          <Mic className="w-5 h-5 text-cyan-400" />
+        </div>
+        <div className="flex-1">
+          <span className="text-sm font-medium text-white">Sesli Değerlendirme</span>
+          <p className="text-xs text-zinc-400">
+            Müfredat hakimiyetini sesli olarak anlat, AI değerlendirsin
+          </p>
+        </div>
+        <span className="text-xs text-cyan-400/60 group-hover:text-cyan-400 transition-colors">
+          Başla →
+        </span>
+      </Link>
 
       {/* Tab Navigation */}
       <div className="flex flex-wrap gap-2">
