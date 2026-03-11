@@ -65,7 +65,7 @@ Aşağıdaki JSON formatında yanıt ver:
         { role: "system", content: SYSTEM_PROMPT_VOICE_ASSESSMENT },
         { role: "user", content: userPrompt },
       ],
-      temperature: 1,
+      temperature: 0.7,
       response_format: { type: "json_object" },
     });
 

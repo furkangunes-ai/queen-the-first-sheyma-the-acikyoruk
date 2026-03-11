@@ -49,7 +49,7 @@ Düzeltmeleri uygula ve güncellenmiş değerlendirmeyi aynı JSON formatında d
         { role: "system", content: SYSTEM_PROMPT_VOICE_CORRECTION },
         { role: "user", content: userPrompt },
       ],
-      temperature: 1,
+      temperature: 0.7,
       response_format: { type: "json_object" },
     });
 
