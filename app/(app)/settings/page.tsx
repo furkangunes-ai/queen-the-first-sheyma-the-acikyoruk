@@ -17,6 +17,9 @@ import {
   MessageSquare,
   Sparkles,
   ArrowRight,
+  CheckCircle2,
+  AlertTriangle,
+  Send,
 } from "lucide-react";
 
 interface ProfileData {
@@ -24,6 +27,7 @@ interface ProfileData {
   username: string;
   displayName: string;
   email: string | null;
+  emailVerified: boolean;
   examTrack: string | null;
   role: string;
   createdAt: string;
@@ -55,6 +59,9 @@ export default function SettingsPage() {
   const [displayName, setDisplayName] = useState("");
   const [examTrack, setExamTrack] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
+
+  // Email doğrulama
+  const [resendingVerification, setResendingVerification] = useState(false);
 
   // Şifre form
   const [currentPassword, setCurrentPassword] = useState("");
@@ -113,6 +120,23 @@ export default function SettingsPage() {
       toast.error(err instanceof Error ? err.message : "Hata oluştu");
     } finally {
       setProfileSaving(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setResendingVerification(true);
+    try {
+      const res = await fetch("/api/auth/resend-verification", { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success("Doğrulama bağlantısı gönderildi!");
+      } else {
+        toast.error(data.error || "Gönderilemedi.");
+      }
+    } catch {
+      toast.error("Bir hata oluştu.");
+    } finally {
+      setResendingVerification(false);
     }
   };
 
@@ -215,14 +239,39 @@ export default function SettingsPage() {
             />
           </div>
 
-          {/* E-posta (readonly) */}
+          {/* E-posta (readonly) + doğrulama durumu */}
           {profile.email && (
             <div className="space-y-1.5">
               <label className="block text-[10px] font-black text-white/50 uppercase tracking-widest">
                 E-posta
               </label>
-              <div className="px-4 py-3 rounded-xl bg-white/[0.02] border border-white/5">
-                <span className="text-sm text-white/40">{profile.email}</span>
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.02] border border-white/5">
+                <span className="text-sm text-white/40 flex-1">{profile.email}</span>
+                {profile.emailVerified ? (
+                  <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider flex-shrink-0">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Doğrulandı
+                  </span>
+                ) : (
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold uppercase tracking-wider">
+                      <AlertTriangle className="w-3 h-3" />
+                      Doğrulanmadı
+                    </span>
+                    <button
+                      onClick={handleResendVerification}
+                      disabled={resendingVerification}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:text-cyan-300 text-[10px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
+                    >
+                      {resendingVerification ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Send className="w-3 h-3" />
+                      )}
+                      Gönder
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}

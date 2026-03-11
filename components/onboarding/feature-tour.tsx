@@ -1,15 +1,35 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { GraduationCap, BookOpenCheck, BrainCircuit, ChevronRight, X, Sparkles } from "lucide-react";
+import {
+  GraduationCap,
+  BookOpenCheck,
+  BrainCircuit,
+  ChevronRight,
+  X,
+  Sparkles,
+  Hand,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 const TOUR_STEPS = [
   {
+    icon: Hand,
+    title: "Hoş geldin!",
+    description:
+      "Seyda senin kişisel çalışma asistanın. Sınavlara hazırlık sürecinde sana rehberlik edecek.",
+    action: null, // bilgilendirme adımı — yönlendirme yok
+    color: "from-amber-500 to-orange-500",
+    borderColor: "border-amber-500/30",
+    shadowColor: "shadow-amber-500/20",
+  },
+  {
     icon: GraduationCap,
-    title: "İlk denemeni ekle",
-    description: "Deneme sonuçlarını girerek performansını takip etmeye başla.",
+    title: "İlk deneme sınavını gir",
+    description:
+      "Deneme sonuçlarını girerek performansını takip etmeye başla.",
     action: "/exams",
     color: "from-pink-500 to-rose-500",
     borderColor: "border-pink-500/30",
@@ -17,8 +37,9 @@ const TOUR_STEPS = [
   },
   {
     icon: BookOpenCheck,
-    title: "Günlük çalışmanı kaydet",
-    description: "Her gün çözdüğün soruları ve tekrar ettiğin konuları kaydet.",
+    title: "Günlük çalışma planını oluştur",
+    description:
+      "Her gün çözdüğün soruları ve tekrar ettiğin konuları kaydet.",
     action: "/study",
     color: "from-cyan-500 to-blue-500",
     borderColor: "border-cyan-500/30",
@@ -26,8 +47,9 @@ const TOUR_STEPS = [
   },
   {
     icon: BrainCircuit,
-    title: "Haftalık planını oluştur",
-    description: "Konu haritanı oluştur ve haftalık çalışma planını hazırla.",
+    title: "AI asistanınla tanış",
+    description:
+      "Strateji sayfasında AI destekli kişisel çalışma planı oluşturabilirsin.",
     action: "/strategy",
     color: "from-purple-500 to-violet-500",
     borderColor: "border-purple-500/30",
@@ -35,40 +57,49 @@ const TOUR_STEPS = [
   },
 ];
 
-const STORAGE_KEY = "sheyda-onboarding-seen";
-
 export default function FeatureTour() {
   const router = useRouter();
-  const [visible, setVisible] = useState(false);
+  const { data: session, update: updateSession } = useSession();
+  const [visible, setVisible] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
+  const [completing, setCompleting] = useState(false);
 
-  useEffect(() => {
-    const seen = localStorage.getItem(STORAGE_KEY);
-    if (!seen) {
-      // Kısa gecikme ile göster (ExamTrackModal kapandıktan sonra)
-      const timer = setTimeout(() => setVisible(true), 800);
-      return () => clearTimeout(timer);
-    }
-  }, []);
+  const onboardingCompleted = (session?.user as any)?.onboardingCompleted;
 
-  const handleDismiss = () => {
-    localStorage.setItem(STORAGE_KEY, "true");
+  const completeOnboarding = useCallback(async () => {
+    if (completing) return;
+    setCompleting(true);
     setVisible(false);
-  };
+    try {
+      await fetch("/api/users/onboarding", { method: "POST" });
+      await updateSession({ onboardingCompleted: true });
+    } catch {
+      // Sessizce başarısız — kullanıcı deneyimini bozmamak için
+    } finally {
+      setCompleting(false);
+    }
+  }, [completing, updateSession]);
+
+  const handleDismiss = useCallback(() => {
+    completeOnboarding();
+  }, [completeOnboarding]);
 
   const handleNext = () => {
     if (currentStep < TOUR_STEPS.length - 1) {
       setCurrentStep((prev) => prev + 1);
     } else {
-      handleDismiss();
+      completeOnboarding();
     }
   };
 
   const handleStepAction = (path: string) => {
-    handleDismiss();
+    completeOnboarding();
     router.push(path);
   };
 
+  // Gösterme koşulları
+  if (!session?.user) return null;
+  if (onboardingCompleted !== false) return null;
   if (!visible) return null;
 
   const step = TOUR_STEPS[currentStep];
@@ -134,7 +165,9 @@ export default function FeatureTour() {
                 <Icon className="w-7 h-7 text-white" />
               </div>
 
-              <h3 className="text-lg font-bold text-white mb-2">{step.title}</h3>
+              <h3 className="text-lg font-bold text-white mb-2">
+                {step.title}
+              </h3>
               <p className="text-sm text-white/50 leading-relaxed mb-6">
                 {step.description}
               </p>
@@ -151,12 +184,14 @@ export default function FeatureTour() {
             </button>
 
             <div className="flex gap-2">
-              <button
-                onClick={() => handleStepAction(step.action)}
-                className={`px-4 py-2 rounded-xl text-sm font-bold border ${step.borderColor} bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-all`}
-              >
-                Şimdi Yap
-              </button>
+              {step.action && (
+                <button
+                  onClick={() => handleStepAction(step.action!)}
+                  className={`px-4 py-2 rounded-xl text-sm font-bold border ${step.borderColor} bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-all`}
+                >
+                  Şimdi Yap
+                </button>
+              )}
               <button
                 onClick={handleNext}
                 className="px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-pink-500 to-pink-600 text-white flex items-center gap-1 shadow-lg shadow-pink-500/20 hover:from-pink-400 hover:to-pink-500 transition-all"

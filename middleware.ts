@@ -60,6 +60,6 @@ export default auth(async (req) => {
 export const config = {
   matcher: [
     // Auth endpoint'leri de dahil (rate limiting için)
-    "/((?!login|signup|welcome|kvkk|terms|forgot-password|reset-password|_next/static|_next/image|favicon.ico).*)",
+    "/((?!login|signup|signup-success|verify-email|welcome|kvkk|terms|forgot-password|reset-password|_next/static|_next/image|favicon.ico).*)",
   ],
 };

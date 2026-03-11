@@ -39,6 +39,8 @@ model User {
   aiChatMessages AIChatMessage[]
   aiInsights     AIInsight[]
   aiEnabled      Boolean  @default(false)
+  emailVerified  Boolean  @default(false)
+  onboardingCompleted Boolean @default(false)
   speedReadingSessions SpeedReadingSession[]
   speedReadingExercises SpeedReadingExercise[]
   spacedRepetitionItems SpacedRepetitionItem[]
@@ -51,6 +53,7 @@ model User {
   cognitiveStates UserCognitiveState[]
   subscription    UserSubscription?
   passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
 }
 
 // ==================== KLASÖRLER & GÖREVLER ====================
@@ -810,6 +813,21 @@ model AdminAuditLog {
 // ==================== ŞİFRE SIFIRLAMA TOKEN ====================
 
 model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
+// ==================== EMAIL DOĞRULAMA TOKEN ====================
+
+model EmailVerificationToken {
   id        String    @id @default(cuid())
   userId    String
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)

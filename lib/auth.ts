@@ -85,6 +85,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const user = await prisma.user.findUnique({
           where: { username },
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            passwordHash: true,
+            role: true,
+            examTrack: true,
+            emailVerified: true,
+            onboardingCompleted: true,
+          },
         });
 
         if (!user) {
@@ -111,6 +121,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.username,
           role: user.role,
           examTrack: user.examTrack,
+          emailVerified: user.emailVerified,
+          onboardingCompleted: user.onboardingCompleted,
         };
       },
     }),
@@ -121,10 +133,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = (user as any).role;
         token.userId = user.id;
         token.examTrack = (user as any).examTrack;
+        token.emailVerified = (user as any).emailVerified ?? false;
+        token.onboardingCompleted = (user as any).onboardingCompleted ?? false;
       }
-      // Handle session.update() from client — e.g. after examTrack change
-      if (trigger === "update" && session?.examTrack !== undefined) {
-        token.examTrack = session.examTrack;
+      // Handle session.update() from client
+      if (trigger === "update") {
+        if (session?.examTrack !== undefined) {
+          token.examTrack = session.examTrack;
+        }
+        if (session?.emailVerified !== undefined) {
+          token.emailVerified = session.emailVerified;
+        }
+        if (session?.onboardingCompleted !== undefined) {
+          token.onboardingCompleted = session.onboardingCompleted;
+        }
       }
       return token;
     },
@@ -133,6 +155,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (session.user as any).role = token.role;
         (session.user as any).id = token.userId;
         (session.user as any).examTrack = token.examTrack;
+        (session.user as any).emailVerified = token.emailVerified;
+        (session.user as any).onboardingCompleted = token.onboardingCompleted;
       }
       return session;
     },

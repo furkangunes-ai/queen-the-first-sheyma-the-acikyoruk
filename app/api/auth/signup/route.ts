@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { logApiError } from "@/lib/logger";
-import { sendWelcomeEmail } from "@/lib/email";
+import { sendEmailVerificationEmail } from "@/lib/email";
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,30}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -13,16 +14,16 @@ export async function POST(request: NextRequest) {
     const { username, displayName, password, email } = body;
 
     // — Validasyon —
-    if (!username || !displayName || !password) {
+    if (!username || !displayName || !password || !email) {
       return NextResponse.json(
-        { error: "Kullanıcı adı, görünen ad ve şifre zorunludur." },
+        { error: "Kullanıcı adı, görünen ad, e-posta ve şifre zorunludur." },
         { status: 400 }
       );
     }
 
     const trimmedUsername = (username as string).trim().toLowerCase();
     const trimmedDisplayName = (displayName as string).trim();
-    const trimmedEmail = email ? (email as string).trim().toLowerCase() : null;
+    const trimmedEmail = (email as string).trim().toLowerCase();
 
     if (!USERNAME_REGEX.test(trimmedUsername)) {
       return NextResponse.json(
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (trimmedEmail && !EMAIL_REGEX.test(trimmedEmail)) {
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
       return NextResponse.json(
         { error: "Geçerli bir e-posta adresi giriniz." },
         { status: 400 }
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
       where: {
         OR: [
           { username: trimmedUsername },
-          ...(trimmedEmail ? [{ email: trimmedEmail }] : []),
+          { email: trimmedEmail },
         ],
       },
       select: { username: true, email: true },
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
           { status: 409 }
         );
       }
-      if (trimmedEmail && existingUser.email === trimmedEmail) {
+      if (existingUser.email === trimmedEmail) {
         return NextResponse.json(
           { error: "Bu e-posta adresi zaten kullanılıyor." },
           { status: 409 }
@@ -80,6 +81,7 @@ export async function POST(request: NextRequest) {
 
     // — Kullanıcı oluştur (transaction) —
     const passwordHash = await bcrypt.hash(password, 12);
+    const verificationToken = crypto.randomBytes(48).toString("hex");
 
     const user = await prisma.$transaction(async (tx) => {
       const newUser = await tx.user.create({
@@ -90,6 +92,7 @@ export async function POST(request: NextRequest) {
           passwordHash,
           role: "user",
           aiEnabled: false,
+          emailVerified: false,
         },
       });
 
@@ -100,18 +103,24 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      await tx.emailVerificationToken.create({
+        data: {
+          userId: newUser.id,
+          token: verificationToken,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 saat
+        },
+      });
+
       return newUser;
     });
 
-    // Hoşgeldin e-postası (fire-and-forget)
-    if (trimmedEmail) {
-      sendWelcomeEmail(trimmedEmail, trimmedDisplayName);
-    }
+    // Doğrulama e-postası (fire-and-forget)
+    sendEmailVerificationEmail(trimmedEmail, verificationToken, trimmedDisplayName);
 
     return NextResponse.json(
       {
         success: true,
-        message: "Hesap başarıyla oluşturuldu. Giriş yapabilirsiniz.",
+        message: "Hesap oluşturuldu. E-posta adresinize doğrulama bağlantısı gönderildi.",
         userId: user.id,
       },
       { status: 201 }
