@@ -10,12 +10,12 @@ export function getOpenAI(): OpenAI {
         "OPENAI_API_KEY environment variable is not set. AI features will not work."
       );
     }
-    _openai = new OpenAI({ apiKey, timeout: 60_000, maxRetries: 2 });
+    _openai = new OpenAI({ apiKey, timeout: 45_000, maxRetries: 1 });
   }
   return _openai;
 }
 
-export const AI_MODEL = process.env.OPENAI_MODEL || "gpt-5-mini";
+export const AI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
 export const SYSTEM_PROMPT_CHAT = `Sen bir YKS hazırlık asistanısın. Adın "Strateji Asistanı". Türkçe konuş.
 Öğrencinin deneme sonuçlarını, konu hakimiyet düzeylerini ve çalışma verilerini analiz ederek
