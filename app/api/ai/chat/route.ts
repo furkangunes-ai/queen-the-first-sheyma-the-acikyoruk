@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { getOpenAI, AI_MODEL, SYSTEM_PROMPT_CHAT } from "@/lib/openai";
-import { checkAIAccess, isAIGuardError } from "@/lib/ai-guard";
+import { checkChatAccess, isAIGuardError } from "@/lib/ai-guard";
 import { NextRequest } from "next/server";
 import { format } from "date-fns";
 
 export async function POST(request: NextRequest) {
   try {
-    const guard = await checkAIAccess();
+    const guard = await checkChatAccess();
     if (isAIGuardError(guard)) return guard;
     const { userId } = guard;
 

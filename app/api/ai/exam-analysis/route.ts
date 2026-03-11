@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getOpenAI, AI_MODEL } from "@/lib/openai";
-import { checkAIAccess, isAIGuardError } from "@/lib/ai-guard";
+import { checkPremiumAIAccess, isAIGuardError } from "@/lib/ai-guard";
 import { NextRequest, NextResponse } from "next/server";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -17,7 +17,7 @@ Kısa ve öz ol. Markdown formatında yanıtla. Başlıklar ve listeler kullan.`
 
 export async function POST(request: NextRequest) {
   try {
-    const guard = await checkAIAccess();
+    const guard = await checkPremiumAIAccess();
     if (isAIGuardError(guard)) return guard;
     const { userId } = guard;
 

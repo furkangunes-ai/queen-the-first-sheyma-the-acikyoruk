@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getOpenAI, AI_MODEL } from "@/lib/openai";
-import { checkAIAccess, isAIGuardError } from "@/lib/ai-guard";
+import { checkPremiumAIAccess, isAIGuardError } from "@/lib/ai-guard";
 import { getTurkeyDayOfWeek } from "@/lib/utils";
 import { NextRequest, NextResponse } from "next/server";
 import { startOfDay, endOfDay, format, startOfWeek, addDays } from "date-fns";
@@ -8,7 +8,7 @@ import { tr } from "date-fns/locale";
 
 export async function GET(request: NextRequest) {
   try {
-    const guard = await checkAIAccess();
+    const guard = await checkPremiumAIAccess();
     if (isAIGuardError(guard)) return guard;
     const { userId } = guard;
 
