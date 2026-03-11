@@ -118,8 +118,10 @@ Aşağıdaki JSON formatında yanıt ver:
         const sanitized = sanitizeAssessment(parsed, validTopicIds, validKazanimIds, topicNameMap);
         return NextResponse.json(sanitized);
       } catch (aiError) {
-        // Network/API errors - don't retry, propagate immediately
-        throw aiError;
+        // Network/API errors - log and retry if possible
+        logApiError("voice-assessment-api-error", { attempt, error: String(aiError) });
+        lastError = aiError instanceof Error ? aiError.message : "AI servisi hatası";
+        if (attempt < MAX_RETRIES) continue;
       }
     }
 
