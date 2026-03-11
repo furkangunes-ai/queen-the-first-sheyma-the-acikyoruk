@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { recordStudyForTopic } from "@/lib/cognitive-engine";
 
 /**
  * GET /api/spaced-repetition
@@ -150,6 +151,14 @@ export async function POST(request: NextRequest) {
         topic: true,
       },
     });
+
+    // Bilişsel çizge güncelleme: review kalitesine göre mastery güncelle
+    if (updated.topicId) {
+      const correctRatio = quality === "easy" ? 1.0 : quality === "hard" ? 0.6 : 0.0;
+      recordStudyForTopic(userId, updated.topicId, correctRatio).catch((err) =>
+        console.error("Cognitive engine update error:", err)
+      );
+    }
 
     return NextResponse.json(updated);
   } catch (error) {

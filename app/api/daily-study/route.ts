@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { updateDailyStudyStreak } from "@/lib/streak-engine";
+import { recordStudyForTopic } from "@/lib/cognitive-engine";
 
 export async function GET(request: NextRequest) {
   try {
@@ -91,6 +92,14 @@ export async function POST(request: NextRequest) {
     updateDailyStudyStreak(userId).catch((err) =>
       console.error("Streak update error:", err)
     );
+
+    // Bilişsel çizge güncelleme: çalışma başarı oranına göre mastery güncelle
+    if (topicId && questionCount > 0) {
+      const correctRatio = (correctCount || 0) / questionCount;
+      recordStudyForTopic(userId, topicId, correctRatio).catch((err) =>
+        console.error("Cognitive engine update error:", err)
+      );
+    }
 
     return NextResponse.json(study, { status: 201 });
   } catch (error) {

@@ -4,6 +4,8 @@ import { checkAIAccess, isAIGuardError } from "@/lib/ai-guard";
 import { NextRequest, NextResponse } from "next/server";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
+import { generateWeeklyPlan } from "@/lib/cognitive-engine";
+import type { ConceptNodeData, DependencyEdgeData, CognitiveStateData, WeeklyPlanResult } from "@/lib/cognitive-engine";
 
 const SYSTEM_PROMPT_PLAN_BASE = `Sen bir YKS haftalık plan oluşturma asistanısın. Türkçe konuş.
 Öğrencinin zayıf konularına, son deneme sonuçlarına ve geçmiş çalışma verilerine göre
@@ -473,12 +475,67 @@ ${wizardStr}`.trim();
       systemPrompt += `\n\nHaftalık toplam 15-25 saat arası olmalı (öğrenci cevaplarına göre ayarla).`;
     }
 
-    // 4. Call OpenAI
+    // 4a. Bilişsel çizge motorundan deterministik plan al (seed edilmişse)
+    let enginePlanStr = "";
+    try {
+      const conceptNodes = await prisma.conceptNode.findMany({
+        select: { id: true, name: true, domain: true, examType: true, complexityScore: true },
+      });
+
+      if (conceptNodes.length > 0) {
+        const nodeIds = conceptNodes.map((n) => n.id);
+        const [edgesRaw, statesRaw] = await Promise.all([
+          prisma.dependencyEdge.findMany({
+            where: { OR: [{ parentNodeId: { in: nodeIds } }, { childNodeId: { in: nodeIds } }] },
+            select: { parentNodeId: true, childNodeId: true, dependencyWeight: true },
+          }),
+          prisma.userCognitiveState.findMany({
+            where: { userId, nodeId: { in: nodeIds } },
+            select: { nodeId: true, masteryLevel: true, strength: true, successCount: true, lastTestedAt: true },
+          }),
+        ]);
+
+        const profileDays = studentProfile?.availableDays;
+        const availDays = Array.isArray(profileDays) ? (profileDays as number[]) : [1, 2, 3, 4, 5, 6, 7];
+        const dailyMins = (studentProfile?.dailyStudyHours ?? 3) * 60;
+
+        const enginePlan: WeeklyPlanResult = generateWeeklyPlan({
+          nodes: conceptNodes as ConceptNodeData[],
+          edges: edgesRaw as DependencyEdgeData[],
+          states: statesRaw as CognitiveStateData[],
+          availableDays: availDays,
+          dailyStudyMinutes: dailyMins,
+          examType: examTrack === "sayisal" ? "ayt" : examTrack === "sozel" ? "tyt" : "both",
+        });
+
+        if (enginePlan.items.length > 0) {
+          const DAY_LABELS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+          const itemsStr = enginePlan.items
+            .map((i) => `${DAY_LABELS[i.dayOfWeek]}: ${i.nodeName} (${i.domain}, ${i.duration}dk, ${i.priority}, ${i.reason})`)
+            .join("\n");
+
+          enginePlanStr = `
+=== BİLİŞSEL MOTOR ÖNERİSİ (DETERMİNİSTİK) ===
+Motor ${enginePlan.items.length} kavram önerdi (${enginePlan.totalMinutes} dk toplam):
+- ${enginePlan.criticalNodesCount} kritik (temel eksik)
+- ${enginePlan.reviewNodesCount} tekrar (unutulmak üzere)
+- ${enginePlan.newNodesCount} yeni konu
+Önerilen plan:
+${itemsStr}
+
+Bu motor önerisini ciddiye al ve planına dahil et. Motor, öğrencinin bilişsel durumunu (mastery + retention + bağımlılık ağacı) analiz ederek en verimli çalışma sırasını hesapladı.`;
+        }
+      }
+    } catch (engineErr) {
+      console.error("Cognitive engine plan error (non-blocking):", engineErr);
+    }
+
+    // 4b. Call OpenAI
     const completion = await getOpenAI().chat.completions.create({
       model: AI_MODEL,
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: contextMessage },
+        { role: "user", content: contextMessage + enginePlanStr },
       ],
     });
 
