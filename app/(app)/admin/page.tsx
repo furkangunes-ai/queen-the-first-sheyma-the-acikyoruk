@@ -8,10 +8,14 @@ import { toast } from 'sonner';
 import {
   Shield, Send, ClipboardList, Heart, TrendingUp, Loader2,
   CheckCircle2, Zap, Smile, FolderOpen, Bell, RefreshCw,
-  Sparkles, Star, FileText
+  Sparkles, Star, FileText, Network, Brain
 } from 'lucide-react';
 import QuestionUpload from '@/components/admin/question-upload';
 import MufredatManager from '@/components/admin/mufredat-manager';
+import ConceptNodeManager from '@/components/admin/concept-node-manager';
+import DependencyEdgeManager from '@/components/admin/dependency-edge-manager';
+import BulkImport from '@/components/admin/bulk-import';
+import CognitiveDashboard from '@/components/admin/cognitive-dashboard';
 
 // ---------- types ----------
 
@@ -95,6 +99,7 @@ export default function AdminPage() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const isAdmin = (session?.user as any)?.role === 'admin';
+  const [activeTab, setActiveTab] = useState<'genel' | 'dag'>('genel');
 
   // Redirect non-admin users
   useEffect(() => {
@@ -282,6 +287,33 @@ export default function AdminPage() {
         </motion.button>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="flex gap-2 relative z-10">
+        <button
+          onClick={() => setActiveTab('genel')}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black tracking-wider transition-all ${
+            activeTab === 'genel'
+              ? 'bg-gradient-to-r from-pink-500/20 to-cyan-500/20 text-white border border-pink-500/20 shadow-[0_0_15px_rgba(255,42,133,0.15)]'
+              : 'bg-white/[0.03] text-white/50 border border-white/5 hover:bg-white/[0.06]'
+          }`}
+        >
+          <Shield size={16} />
+          GENEL YÖNETİM
+        </button>
+        <button
+          onClick={() => setActiveTab('dag')}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black tracking-wider transition-all ${
+            activeTab === 'dag'
+              ? 'bg-gradient-to-r from-violet-500/20 to-cyan-500/20 text-white border border-violet-500/20 shadow-[0_0_15px_rgba(139,92,246,0.15)]'
+              : 'bg-white/[0.03] text-white/50 border border-white/5 hover:bg-white/[0.06]'
+          }`}
+        >
+          <Network size={16} />
+          BİLİŞSEL ÇİZGE (DAG)
+        </button>
+      </div>
+
+      {activeTab === 'genel' && (<>
       {/* ===== Section 1: Seyda'nin Genel Durumu ===== */}
       <div className="glass-panel p-6 sm:p-8 relative z-10 shadow-[0_8px_32px_rgba(255,42,133,0.05)] border-white/10 rounded-3xl overflow-hidden">
         <div className="absolute top-0 right-0 w-48 h-48 bg-pink-500/5 rounded-full blur-[60px] pointer-events-none" />
@@ -622,6 +654,23 @@ export default function AdminPage() {
 
       {/* ====== Müfredat Yönetimi ====== */}
       <MufredatManager />
+      </>)}
+
+      {activeTab === 'dag' && (
+        <div className="flex flex-col gap-8 relative z-10">
+          {/* Bilişsel Durum Dashboard */}
+          <CognitiveDashboard />
+
+          {/* Kavram Düğümleri */}
+          <ConceptNodeManager />
+
+          {/* Bağımlılık Kenarları */}
+          <DependencyEdgeManager />
+
+          {/* Toplu Import */}
+          <BulkImport />
+        </div>
+      )}
     </div>
   );
 }
