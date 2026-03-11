@@ -6,11 +6,9 @@ import { toast } from "sonner";
 import {
   Brain, Loader2, RefreshCw, AlertTriangle,
 } from "lucide-react";
-import {
-  calculateRetention,
-  getEffectiveMastery,
-} from "@/lib/cognitive-engine";
-import type { CognitiveStateData, DependencyEdgeData } from "@/lib/cognitive-engine";
+import { calculateRetention } from "@/lib/cognitive-engine/ebbinghaus";
+import { getEffectiveMastery } from "@/lib/cognitive-engine/ceiling-penalty";
+import type { CognitiveStateData } from "@/lib/cognitive-engine/types";
 
 // ---------------------------------------------------------------------------
 // Types

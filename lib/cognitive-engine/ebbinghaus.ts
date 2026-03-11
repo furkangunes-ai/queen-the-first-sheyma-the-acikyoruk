@@ -8,8 +8,8 @@
 //
 // S Büyüme Stratejisi:
 //   Başlangıç S = BASE_STRENGTH / (complexityScore / 5)
-//   Her başarılı tekrarda S *= STRENGTH_MULTIPLIERS[successCount]
-//   Yani ilk günlerde S=2 iken, 4. başarılı tekrarda S=30+ (bilgi kalıcı hafızaya geçer)
+//   Her başarılı tekrarda S += STRENGTH_MULTIPLIERS[successCount]
+//   Yani ilk günlerde S=3 iken, 7. başarılı tekrarda S=57 (bilgi kalıcı hafızaya geçer)
 
 import type { CognitiveStateData, RetentionInfo } from './types';
 import {

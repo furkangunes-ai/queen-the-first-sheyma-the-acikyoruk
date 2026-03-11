@@ -9,6 +9,7 @@
 import { PrismaClient } from "@prisma/client";
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
 
 const prisma = new PrismaClient();
 
@@ -32,7 +33,10 @@ interface SeedPayload {
 }
 
 async function seedCognitiveGraph() {
-  const seedDir = path.join(__dirname, "seed-data");
+  const currentDir = typeof __dirname !== "undefined"
+    ? __dirname
+    : path.dirname(fileURLToPath(import.meta.url));
+  const seedDir = path.join(currentDir, "seed-data");
 
   if (!fs.existsSync(seedDir)) {
     console.log("seed-data klasoru bulunamadi, atlaniyor");

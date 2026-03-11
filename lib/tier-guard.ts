@@ -80,10 +80,10 @@ export async function checkChatLimit(userId: string): Promise<{
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  const count = await prisma.aIInsight.count({
+  const count = await prisma.aIChatMessage.count({
     where: {
       userId,
-      type: "chat_message",
+      role: "user",
       createdAt: { gte: todayStart },
     },
   });

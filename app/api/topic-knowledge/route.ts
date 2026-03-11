@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { recordStudyForTopic } from "@/lib/cognitive-engine";
+import { setAbsoluteMasteryForTopic } from "@/lib/cognitive-engine";
 
 export async function GET(request: NextRequest) {
   try {
@@ -71,8 +71,8 @@ export async function POST(request: NextRequest) {
 
     // Bilişsel çizge senkronizasyonu: topic bilgi seviyesini mastery'ye dönüştür
     // Seviye 0→0.0, 1→0.2, 2→0.4, 3→0.6, 4→0.8, 5→1.0
-    const correctRatio = clampedLevel / 5;
-    recordStudyForTopic(userId, topicId, correctRatio).catch((err) =>
+    const mastery = clampedLevel / 5;
+    setAbsoluteMasteryForTopic(userId, topicId, mastery).catch((err) =>
       console.error("Cognitive engine sync error:", err)
     );
 

@@ -56,4 +56,5 @@ export {
   recordStudySession,
   getConceptNodesForTopic,
   recordStudyForTopic,
+  setAbsoluteMasteryForTopic,
 } from './dag-updater';

@@ -14,7 +14,7 @@ export async function POST(req: Request) {
   const body = await req.json();
   const {
     examType,
-    availableDays = [1, 2, 3, 4, 5, 6, 7],
+    availableDays = [0, 1, 2, 3, 4, 5, 6],
     dailyStudyMinutes = 120,
     domain,
   } = body;

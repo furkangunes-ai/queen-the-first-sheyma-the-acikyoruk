@@ -136,10 +136,9 @@ export function findAllWeakRoots(
 
     // Zayıf kök düğüm → sonuçlara ekle
     if (mastery < 0.6) {
-      const maxPenalty = incomingEdges.length > 0
-        ? Math.max(...edges
-            .filter(e => e.parentNodeId === nodeId)
-            .map(e => e.dependencyWeight * (1 - mastery)))
+      const outgoing = edges.filter(e => e.parentNodeId === nodeId);
+      const maxPenalty = outgoing.length > 0
+        ? Math.max(...outgoing.map(e => e.dependencyWeight * (1 - mastery)))
         : 1 - mastery;
 
       results.push({

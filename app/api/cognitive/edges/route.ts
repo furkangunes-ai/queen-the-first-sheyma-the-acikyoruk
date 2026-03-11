@@ -53,10 +53,46 @@ export async function POST(req: Request) {
     );
   }
 
-  // Döngü kontrolü: child, parent'ın atası olmamalı
+  // Döngü kontrolü: self-loop
   if (parentNodeId === childNodeId) {
     return NextResponse.json(
       { error: "Bir düğüm kendisine bağlanamaz" },
+      { status: 400 }
+    );
+  }
+
+  // Döngü kontrolü: child → parent yolu varsa döngü oluşur
+  // BFS: childNodeId'den başla, parentNodeId'ye ulaşılabilir mi?
+  const allEdges = await prisma.dependencyEdge.findMany({
+    select: { parentNodeId: true, childNodeId: true },
+  });
+  const childrenMap = new Map<string, string[]>();
+  for (const e of allEdges) {
+    const children = childrenMap.get(e.parentNodeId) ?? [];
+    children.push(e.childNodeId);
+    childrenMap.set(e.parentNodeId, children);
+  }
+
+  // childNodeId'nin child'ları arasında parentNodeId var mı?
+  const visited = new Set<string>();
+  const queue = [childNodeId];
+  let hasCycle = false;
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    if (current === parentNodeId) {
+      hasCycle = true;
+      break;
+    }
+    if (visited.has(current)) continue;
+    visited.add(current);
+    for (const child of childrenMap.get(current) ?? []) {
+      queue.push(child);
+    }
+  }
+
+  if (hasCycle) {
+    return NextResponse.json(
+      { error: "Bu bağlantı döngü oluşturur (DAG kuralı ihlali)" },
       { status: 400 }
     );
   }

@@ -133,6 +133,7 @@ export async function getConceptNodesForTopic(topicId: string): Promise<string[]
 
 /**
  * Bir topic'teki çalışma sonucunu o topic'e bağlı tüm ConceptNode'lara yay.
+ * correctRatio: 0.0-1.0 (çalışma oturumu başarı oranı)
  */
 export async function recordStudyForTopic(
   userId: string,
@@ -147,5 +148,38 @@ export async function recordStudyForTopic(
   // Tüm node'lar için güncelle
   for (const nodeId of nodeIds) {
     await recordStudySession(userId, nodeId, correctRatio);
+  }
+}
+
+/**
+ * Bir topic'in bilgi seviyesini doğrudan (absolute) olarak ata.
+ * topic-knowledge'dan çağrılır. Incremental değil, idempotent.
+ */
+export async function setAbsoluteMasteryForTopic(
+  userId: string,
+  topicId: string,
+  mastery: number
+): Promise<void> {
+  const nodeIds = await getConceptNodesForTopic(topicId);
+  if (nodeIds.length === 0) return;
+
+  const clampedMastery = Math.max(0.0, Math.min(1.0, mastery));
+
+  for (const nodeId of nodeIds) {
+    await prisma.userCognitiveState.upsert({
+      where: { userId_nodeId: { userId, nodeId } },
+      update: {
+        masteryLevel: clampedMastery,
+        lastTestedAt: new Date(),
+      },
+      create: {
+        userId,
+        nodeId,
+        masteryLevel: clampedMastery,
+        strength: 2.0,
+        successCount: 0,
+        lastTestedAt: new Date(),
+      },
+    });
   }
 }
