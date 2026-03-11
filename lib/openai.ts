@@ -10,7 +10,7 @@ export function getOpenAI(): OpenAI {
         "OPENAI_API_KEY environment variable is not set. AI features will not work."
       );
     }
-    _openai = new OpenAI({ apiKey });
+    _openai = new OpenAI({ apiKey, timeout: 15_000, maxRetries: 1 });
   }
   return _openai;
 }

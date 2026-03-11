@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     const folders = await prisma.folder.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
+      take: 100,
     });
 
     return NextResponse.json(folders);
@@ -37,16 +38,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { name, color } = body;
 
-    if (!name) {
+    if (!name || typeof name !== "string" || name.trim().length === 0 || name.length > 100) {
       return NextResponse.json(
-        { error: "Folder name is required" },
+        { error: "Klasör adı 1-100 karakter olmalı" },
+        { status: 400 }
+      );
+    }
+    if (color && !/^#[0-9a-fA-F]{6}$/.test(color)) {
+      return NextResponse.json(
+        { error: "Geçersiz renk formatı" },
         { status: 400 }
       );
     }
 
     const folder = await prisma.folder.create({
       data: {
-        name,
+        name: name.trim(),
         color: color || "#6366f1",
         userId,
       },

@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
             topic: true,
           },
           orderBy: { date: "asc" },
+          take: 2000,
         }),
 
         // Topic reviews
@@ -70,29 +71,39 @@ export async function GET(request: NextRequest) {
             },
             ...subjectFilter,
           },
-          include: {
-            subject: { include: { examType: true } },
-            topic: true,
+          select: {
+            topicId: true,
+            subjectId: true,
+            date: true,
+            duration: true,
+            subject: { select: { name: true, examType: { select: { name: true } } } },
+            topic: { select: { name: true } },
           },
           orderBy: { date: "asc" },
+          take: 2000,
         }),
 
-        // Exam wrong questions (all time)
+        // Exam wrong questions (last 1 year)
         prisma.examWrongQuestion.findMany({
           where: {
             exam: {
               userId,
               ...(examTypeId && { examTypeId }),
+              date: { gte: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000) },
             },
             topicId: { not: null },
             ...(subjectId && { subjectId }),
           },
-          include: {
-            subject: { include: { examType: true } },
-            topic: true,
+          select: {
+            topicId: true,
+            subjectId: true,
+            examId: true,
+            subject: { select: { name: true, examType: { select: { name: true } } } },
+            topic: { select: { name: true } },
             exam: { select: { date: true, title: true } },
           },
           orderBy: { exam: { date: "asc" } },
+          take: 5000,
         }),
 
         // Topic knowledge levels
@@ -106,9 +117,12 @@ export async function GET(request: NextRequest) {
               },
             },
           },
-          include: {
-            topic: { include: { subject: { include: { examType: true } } } },
+          select: {
+            topicId: true,
+            level: true,
+            topic: { select: { name: true, subject: { select: { id: true, name: true, examType: { select: { name: true } } } } } },
           },
+          take: 1000,
         }),
       ]);
 

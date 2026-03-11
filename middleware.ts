@@ -5,8 +5,17 @@ import { isRateLimited } from "@/lib/rate-limit";
 // Maksimum request body boyutu (5 MB)
 const MAX_BODY_SIZE = 5 * 1024 * 1024;
 
+// Security headers
+const SECURITY_HEADERS: Record<string, string> = {
+  "X-Frame-Options": "DENY",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+};
+
 export default auth(async (req) => {
   const isApiRoute = req.nextUrl.pathname.startsWith("/api");
+  const isAuthRoute = req.nextUrl.pathname.startsWith("/api/auth");
   const isLoggedIn = !!req.auth;
 
   if (isApiRoute) {
@@ -19,11 +28,11 @@ export default auth(async (req) => {
       );
     }
 
-    // IP bazlı rate limiting (Redis veya in-memory)
+    // IP bazlı rate limiting (Redis veya in-memory) — auth dahil
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
       || req.headers.get("x-real-ip")
       || "unknown";
-    if (await isRateLimited(ip)) {
+    if (await isRateLimited(isAuthRoute ? `auth:${ip}` : ip)) {
       return NextResponse.json(
         { error: "Çok fazla istek. Lütfen biraz bekleyin." },
         { status: 429 }
@@ -36,11 +45,17 @@ export default auth(async (req) => {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  return NextResponse.next();
+  // Security headers ekle
+  const response = NextResponse.next();
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    response.headers.set(key, value);
+  }
+  return response;
 });
 
 export const config = {
   matcher: [
-    "/((?!login|api/auth|_next/static|_next/image|favicon.ico).*)",
+    // Auth endpoint'leri de dahil (rate limiting için)
+    "/((?!login|_next/static|_next/image|favicon.ico).*)",
   ],
 };

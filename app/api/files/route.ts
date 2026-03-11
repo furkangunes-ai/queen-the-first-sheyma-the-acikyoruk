@@ -44,6 +44,18 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    if (name.length > 255) {
+      return NextResponse.json({ error: "Dosya adı çok uzun (max 255)" }, { status: 400 });
+    }
+    // URL protocol whitelist (XSS koruması)
+    try {
+      const urlObj = new URL(url);
+      if (!["http:", "https:"].includes(urlObj.protocol)) {
+        return NextResponse.json({ error: "Sadece HTTP(S) URL kabul edilir" }, { status: 400 });
+      }
+    } catch {
+      return NextResponse.json({ error: "Geçersiz URL formatı" }, { status: 400 });
+    }
 
     const file = await prisma.userFile.create({
       data: {

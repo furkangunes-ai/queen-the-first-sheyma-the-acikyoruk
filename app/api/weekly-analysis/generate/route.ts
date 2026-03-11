@@ -20,56 +20,42 @@ export async function POST(request: NextRequest) {
     const start = new Date(weekStartDate);
     const end = new Date(weekEndDate);
 
-    // 1. Get weekly plan items
-    const plan = await prisma.weeklyPlan.findFirst({
-      where: {
-        userId,
-        startDate: { lte: end },
-        endDate: { gte: start },
-      },
-      include: {
-        items: {
-          include: { subject: true, topic: true },
-        },
-      },
-    });
+    // 1-3. Paralel veri çekme (5 sıralı sorgu → 1 paralel blok)
+    const [plan, studies, reviews, recentExams, previousExam] = await Promise.all([
+      prisma.weeklyPlan.findFirst({
+        where: { userId, startDate: { lte: end }, endDate: { gte: start } },
+        include: { items: { include: { subject: true, topic: true } } },
+      }),
+      prisma.dailyStudy.findMany({
+        where: { userId, date: { gte: start, lt: end } },
+        include: { subject: true, topic: true },
+        take: 500,
+      }),
+      prisma.topicReview.findMany({
+        where: { userId, date: { gte: start, lt: end } },
+        include: { subject: true, topic: true },
+        take: 500,
+      }),
+      prisma.exam.findMany({
+        where: { userId, date: { gte: start, lt: end } },
+        include: { subjectResults: { include: { subject: true } }, examType: true },
+        orderBy: { date: "desc" },
+        take: 20,
+      }),
+      prisma.exam.findFirst({
+        where: { userId, date: { lt: start } },
+        include: { subjectResults: { include: { subject: true } } },
+        orderBy: { date: "desc" },
+      }),
+    ]);
 
     const plannedItems = plan?.items.length || 0;
     const completedItems = plan?.items.filter((i) => i.completed).length || 0;
-
-    // 2. Get study data for the week
-    const studies = await prisma.dailyStudy.findMany({
-      where: { userId, date: { gte: start, lt: end } },
-      include: { subject: true, topic: true },
-    });
-
-    const reviews = await prisma.topicReview.findMany({
-      where: { userId, date: { gte: start, lt: end } },
-      include: { subject: true, topic: true },
-    });
 
     const totalStudyMinutes =
       studies.reduce((sum, s) => sum + (s.duration || 0), 0) +
       reviews.reduce((sum, r) => sum + (r.duration || 0), 0);
     const totalQuestions = studies.reduce((sum, s) => sum + s.questionCount, 0);
-
-    // 3. Get exam net score changes
-    const recentExams = await prisma.exam.findMany({
-      where: { userId, date: { gte: start, lt: end } },
-      include: {
-        subjectResults: { include: { subject: true } },
-        examType: true,
-      },
-      orderBy: { date: "desc" },
-    });
-
-    const previousExam = await prisma.exam.findFirst({
-      where: { userId, date: { lt: start } },
-      include: {
-        subjectResults: { include: { subject: true } },
-      },
-      orderBy: { date: "desc" },
-    });
 
     const netScoreChanges = recentExams.flatMap((exam) =>
       exam.subjectResults.map((r) => {

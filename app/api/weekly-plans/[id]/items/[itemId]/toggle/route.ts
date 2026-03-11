@@ -21,6 +21,14 @@ export async function PATCH(
       return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
     }
 
+    // Verify item belongs to this plan (IDOR koruması)
+    const existingItem = await prisma.weeklyPlanItem.findFirst({
+      where: { id: itemId, weeklyPlanId: id },
+    });
+    if (!existingItem) {
+      return NextResponse.json({ error: "Plan öğesi bulunamadı" }, { status: 404 });
+    }
+
     const { completed } = await request.json();
 
     const item = await prisma.weeklyPlanItem.update({

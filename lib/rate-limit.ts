@@ -13,6 +13,7 @@ import { Redis } from "@upstash/redis";
 
 const WINDOW_MS = 60 * 1000; // 1 dakika
 const MAX_REQUESTS = 60; // 60 istek/dakika/IP
+const MAX_STORE_SIZE = 50_000; // In-memory store max boyut (OOM koruması)
 
 // ---------------------------------------------------------------------------
 // Redis-backed rate limiter (Upstash)
@@ -59,6 +60,15 @@ function isRateLimitedInMemory(ip: string): boolean {
   const entry = store.get(ip);
 
   if (!entry || entry.resetAt < now) {
+    // Store taşma koruması: max boyutu aşarsa eski kayıtları temizle
+    if (store.size >= MAX_STORE_SIZE) {
+      for (const [key, e] of store) {
+        if (e.resetAt < now) store.delete(key);
+        if (store.size < MAX_STORE_SIZE * 0.8) break; // %80'e düşür
+      }
+      // Hala doluysa tüm store'u temizle (son çare)
+      if (store.size >= MAX_STORE_SIZE) store.clear();
+    }
     store.set(ip, { count: 1, resetAt: now + WINDOW_MS });
     return false;
   }

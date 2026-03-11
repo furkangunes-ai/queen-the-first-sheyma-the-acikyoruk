@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: { date: "desc" },
-      take: limit ? Math.min(Math.max(1, parseInt(limit, 10)), 100) : 50,
+      take: limit ? Math.min(Math.max(1, parseInt(limit, 10) || 50), 100) : 50,
     });
 
     return NextResponse.json(exams);

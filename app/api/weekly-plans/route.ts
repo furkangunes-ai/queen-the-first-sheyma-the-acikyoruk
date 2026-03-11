@@ -64,6 +64,12 @@ export async function POST(request: NextRequest) {
     if (!title || !startDate || !endDate) {
       return NextResponse.json({ error: "Başlık, başlangıç ve bitiş tarihi gerekli" }, { status: 400 });
     }
+    if (typeof title !== "string" || title.length > 200) {
+      return NextResponse.json({ error: "Başlık 1-200 karakter olmalı" }, { status: 400 });
+    }
+    if (Array.isArray(items) && items.length > 200) {
+      return NextResponse.json({ error: "En fazla 200 plan öğesi eklenebilir" }, { status: 400 });
+    }
 
     // Validate topic belongs to subject
     if (items && items.length > 0) {

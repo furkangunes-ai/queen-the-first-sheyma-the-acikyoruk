@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: { createdAt: "desc" },
+      take: 200,
     });
 
     return NextResponse.json(tasks);
@@ -50,29 +51,35 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { title, description, folderId, priority, dueDate, isRecurring, recurrence } = body;
 
-    if (!title) {
-      return NextResponse.json(
-        { error: "Görev başlığı gerekli" },
-        { status: 400 }
-      );
+    if (!title || typeof title !== "string" || title.trim().length === 0 || title.length > 500) {
+      return NextResponse.json({ error: "Görev başlığı 1-500 karakter olmalı" }, { status: 400 });
+    }
+    if (description && typeof description === "string" && description.length > 5000) {
+      return NextResponse.json({ error: "Açıklama en fazla 5000 karakter olabilir" }, { status: 400 });
     }
 
     if (!folderId) {
-      return NextResponse.json(
-        { error: "Klasör seçimi gerekli" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Klasör seçimi gerekli" }, { status: 400 });
+    }
+
+    const validPriorities = ["low", "medium", "high"];
+    const validRecurrences = ["daily", "weekly", "monthly"];
+    if (priority && !validPriorities.includes(priority)) {
+      return NextResponse.json({ error: "Geçersiz öncelik değeri" }, { status: 400 });
+    }
+    if (recurrence && !validRecurrences.includes(recurrence)) {
+      return NextResponse.json({ error: "Geçersiz tekrar değeri" }, { status: 400 });
     }
 
     const task = await prisma.task.create({
       data: {
-        title,
-        description,
+        title: title.trim(),
+        description: description?.trim() || undefined,
         folderId,
         priority: priority || "medium",
         dueDate: dueDate ? new Date(dueDate) : undefined,
         isRecurring: isRecurring ?? false,
-        recurrence,
+        recurrence: recurrence || undefined,
         assignedById: userId,
       },
     });

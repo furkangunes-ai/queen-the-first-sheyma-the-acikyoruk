@@ -205,6 +205,7 @@ model Exam {
   @@index([userId])
   @@index([examTypeId])
   @@index([date])
+  @@index([userId, date])
 }
 
 model ExamSubjectResult {
@@ -246,6 +247,7 @@ model ExamWrongQuestion {
   @@index([subjectId])
   @@index([topicId])
   @@index([errorReasonId])
+  @@index([examId, topicId])
 }
 
 model ExamEmptyQuestion {
@@ -361,6 +363,7 @@ model DailyStudy {
   @@index([userId])
   @@index([date])
   @@index([subjectId])
+  @@index([userId, date])
 }
 
 model TopicReview {
@@ -385,6 +388,7 @@ model TopicReview {
   @@index([date])
   @@index([subjectId])
   @@index([topicId])
+  @@index([userId, date])
 }
 
 // ==================== DOSYALAR ====================
@@ -435,6 +439,7 @@ model WeeklyPlan {
 
   @@index([userId])
   @@index([startDate])
+  @@index([userId, startDate])
 }
 
 model WeeklyPlanItem {
