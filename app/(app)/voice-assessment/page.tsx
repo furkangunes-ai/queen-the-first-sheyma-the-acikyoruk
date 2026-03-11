@@ -421,6 +421,46 @@ export default function VoiceAssessmentPage() {
                 </p>
               </div>
 
+              {/* Show current assessment so user can see topics while correcting */}
+              {assessmentData && (
+                <div className="rounded-xl border border-zinc-700/50 bg-zinc-900/30 p-4 max-h-[40vh] overflow-y-auto">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs text-zinc-500 uppercase tracking-wide">
+                      Mevcut Değerlendirme — düzeltmek istediğin konuları söyle
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {assessmentData.topics.map((topic) => (
+                      <div
+                        key={topic.topicId}
+                        className="flex items-center gap-2 text-sm text-zinc-300 px-2 py-1.5 rounded bg-zinc-800/40"
+                      >
+                        <div
+                          className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                            topic.suggestedLevel >= 4
+                              ? "bg-emerald-500"
+                              : topic.suggestedLevel >= 3
+                              ? "bg-yellow-500"
+                              : topic.suggestedLevel >= 1
+                              ? "bg-orange-500"
+                              : "bg-red-500"
+                          }`}
+                        />
+                        <span className="flex-1 truncate">{topic.topicName}</span>
+                        <span className="text-xs text-zinc-500 font-mono">
+                          {topic.suggestedLevel}/5
+                        </span>
+                      </div>
+                    ))}
+                    {assessmentData.unmentionedTopics.length > 0 && (
+                      <div className="text-xs text-zinc-600 mt-2 px-2">
+                        + {assessmentData.unmentionedTopics.length} konu henüz değerlendirilmedi
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <VoiceRecorder
                 isListening={voice.isListening}
                 isPaused={voice.isPaused}
