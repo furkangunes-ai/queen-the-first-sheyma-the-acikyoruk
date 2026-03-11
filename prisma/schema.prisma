@@ -50,6 +50,7 @@ model User {
   kazanimProgress KazanimProgress[]
   cognitiveStates UserCognitiveState[]
   subscription    UserSubscription?
+  passwordResetTokens PasswordResetToken[]
 }
 
 // ==================== KLASÖRLER & GÖREVLER ====================
@@ -804,4 +805,19 @@ model AdminAuditLog {
   @@index([adminId])
   @@index([createdAt])
   @@index([action])
+}
+
+// ==================== ŞİFRE SIFIRLAMA TOKEN ====================
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([token])
+  @@index([userId])
 }

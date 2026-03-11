@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { logApiError } from "@/lib/logger";
+import { sendWelcomeEmail } from "@/lib/email";
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,30}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -101,6 +102,11 @@ export async function POST(request: NextRequest) {
 
       return newUser;
     });
+
+    // Hoşgeldin e-postası (fire-and-forget)
+    if (trimmedEmail) {
+      sendWelcomeEmail(trimmedEmail, trimmedDisplayName);
+    }
 
     return NextResponse.json(
       {

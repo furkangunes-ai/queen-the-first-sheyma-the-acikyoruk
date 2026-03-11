@@ -130,8 +130,18 @@ export default function LoginPage() {
             </button>
           </form>
 
+          {/* Forgot password link */}
+          <div className="text-center mt-4 relative z-10">
+            <Link
+              href="/forgot-password"
+              className="text-xs text-white/30 hover:text-white/60 transition-colors"
+            >
+              Şifremi Unuttum?
+            </Link>
+          </div>
+
           {/* Signup link */}
-          <div className="text-center mt-6 relative z-10">
+          <div className="text-center mt-3 relative z-10">
             <p className="text-sm text-white/40">
               Hesabınız yok mu?{" "}
               <Link
