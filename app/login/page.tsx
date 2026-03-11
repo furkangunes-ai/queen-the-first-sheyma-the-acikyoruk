@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { User, Lock, LogIn, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "motion/react";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -128,6 +129,19 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          {/* Signup link */}
+          <div className="text-center mt-6 relative z-10">
+            <p className="text-sm text-white/40">
+              Hesabınız yok mu?{" "}
+              <Link
+                href="/signup"
+                className="text-pink-400 hover:text-pink-300 font-semibold transition-colors"
+              >
+                Kayıt Olun
+              </Link>
+            </p>
+          </div>
 
         </div>
       </motion.div>

@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
+import UpgradePrompt from '@/components/ui/upgrade-prompt';
 
 interface DashboardExam {
   id: string;
@@ -69,6 +70,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [aiInsightLoading, setAiInsightLoading] = useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   const userName = session?.user?.name || 'Kullanıcı';
   const isAdmin = (session?.user as any)?.role === 'admin';
@@ -124,8 +126,12 @@ export default function DashboardPage() {
           if (data.insight) {
             setAiInsight(data.insight);
           }
+        } else if (res.status === 403) {
+          const data = await res.json();
+          if (data.tierRequired === 'premium') {
+            setShowUpgradePrompt(true);
+          }
         }
-        // 403 = AI not enabled — silently ignore
       } catch {
         // Silently ignore — don't break dashboard
       } finally {
@@ -317,6 +323,17 @@ export default function DashboardPage() {
             ) : (
               <p className="text-sm text-white/65 leading-relaxed relative z-10">{aiInsight}</p>
             )}
+          </motion.div>
+        )}
+
+        {/* Upgrade Prompt for basic users */}
+        {showUpgradePrompt && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+          >
+            <UpgradePrompt feature="AI Günlük Öneri" onClose={() => setShowUpgradePrompt(false)} />
           </motion.div>
         )}
 

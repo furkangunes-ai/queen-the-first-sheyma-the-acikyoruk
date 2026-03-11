@@ -16,6 +16,7 @@ import ConceptNodeManager from '@/components/admin/concept-node-manager';
 import DependencyEdgeManager from '@/components/admin/dependency-edge-manager';
 import BulkImport from '@/components/admin/bulk-import';
 import CognitiveDashboard from '@/components/admin/cognitive-dashboard';
+import SubscriptionManager from '@/components/admin/subscription-manager';
 
 // ---------- types ----------
 
@@ -99,7 +100,7 @@ export default function AdminPage() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const isAdmin = (session?.user as any)?.role === 'admin';
-  const [activeTab, setActiveTab] = useState<'genel' | 'dag'>('genel');
+  const [activeTab, setActiveTab] = useState<'genel' | 'dag' | 'abonelikler'>('genel');
 
   // Redirect non-admin users
   useEffect(() => {
@@ -299,6 +300,17 @@ export default function AdminPage() {
         >
           <Shield size={16} />
           GENEL YÖNETİM
+        </button>
+        <button
+          onClick={() => setActiveTab('abonelikler')}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black tracking-wider transition-all ${
+            activeTab === 'abonelikler'
+              ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
+              : 'bg-white/[0.03] text-white/50 border border-white/5 hover:bg-white/[0.06]'
+          }`}
+        >
+          <Brain size={16} />
+          ABONELİKLER
         </button>
         <button
           onClick={() => setActiveTab('dag')}
@@ -655,6 +667,10 @@ export default function AdminPage() {
       {/* ====== Müfredat Yönetimi ====== */}
       <MufredatManager />
       </>)}
+
+      {activeTab === 'abonelikler' && (
+        <SubscriptionManager />
+      )}
 
       {activeTab === 'dag' && (
         <div className="flex flex-col gap-8 relative z-10">

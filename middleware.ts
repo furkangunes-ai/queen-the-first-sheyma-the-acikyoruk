@@ -40,8 +40,12 @@ export default auth(async (req) => {
     }
   }
 
-  // UI sayfaları: session yoksa /login'e redirect
+  // UI sayfaları: session yoksa yönlendir
   if (!isLoggedIn && !isApiRoute) {
+    // Ana sayfa -> welcome'a yönlendir
+    if (req.nextUrl.pathname === "/") {
+      return NextResponse.redirect(new URL("/welcome", req.url));
+    }
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
@@ -56,6 +60,6 @@ export default auth(async (req) => {
 export const config = {
   matcher: [
     // Auth endpoint'leri de dahil (rate limiting için)
-    "/((?!login|_next/static|_next/image|favicon.ico).*)",
+    "/((?!login|signup|welcome|kvkk|terms|forgot-password|reset-password|_next/static|_next/image|favicon.ico).*)",
   ],
 };

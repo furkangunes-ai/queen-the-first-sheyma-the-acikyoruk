@@ -21,6 +21,7 @@ import {
   CalendarDays,
   Dumbbell,
   BookOpen,
+  Settings,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import NotificationBell from '@/components/notifications/notification-bell';
@@ -167,6 +168,7 @@ const NAV_ITEMS: NavItem[] = [
   { path: '/calendar', label: 'Takvim', icon: CalendarDays },
   { path: '/check-in', label: 'Check-in', icon: Heart },
   { path: '/gallery', label: 'Dosyalar', icon: ImageIcon },
+  { path: '/settings', label: 'Ayarlar', icon: Settings },
 ];
 
 const ADMIN_NAV_ITEMS = [

@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { motion } from "motion/react";
-import { Crown, Sparkles } from "lucide-react";
+import { Crown, Sparkles, ArrowRight } from "lucide-react";
 
 interface UpgradePromptProps {
   feature: string;
@@ -35,7 +36,7 @@ export default function UpgradePrompt({ feature, onClose }: UpgradePromptProps) 
             gerektiren bir özelliktir. Premium'a geçerek sınırsız AI erişimi, derinlemesine
             analiz ve daha fazlasına erişin.
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-4">
             <div className="flex items-center gap-2 text-xs text-white/40">
               <Sparkles size={12} className="text-amber-400" />
               <span>Sınırsız AI Chat</span>
@@ -49,6 +50,14 @@ export default function UpgradePrompt({ feature, onClose }: UpgradePromptProps) 
               <span>Dashboard Insight</span>
             </div>
           </div>
+          <Link
+            href="/welcome#fiyatlandirma"
+            className="group inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-[0_0_10px_rgba(245,158,11,0.3)] hover:shadow-[0_0_20px_rgba(245,158,11,0.5)] transition-all"
+          >
+            <Crown size={14} />
+            Planları Gör
+            <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
+          </Link>
         </div>
       </div>
 
