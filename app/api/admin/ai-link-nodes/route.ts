@@ -79,7 +79,11 @@ export async function POST(request: NextRequest) {
     const systemPrompt = `Sen bir YKS müfredat uzmanısın. Bir dersin konu listesini alacaksın ve her konu için "kavram düğümü" (concept node) önerileri üreteceksin.
 
 KURALLAR:
-- Her konu için 2-5 kavram düğümü öner.
+- Her konu için KONUNUN KAPSAMINA GÖRE yeterli sayıda kavram düğümü öner:
+  - Dar/basit konular (ör: Sayı Basamakları, Bölünebilme): 3-5 düğüm
+  - Orta kapsamlı konular (ör: Türev, Fonksiyonlar): 8-15 düğüm
+  - Geniş/derin konular (ör: İntegral, Limit, Analitik Geometri): 15-30 düğüm
+- Konunun alt başlıklarını, temel kavramları, formülleri, teoremleri, yöntemleri ve uygulama alanlarını ayrı düğüm olarak modellemekten çekinme.
 - Kavram düğümleri öğrencinin o konuda ustalaşması gereken temel kavramları temsil eder.
 - Her düğüm için şunları üret:
   - "name": Kavram adı (Türkçe, anlaşılır)
