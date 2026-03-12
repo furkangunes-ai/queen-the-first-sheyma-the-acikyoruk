@@ -27,7 +27,6 @@ model User {
   metricDefs     MetricDefinition[]
   metricEntries  MetricEntry[]
   checkIns       DailyCheckIn[]
-  errorReasons   ErrorReason[]
   files          UserFile[]
   notificationsReceived Notification[] @relation("NotificationRecipient")
   notificationsSent     Notification[] @relation("NotificationSender")
@@ -140,8 +139,7 @@ model Subject {
   examType      ExamType @relation(fields: [examTypeId], references: [id])
   topics        Topic[]
   examResults   ExamSubjectResult[]
-  wrongQuestions ExamWrongQuestion[]
-  emptyQuestions ExamEmptyQuestion[]
+  cognitiveVoids  CognitiveVoid[]
   dailyStudies    DailyStudy[]
   topicReviews    TopicReview[]
   weeklyPlanItems WeeklyPlanItem[]
@@ -161,8 +159,7 @@ model Topic {
   estimatedHours Float   @default(2)  // Tahmini toplam çalışma saati
   gradeLevel    Int?     // 9, 10, 11, 12 — ÖSYM sınıf seviyesi
   learningArea  String?  // "SAYILAR VE CEBİR", "GEOMETRİ" vb. — ÖSYM alt öğrenme alanı
-  wrongQuestions ExamWrongQuestion[]
-  emptyQuestions ExamEmptyQuestion[]
+  cognitiveVoids  CognitiveVoid[]
   dailyStudies    DailyStudy[]
   topicReviews    TopicReview[]
   topicKnowledge  TopicKnowledge[]
@@ -178,14 +175,27 @@ model Topic {
   @@index([subjectId])
 }
 
-model ErrorReason {
-  id             String   @id @default(cuid())
-  label          String   // "Bilgi eksikliği", "Dikkatsizlik"
-  isDefault      Boolean  @default(false)
-  userId         String?  // null = sistem varsayılanı
-  user           User?    @relation(fields: [userId], references: [id])
-  wrongQuestions ExamWrongQuestion[]
-  createdAt      DateTime @default(now())
+// Statik hata nedenleri - MECE (Mutually Exclusive, Collectively Exhaustive)
+enum ErrorReasonType {
+  BILGI_EKSIKLIGI       // Bilgi Eksikliği - katsayı: 0.8
+  ISLEM_HATASI          // İşlem Hatası - katsayı: 0.3
+  DIKKATSIZLIK          // Dikkatsizlik / Odak Kaybı - katsayı: 0.2
+  SURE_YETISMEDI        // Süre Yetişmedi - katsayı: 0.4
+  KAVRAM_YANILGISI      // Kavram Yanılgısı - katsayı: 1.0
+  SORU_KOKUNU_YANLIS_OKUMA // Soru Kökünü Yanlış Okuma - katsayı: 0.3
+}
+
+// Zafiyet durumu
+enum VoidStatus {
+  UNRESOLVED  // Çözülmemiş - kırmızı
+  REVIEW      // Tekrar gerekiyor - sarı
+  RESOLVED    // Çözüldü/Öğrenildi - yeşil
+}
+
+// Zafiyet kaynağı (yanlış mı, boş mu)
+enum VoidSource {
+  WRONG   // Yanlış yapılan soru
+  EMPTY   // Boş bırakılan soru
 }
 
 model Exam {
@@ -198,16 +208,27 @@ model Exam {
   userId        String
   user          User                @relation(fields: [userId], references: [id])
   notes         String?
-  subjectResults ExamSubjectResult[]
-  wrongQuestions ExamWrongQuestion[]
-  emptyQuestions ExamEmptyQuestion[]
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+
+  // Sıcak Faz: Bağlam alanları (sınav anında girilir)
+  timeOfDay             String?     // "sabah" | "ogle" | "aksam"
+  environment           String?     // "sessiz" | "gurultulu"
+  perceivedDifficulty   Int?        // 1-5 algılanan zorluk
+  biologicalState       String?     // "dinc" | "normal" | "yorgun"
+
+  // Soğuk Faz durumu
+  coldPhaseCompleted    Boolean     @default(false)  // Zafiyet analizi yapıldı mı?
+  coldPhaseCompletedAt  DateTime?   // Ne zaman yapıldı?
+
+  subjectResults  ExamSubjectResult[]
+  cognitiveVoids  CognitiveVoid[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 
   @@index([userId])
   @@index([examTypeId])
   @@index([date])
   @@index([userId, date])
+  @@index([userId, coldPhaseCompleted])
 }
 
 model ExamSubjectResult {
@@ -225,47 +246,43 @@ model ExamSubjectResult {
   @@index([examId])
 }
 
-model ExamWrongQuestion {
-  id            String       @id @default(cuid())
+// Kognitif Zafiyet Motoru - Yanlış ve boş soruların birleşik kavramsal temsili
+// Gruplama: Aynı [examId + subjectId + topicId + errorReason] → tek void, magnitude artar
+model CognitiveVoid {
+  id            String          @id @default(cuid())
   examId        String
-  exam          Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  exam          Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
   subjectId     String
-  subject       Subject      @relation(fields: [subjectId], references: [id])
+  subject       Subject         @relation(fields: [subjectId], references: [id])
   topicId       String?
-  topic         Topic?       @relation(fields: [topicId], references: [id])
-  questionNumber Int
-  errorReasonId String?
-  errorReason   ErrorReason? @relation(fields: [errorReasonId], references: [id])
-  notes         String?
-  photoUrl      String?
-  photoR2Key    String?
-  difficulty    String?      // "kolay" | "orta" | "zor"
-  understandingStatus String? // "anladim" | "tekrar" | "anlamadim"
-  spacedRepetitionItems SpacedRepetitionItem[]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime?    @updatedAt
+  topic         Topic?          @relation(fields: [topicId], references: [id])
 
+  // Zafiyet özellikleri
+  source        VoidSource      @default(WRONG)    // Yanlış mı, boş mu?
+  errorReason   ErrorReasonType @default(BILGI_EKSIKLIGI) // 6 statik kök neden
+  magnitude     Int             @default(1)         // Aynı konudaki hata adedi (gruplama)
+  status        VoidStatus      @default(UNRESOLVED) // Çözüm durumu
+
+  // Otomatik hesaplanan severity (TopicWeight × ErrorReason katsayısı)
+  severity      Float           @default(1.0)
+
+  // Opsiyonel içgörü notu (sadece Soğuk Faz'da, "Eureka" anı)
+  notes         String?
+
+  // Spaced Repetition bağlantısı
+  spacedRepetitionItems SpacedRepetitionItem[]
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  // Gruplama: Aynı deneme, ders, konu ve hata nedeni birleşir
+  @@unique([examId, subjectId, topicId, errorReason, source])
   @@index([examId])
   @@index([subjectId])
   @@index([topicId])
-  @@index([errorReasonId])
-  @@index([examId, topicId])
-}
-
-model ExamEmptyQuestion {
-  id             String   @id @default(cuid())
-  examId         String
-  exam           Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
-  subjectId      String
-  subject        Subject  @relation(fields: [subjectId], references: [id])
-  topicId        String?
-  topic          Topic?   @relation(fields: [topicId], references: [id])
-  questionNumber Int
-  notes          String?
-  createdAt      DateTime @default(now())
-
-  @@index([examId])
-  @@index([subjectId])
+  @@index([status])
+  @@index([examId, subjectId])
+  @@index([examId, status])
 }
 
 // ==================== METRİKLER & CHECK-IN ====================
@@ -356,8 +373,6 @@ model DailyStudy {
   difficulty    String?         // "kolay" | "orta" | "zor"
   source        String?         // Kaynak kitap/test adı
   duration      Int?            // Dakika cinsinden süre
-  photoUrl      String?
-  photoR2Key    String?
   notes         String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -380,8 +395,6 @@ model TopicReview {
   duration      Int?     // Dakika cinsinden süre
   confidence    String?  // "dusuk" | "orta" | "yuksek"
   method        String?  // "video" | "kitap" | "ders_notu" | "soru_cozumu" | "diger"
-  photoUrl      String?
-  photoR2Key    String?
   notes         String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -541,8 +554,8 @@ model SpacedRepetitionItem {
   id              String   @id @default(cuid())
   userId          String
   user            User     @relation(fields: [userId], references: [id])
-  wrongQuestionId String
-  wrongQuestion   ExamWrongQuestion @relation(fields: [wrongQuestionId], references: [id], onDelete: Cascade)
+  cognitiveVoidId String
+  cognitiveVoid   CognitiveVoid @relation(fields: [cognitiveVoidId], references: [id], onDelete: Cascade)
   subjectId       String
   subject         Subject  @relation(fields: [subjectId], references: [id])
   topicId         String?
