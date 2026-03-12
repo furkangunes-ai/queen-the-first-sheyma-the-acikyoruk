@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { ChevronRight, ChevronLeft, Check, SkipForward } from "lucide-react";
+import { motion } from "motion/react";
+import { Check, Save } from "lucide-react";
 
 interface TopicItem {
   id: string;
@@ -17,19 +17,17 @@ interface QuickAssessorProps {
   onCancel: () => void;
 }
 
-const LEVEL_CONFIG = [
-  { level: 0, label: "0", description: "Hiç bilmiyorum", color: "bg-red-500", hoverColor: "hover:bg-red-400", key: "0" },
-  { level: 1, label: "1", description: "Çok az", color: "bg-orange-500", hoverColor: "hover:bg-orange-400", key: "1" },
-  { level: 2, label: "2", description: "Temel", color: "bg-amber-500", hoverColor: "hover:bg-amber-400", key: "2" },
-  { level: 3, label: "3", description: "Orta", color: "bg-yellow-500", hoverColor: "hover:bg-yellow-400", key: "3" },
-  { level: 4, label: "4", description: "İyi", color: "bg-lime-500", hoverColor: "hover:bg-lime-400", key: "4" },
-  { level: 5, label: "5", description: "Çok iyi", color: "bg-emerald-500", hoverColor: "hover:bg-emerald-400", key: "5" },
+const LEVELS = [
+  { level: 0, label: "0", short: "Yok", color: "bg-red-500/80", ring: "ring-red-500" },
+  { level: 1, label: "1", short: "Az", color: "bg-orange-500/80", ring: "ring-orange-500" },
+  { level: 2, label: "2", short: "Temel", color: "bg-amber-500/80", ring: "ring-amber-500" },
+  { level: 3, label: "3", short: "Orta", color: "bg-yellow-500/80", ring: "ring-yellow-500" },
+  { level: 4, label: "4", short: "İyi", color: "bg-lime-500/80", ring: "ring-lime-500" },
+  { level: 5, label: "5", short: "Tam", color: "bg-emerald-500/80", ring: "ring-emerald-500" },
 ];
 
 export function QuickAssessor({ topics, onComplete, onCancel }: QuickAssessorProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [results, setResults] = useState<Map<string, number>>(() => {
-    // Pre-fill with existing levels
     const map = new Map<string, number>();
     for (const t of topics) {
       if (t.currentLevel !== undefined) {
@@ -39,204 +37,192 @@ export function QuickAssessor({ topics, onComplete, onCancel }: QuickAssessorPro
     return map;
   });
 
-  const currentTopic = topics[currentIndex];
-  const isLast = currentIndex === topics.length - 1;
-  const answered = results.size;
-  const total = topics.length;
-  const progress = total > 0 ? ((currentIndex + 1) / total) * 100 : 0;
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
-  const selectLevel = useCallback((level: number) => {
-    if (!currentTopic) return;
+  const changed = new Set<string>();
+  for (const [id, level] of results) {
+    const topic = topics.find((t) => t.id === id);
+    if (topic && topic.currentLevel !== level) changed.add(id);
+    if (topic && topic.currentLevel === undefined) changed.add(id);
+  }
+  const changedCount = changed.size;
+  const filledCount = results.size;
 
+  const selectLevel = useCallback((topicId: string, level: number) => {
     setResults((prev) => {
       const next = new Map(prev);
-      next.set(currentTopic.id, level);
+      next.set(topicId, level);
       return next;
     });
-
-    // Auto-advance after short delay
-    if (!isLast) {
-      setTimeout(() => setCurrentIndex((i) => Math.min(i + 1, topics.length - 1)), 150);
-    }
-  }, [currentTopic, isLast, topics.length]);
-
-  const goBack = useCallback(() => {
-    setCurrentIndex((i) => Math.max(0, i - 1));
   }, []);
-
-  const skip = useCallback(() => {
-    if (!isLast) {
-      setCurrentIndex((i) => i + 1);
-    }
-  }, [isLast]);
 
   const handleFinish = useCallback(() => {
     onComplete(results);
   }, [results, onComplete]);
 
-  // Keyboard support: 0-5 for levels, left/right arrows, Enter to finish, Escape to cancel
+  // Keyboard: 0-5 sets level for focused topic, Escape cancels
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
-      if (e.key >= "0" && e.key <= "5") {
+      if (e.key >= "0" && e.key <= "5" && focusedIndex !== null) {
         e.preventDefault();
-        selectLevel(parseInt(e.key));
-      } else if (e.key === "ArrowLeft") {
+        selectLevel(topics[focusedIndex].id, parseInt(e.key));
+        // Auto-advance focus
+        if (focusedIndex < topics.length - 1) {
+          setFocusedIndex(focusedIndex + 1);
+          // Scroll the next item into view
+          setTimeout(() => {
+            document.getElementById(`topic-row-${focusedIndex + 1}`)?.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          }, 50);
+        }
+      } else if (e.key === "ArrowDown" && focusedIndex !== null) {
         e.preventDefault();
-        goBack();
-      } else if (e.key === "ArrowRight") {
+        const next = Math.min(focusedIndex + 1, topics.length - 1);
+        setFocusedIndex(next);
+        document.getElementById(`topic-row-${next}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else if (e.key === "ArrowUp" && focusedIndex !== null) {
         e.preventDefault();
-        skip();
-      } else if (e.key === "Enter" && isLast && results.has(currentTopic?.id)) {
-        e.preventDefault();
-        handleFinish();
+        const prev = Math.max(focusedIndex - 1, 0);
+        setFocusedIndex(prev);
+        document.getElementById(`topic-row-${prev}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
       } else if (e.key === "Escape") {
         e.preventDefault();
         onCancel();
+      } else if (e.key === "Enter" && filledCount > 0) {
+        e.preventDefault();
+        handleFinish();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectLevel, goBack, skip, isLast, currentTopic, results, handleFinish, onCancel]);
+  }, [focusedIndex, topics, selectLevel, onCancel, handleFinish, filledCount]);
 
-  if (!currentTopic) return null;
-
-  const selectedLevel = results.get(currentTopic.id);
+  // "Select all same level" helper
+  const setAllToLevel = (level: number) => {
+    setResults((prev) => {
+      const next = new Map(prev);
+      for (const t of topics) {
+        if (!next.has(t.id)) {
+          next.set(t.id, level);
+        }
+      }
+      return next;
+    });
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Progress bar */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs text-zinc-500">
-          <span>{currentTopic.subjectName}</span>
-          <span>{currentIndex + 1} / {total}</span>
+    <div className="space-y-4">
+      {/* Header with quick-fill and legend */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="text-xs text-zinc-500">
+          Konuya tıkla, sonra <kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">0</kbd>-<kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400">5</kbd> ile seviye seç
         </div>
-        <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-          <motion.div
-            className="h-full bg-cyan-500 rounded-full"
-            initial={false}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.2 }}
-          />
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-zinc-600 mr-1">Boşları doldur:</span>
+          {LEVELS.map((l) => (
+            <button
+              key={l.level}
+              onClick={() => setAllToLevel(l.level)}
+              className={`w-6 h-6 rounded text-[10px] font-bold text-white/80 hover:scale-110 transition-transform ${l.color}`}
+              title={`Boş konuları ${l.level} yap`}
+            >
+              {l.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Topic card */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentTopic.id}
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -40 }}
-          transition={{ duration: 0.15 }}
-          className="rounded-xl border border-zinc-700/50 bg-zinc-900/50 p-6 text-center space-y-6"
-        >
-          {/* Topic name */}
-          <div>
-            <h2 className="text-xl font-semibold text-white">
-              {currentTopic.name}
-            </h2>
-            {currentTopic.currentLevel !== undefined && (
-              <p className="text-xs text-zinc-500 mt-1">
-                Mevcut seviye: {currentTopic.currentLevel}/5
-              </p>
-            )}
-          </div>
+      {/* Scrollable topic list */}
+      <div className="max-h-[60vh] overflow-y-auto rounded-xl border border-zinc-700/50 bg-zinc-900/30 divide-y divide-zinc-800/50">
+        {topics.map((topic, index) => {
+          const selectedLevel = results.get(topic.id);
+          const isFocused = focusedIndex === index;
 
-          {/* Level buttons */}
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-            {LEVEL_CONFIG.map((cfg) => {
-              const isSelected = selectedLevel === cfg.level;
-              return (
-                <button
-                  key={cfg.level}
-                  onClick={() => selectLevel(cfg.level)}
-                  className={`
-                    relative flex flex-col items-center justify-center gap-1 p-4 rounded-xl border-2 transition-all
-                    ${isSelected
-                      ? `${cfg.color} border-white/30 text-white scale-105 shadow-lg`
-                      : `bg-zinc-800/50 border-zinc-700 text-zinc-300 ${cfg.hoverColor} hover:text-white hover:border-zinc-500`
-                    }
-                  `}
-                >
-                  <span className="text-2xl font-bold">{cfg.label}</span>
-                  <span className="text-[10px] leading-tight opacity-80">{cfg.description}</span>
-                  <span className="absolute top-1 right-1.5 text-[9px] text-zinc-500 font-mono">
-                    {cfg.key}
+          return (
+            <div
+              key={topic.id}
+              id={`topic-row-${index}`}
+              onClick={() => setFocusedIndex(index)}
+              className={`flex items-center gap-2 px-3 py-2.5 cursor-pointer transition-colors ${
+                isFocused
+                  ? "bg-cyan-500/5 border-l-2 border-l-cyan-500"
+                  : "border-l-2 border-l-transparent hover:bg-zinc-800/30"
+              }`}
+            >
+              {/* Topic number + name */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-zinc-600 font-mono w-5 text-right shrink-0">
+                    {index + 1}
                   </span>
-                </button>
-              );
-            })}
-          </div>
+                  <span className="text-sm text-zinc-200 truncate">{topic.name}</span>
+                </div>
+              </div>
 
-          {/* Keyboard hint */}
-          <p className="text-[11px] text-zinc-600">
-            Klavyeden <kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400 text-[10px]">0</kbd>-<kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400 text-[10px]">5</kbd> ile seç
-            {" · "}
-            <kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400 text-[10px]">←</kbd> geri
-            {" · "}
-            <kbd className="px-1 py-0.5 bg-zinc-800 rounded text-zinc-400 text-[10px]">→</kbd> atla
-          </p>
-        </motion.div>
-      </AnimatePresence>
+              {/* Level buttons */}
+              <div className="flex gap-1 shrink-0">
+                {LEVELS.map((l) => {
+                  const isSelected = selectedLevel === l.level;
+                  return (
+                    <button
+                      key={l.level}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        selectLevel(topic.id, l.level);
+                        setFocusedIndex(index);
+                      }}
+                      className={`
+                        w-8 h-8 rounded-md text-xs font-bold transition-all
+                        ${isSelected
+                          ? `${l.color} text-white ring-2 ${l.ring} ring-offset-1 ring-offset-zinc-900 scale-110`
+                          : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+                        }
+                      `}
+                    >
+                      {l.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-      {/* Navigation */}
+      {/* Footer: save + stats */}
       <div className="flex items-center justify-between gap-3">
         <button
-          onClick={goBack}
-          disabled={currentIndex === 0}
-          className="flex items-center gap-1 px-3 py-2 text-sm text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          onClick={onCancel}
+          className="px-3 py-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
         >
-          <ChevronLeft className="w-4 h-4" />
-          Geri
+          İptal
         </button>
 
-        <div className="flex items-center gap-2">
-          {!isLast && (
-            <button
-              onClick={skip}
-              className="flex items-center gap-1 px-3 py-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
-            >
-              Atla
-              <SkipForward className="w-4 h-4" />
-            </button>
-          )}
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-zinc-500">
+            {filledCount}/{topics.length} dolduruldu
+            {changedCount > 0 && (
+              <span className="text-cyan-400"> · {changedCount} değişiklik</span>
+            )}
+          </span>
 
-          {(isLast || answered >= total * 0.5) && (
-            <button
-              onClick={handleFinish}
-              disabled={answered === 0}
-              className="flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-white text-sm font-medium transition-colors disabled:opacity-30"
-            >
-              <Check className="w-4 h-4" />
-              Kaydet ({answered}/{total})
-            </button>
-          )}
-        </div>
-
-        {!isLast && (
-          <button
-            onClick={() => setCurrentIndex((i) => i + 1)}
-            className="flex items-center gap-1 px-3 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={handleFinish}
+            disabled={filledCount === 0}
+            className="flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-white text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            İleri
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        )}
-
-        {isLast && <div />}
+            <Save className="w-4 h-4" />
+            Kaydet
+          </motion.button>
+        </div>
       </div>
-
-      {/* Cancel */}
-      <button
-        onClick={onCancel}
-        className="w-full py-2 text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
-      >
-        İptal (Esc)
-      </button>
     </div>
   );
 }
