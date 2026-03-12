@@ -144,7 +144,7 @@ export default function UserOverview() {
       const res = await fetch("/api/admin/user-overview");
       if (res.ok) setUsers(await res.json());
     } catch {
-      toast.error("Kullanicilar yuklenemedi");
+      toast.error("Kullanıcılar yüklenemedi");
     }
     setLoading(false);
   }, []);
@@ -159,7 +159,7 @@ export default function UserOverview() {
       const res = await fetch(`/api/admin/user-overview?userId=${userId}`);
       if (res.ok) setDetail(await res.json());
     } catch {
-      toast.error("Kullanici bilgileri yuklenemedi");
+      toast.error("Kullanıcı bilgileri yüklenemedi");
     }
     setLoadingDetail(false);
   }, []);
@@ -195,8 +195,8 @@ export default function UserOverview() {
           <h2 className="text-base font-black tracking-wider text-white/90">
             {selectedUserId && detail ? detail.user.displayName.toUpperCase() : "KULLANICI TAKIBI"}
           </h2>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mt-0.5">
-            {selectedUserId ? "Mufredat, calisma ve test bilgileri" : `${users.length} kullanici`}
+          <p className="text-xs font-bold uppercase tracking-widest text-white/40 mt-0.5">
+            {selectedUserId ? "Müfredat, çalışma ve test bilgileri" : `${users.length} kullanici`}
           </p>
         </div>
       </div>
@@ -209,7 +209,7 @@ export default function UserOverview() {
               <Loader2 className="w-5 h-5 text-cyan-400 animate-spin" />
             </div>
           ) : users.length === 0 ? (
-            <p className="text-xs text-white/30 text-center py-8">Kullanici bulunamadi</p>
+            <p className="text-xs text-white/30 text-center py-8">Kullanıcı bulunamadı</p>
           ) : (
             <div className="space-y-2">
               {users.map((u) => (
@@ -226,14 +226,14 @@ export default function UserOverview() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-white/90">{u.displayName}</span>
                       {u.examTrack && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-400/70 font-bold uppercase">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-400/70 font-bold uppercase">
                           {u.examTrack}
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-[10px] text-white/40">
+                    <div className="flex items-center gap-3 mt-1 text-xs text-white/40">
                       <span>{u._count.topicKnowledge} konu</span>
-                      <span>{u._count.dailyStudies} calisma</span>
+                      <span>{u._count.dailyStudies} çalışma</span>
                       <span>{u._count.exams} deneme</span>
                       <span>{u._count.kazanimProgress} kazanim</span>
                     </div>
@@ -258,42 +258,42 @@ export default function UserOverview() {
               {/* Summary cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                  <div className="flex items-center gap-1.5 text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-1">
+                  <div className="flex items-center gap-1.5 text-xs text-blue-400 font-bold uppercase tracking-widest mb-1">
                     <BookOpen size={12} />Bilgi Seviyesi
                   </div>
                   <div className="text-2xl font-black text-white/90">{detail.summary.avgKnowledge}</div>
-                  <div className="text-[9px] text-white/30">{detail.summary.totalKnowledge} konu</div>
+                  <div className="text-[10px] text-white/30">{detail.summary.totalKnowledge} konu</div>
                 </div>
 
                 <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                  <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-bold uppercase tracking-widest mb-1">
-                    <BarChart3 size={12} />Calisma
+                  <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-bold uppercase tracking-widest mb-1">
+                    <BarChart3 size={12} />Çalışma
                   </div>
                   <div className="text-2xl font-black text-white/90">{detail.summary.totalStudySessions}</div>
-                  <div className="text-[9px] text-white/30">{detail.summary.totalQuestions} soru, %{detail.summary.correctRate} dogru</div>
+                  <div className="text-[10px] text-white/30">{detail.summary.totalQuestions} soru, %{detail.summary.correctRate} doğru</div>
                 </div>
 
                 <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                  <div className="flex items-center gap-1.5 text-[10px] text-amber-400 font-bold uppercase tracking-widest mb-1">
+                  <div className="flex items-center gap-1.5 text-xs text-amber-400 font-bold uppercase tracking-widest mb-1">
                     <GraduationCap size={12} />Denemeler
                   </div>
                   <div className="text-2xl font-black text-white/90">{detail.summary.examCount}</div>
-                  <div className="text-[9px] text-white/30">Ort. {detail.summary.avgNet} net</div>
+                  <div className="text-[10px] text-white/30">Ort. {detail.summary.avgNet} net</div>
                 </div>
 
                 <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                  <div className="flex items-center gap-1.5 text-[10px] text-orange-400 font-bold uppercase tracking-widest mb-1">
+                  <div className="flex items-center gap-1.5 text-xs text-orange-400 font-bold uppercase tracking-widest mb-1">
                     <Flame size={12} />Seri
                   </div>
                   <div className="text-2xl font-black text-white/90">{detail.summary.streak?.currentStreak ?? 0}</div>
-                  <div className="text-[9px] text-white/30">En uzun: {detail.summary.streak?.longestStreak ?? 0} gun</div>
+                  <div className="text-[10px] text-white/30">En uzun: {detail.summary.streak?.longestStreak ?? 0} gün</div>
                 </div>
               </div>
 
               {/* Knowledge distribution bar */}
               <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                <div className="text-[10px] text-white/40 font-bold uppercase tracking-widest mb-2">
-                  Bilgi Seviyesi Dagilimi
+                <div className="text-xs text-white/40 font-bold uppercase tracking-widest mb-2">
+                  Bilgi Seviyesi Dağılımı
                 </div>
                 <div className="flex gap-1 h-6">
                   {detail.summary.knowledgeByLevel.map((count, lvl) => {
@@ -307,14 +307,14 @@ export default function UserOverview() {
                         style={{ width: `${Math.max(pct, 3)}%` }}
                         title={`Seviye ${lvl}: ${count} konu`}
                       >
-                        <span className="text-[8px] font-black text-black/60">{count > 0 ? count : ""}</span>
+                        <span className="text-[10px] font-black text-black/60">{count > 0 ? count : ""}</span>
                       </div>
                     ) : null;
                   })}
                 </div>
-                <div className="flex justify-between mt-1 text-[8px] text-white/20">
+                <div className="flex justify-between mt-1 text-[10px] text-white/20">
                   <span>0 - Bilmiyor</span>
-                  <span>5 - Cok iyi</span>
+                  <span>5 - Çok iyi</span>
                 </div>
               </div>
 
@@ -322,7 +322,7 @@ export default function UserOverview() {
               <div className="flex gap-1.5 overflow-x-auto">
                 {([
                   { key: "knowledge", label: "KONU BILGISI", icon: BookOpen },
-                  { key: "studies", label: "CALISMALAR", icon: Clock },
+                  { key: "studies", label: "ÇALIŞMALAR", icon: Clock },
                   { key: "exams", label: "DENEMELER", icon: GraduationCap },
                   { key: "kazanim", label: "KAZANIMLAR", icon: CheckCircle2 },
                   { key: "cognitive", label: "BILISSEL", icon: Brain },
@@ -330,7 +330,7 @@ export default function UserOverview() {
                   <button
                     key={key}
                     onClick={() => setDetailTab(key)}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold tracking-wide whitespace-nowrap transition-colors ${
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold tracking-wide whitespace-nowrap transition-colors ${
                       detailTab === key
                         ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
                         : "bg-white/[0.03] text-white/40 border border-white/[0.06] hover:bg-white/[0.06]"
@@ -372,7 +372,7 @@ export default function UserOverview() {
                 {/* STUDIES TAB */}
                 {detailTab === "studies" && (
                   detail.recentStudies.length === 0 ? (
-                    <p className="text-xs text-white/30 py-4 text-center">Calisma verisi yok</p>
+                    <p className="text-xs text-white/30 py-4 text-center">Çalışma verisi yok</p>
                   ) : (
                     detail.recentStudies.map((ds, i) => (
                       <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04]">
@@ -495,7 +495,7 @@ export default function UserOverview() {
               </div>
             </div>
           ) : (
-            <p className="text-xs text-white/30 text-center py-8">Veri yuklenemedi</p>
+            <p className="text-xs text-white/30 text-center py-8">Veri yüklenemedi</p>
           )}
         </div>
       )}

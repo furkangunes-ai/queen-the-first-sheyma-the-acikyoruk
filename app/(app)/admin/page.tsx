@@ -20,6 +20,7 @@ import SubscriptionManager from '@/components/admin/subscription-manager';
 import AICurriculumEditor from '@/components/admin/ai-curriculum-editor';
 import UserOverview from '@/components/admin/user-overview';
 import CurriculumManager from '@/components/admin/curriculum-manager';
+import AINodeLinker from '@/components/admin/ai-node-linker';
 
 // ---------- types ----------
 
@@ -292,8 +293,10 @@ export default function AdminPage() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 relative z-10 overflow-x-auto">
+      <div className="flex gap-2 relative z-10 overflow-x-auto" role="tablist">
         <button
+          role="tab"
+          aria-selected={activeTab === 'genel'}
           onClick={() => setActiveTab('genel')}
           className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black tracking-wider transition-all whitespace-nowrap ${
             activeTab === 'genel'
@@ -305,6 +308,8 @@ export default function AdminPage() {
           GENEL
         </button>
         <button
+          role="tab"
+          aria-selected={activeTab === 'kullanicilar'}
           onClick={() => setActiveTab('kullanicilar')}
           className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black tracking-wider transition-all whitespace-nowrap ${
             activeTab === 'kullanicilar'
@@ -316,6 +321,8 @@ export default function AdminPage() {
           KULLANICILAR
         </button>
         <button
+          role="tab"
+          aria-selected={activeTab === 'mufredat'}
           onClick={() => setActiveTab('mufredat')}
           className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black tracking-wider transition-all whitespace-nowrap ${
             activeTab === 'mufredat'
@@ -327,6 +334,8 @@ export default function AdminPage() {
           MÜFREDAT
         </button>
         <button
+          role="tab"
+          aria-selected={activeTab === 'ai-edit'}
           onClick={() => setActiveTab('ai-edit')}
           className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black tracking-wider transition-all whitespace-nowrap ${
             activeTab === 'ai-edit'
@@ -338,6 +347,8 @@ export default function AdminPage() {
           AI DÜZENLEME
         </button>
         <button
+          role="tab"
+          aria-selected={activeTab === 'abonelikler'}
           onClick={() => setActiveTab('abonelikler')}
           className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black tracking-wider transition-all whitespace-nowrap ${
             activeTab === 'abonelikler'
@@ -349,6 +360,8 @@ export default function AdminPage() {
           ABONELİKLER
         </button>
         <button
+          role="tab"
+          aria-selected={activeTab === 'dag'}
           onClick={() => setActiveTab('dag')}
           className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black tracking-wider transition-all whitespace-nowrap ${
             activeTab === 'dag'
@@ -385,7 +398,7 @@ export default function AdminPage() {
             <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="flex items-center gap-2 text-indigo-400 mb-2">
               <TrendingUp size={16} />
-              <span className="font-bold text-[10px] uppercase tracking-wider">Son Deneme</span>
+              <span className="font-bold text-xs uppercase tracking-wider">Son Deneme</span>
             </div>
             <div className="flex items-baseline">
               <span className="text-3xl font-black text-white/90 drop-shadow-md tracking-tight">{latestNet}</span>
@@ -403,7 +416,7 @@ export default function AdminPage() {
             <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="flex items-center gap-2 text-blue-400 mb-2">
               <Star size={16} />
-              <span className="font-bold text-[10px] uppercase tracking-wider">Ortalama</span>
+              <span className="font-bold text-xs uppercase tracking-wider">Ortalama</span>
             </div>
             <div className="flex items-baseline">
               <span className="text-3xl font-black text-white/90 drop-shadow-md tracking-tight">{avgNet}</span>
@@ -421,7 +434,7 @@ export default function AdminPage() {
             <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="flex items-center gap-2 text-emerald-400 mb-2">
               <CheckCircle2 size={16} />
-              <span className="font-bold text-[10px] uppercase tracking-wider">Görev</span>
+              <span className="font-bold text-xs uppercase tracking-wider">Görev</span>
             </div>
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-black text-white/90 drop-shadow-md tracking-tight">{completionRate}%</span>
@@ -439,14 +452,14 @@ export default function AdminPage() {
             <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="flex items-center gap-2 text-amber-400 mb-2">
               <Smile size={16} />
-              <span className="font-bold text-[10px] uppercase tracking-wider">Ruh Hali</span>
+              <span className="font-bold text-xs uppercase tracking-wider">Ruh Hali</span>
             </div>
             {lastCheckIn ? (
               <div>
                 <span className="text-xl font-black text-white/90 drop-shadow-md tracking-tight block truncate">{moodLabel(lastCheckIn.mood)}</span>
                 <div className="flex items-center gap-1.5 mt-1 bg-amber-500/10 self-start px-2 py-0.5 rounded-md border border-amber-500/20">
                   <Zap size={10} className="text-amber-400" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-amber-300/80">{energyLabel(lastCheckIn.energy)} Enerji</span>
+                  <span className="text-xs font-bold uppercase tracking-widest text-amber-300/80">{energyLabel(lastCheckIn.energy)} Enerji</span>
                 </div>
               </div>
             ) : (
@@ -474,7 +487,7 @@ export default function AdminPage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-bold uppercase tracking-widest bg-white/10 px-2.5 py-1 rounded-lg text-white/60 border border-white/5">
+                    <span className="text-xs font-bold uppercase tracking-widest bg-white/10 px-2.5 py-1 rounded-lg text-white/60 border border-white/5">
                       {t.examTypeName}
                     </span>
                     <span className="text-xl font-black font-mono tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400 drop-shadow-md w-16 text-right">
@@ -512,7 +525,7 @@ export default function AdminPage() {
 
           <form onSubmit={handleTaskSubmit} className="flex flex-col gap-5 relative z-10">
             <div>
-              <label className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1.5 block">
+              <label className="text-xs font-black text-white/50 uppercase tracking-widest mb-1.5 block">
                 GÖREV BAŞLIĞI
               </label>
               <input
@@ -525,7 +538,7 @@ export default function AdminPage() {
             </div>
 
             <div>
-              <label className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1.5 block">
+              <label className="text-xs font-black text-white/50 uppercase tracking-widest mb-1.5 block">
                 KLASÖR
               </label>
               <select
@@ -577,7 +590,7 @@ export default function AdminPage() {
           <form onSubmit={handleMsgSubmit} className="flex flex-col gap-5 relative z-10">
             {users.length > 0 && (
               <div>
-                <label className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1.5 block">
+                <label className="text-xs font-black text-white/50 uppercase tracking-widest mb-1.5 block">
                   ALICI
                 </label>
                 <select
@@ -595,7 +608,7 @@ export default function AdminPage() {
             )}
 
             <div>
-              <label className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1.5 block">
+              <label className="text-xs font-black text-white/50 uppercase tracking-widest mb-1.5 block">
                 BAŞLIK
               </label>
               <input
@@ -608,7 +621,7 @@ export default function AdminPage() {
             </div>
 
             <div>
-              <label className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1.5 block">
+              <label className="text-xs font-black text-white/50 uppercase tracking-widest mb-1.5 block">
                 MESAJ
               </label>
               <textarea
@@ -691,7 +704,7 @@ export default function AdminPage() {
                       )*/}
                     </div>
                     <p className="text-xs font-medium tracking-wide text-white/60 line-clamp-2">{n.message}</p>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/30 mt-2 block">{timeAgo(n.createdAt)}</span>
+                    <span className="text-xs font-bold uppercase tracking-widest text-white/30 mt-2 block">{timeAgo(n.createdAt)}</span>
                   </div>
                 </motion.div>
               ))}
@@ -728,6 +741,9 @@ export default function AdminPage() {
 
       {activeTab === 'dag' && (
         <div className="flex flex-col gap-8 relative z-10">
+          {/* AI Kavram Düğümü Oluşturucu */}
+          <AINodeLinker />
+
           {/* Bilişsel Durum Dashboard */}
           <CognitiveDashboard />
 
