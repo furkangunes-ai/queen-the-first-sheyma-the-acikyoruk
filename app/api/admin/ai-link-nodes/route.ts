@@ -3,7 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { logAdminAction } from "@/lib/audit-log";
 import { logApiError } from "@/lib/logger";
-import { getOpenAI, AI_MODEL } from "@/lib/openai";
+import { getOpenAI } from "@/lib/openai";
+
+// Kavram düğümü oluşturma için güçlü model — konu-kavram eşleştirmesi kritik
+const AI_LINK_MODEL = process.env.OPENAI_LINK_MODEL || "gpt-4.1";
 
 function adminGuard(session: any) {
   if (!session?.user) return { error: "Unauthorized", status: 401 };
@@ -125,7 +128,7 @@ YANITINI SADECE JSON OLARAK VER, başka hiçbir şey ekleme.`;
     const userContent = `KONULAR (${topicsList.length} adet):\n${JSON.stringify(topicsList, null, 0)}`;
 
     const completion = await getOpenAI().chat.completions.create({
-      model: AI_MODEL,
+      model: AI_LINK_MODEL,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userContent },
