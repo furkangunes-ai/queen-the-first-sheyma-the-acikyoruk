@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import {
   Shield, Send, ClipboardList, Heart, TrendingUp, Loader2,
   CheckCircle2, Zap, Smile, FolderOpen, Bell, RefreshCw,
-  Sparkles, Star, FileText, Network, Brain
+  Sparkles, Star, FileText, Network, Brain, Wand2, Users
 } from 'lucide-react';
 import QuestionUpload from '@/components/admin/question-upload';
 import MufredatManager from '@/components/admin/mufredat-manager';
@@ -17,6 +17,8 @@ import DependencyEdgeManager from '@/components/admin/dependency-edge-manager';
 import BulkImport from '@/components/admin/bulk-import';
 import CognitiveDashboard from '@/components/admin/cognitive-dashboard';
 import SubscriptionManager from '@/components/admin/subscription-manager';
+import AICurriculumEditor from '@/components/admin/ai-curriculum-editor';
+import UserOverview from '@/components/admin/user-overview';
 
 // ---------- types ----------
 
@@ -100,7 +102,7 @@ export default function AdminPage() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const isAdmin = (session?.user as any)?.role === 'admin';
-  const [activeTab, setActiveTab] = useState<'genel' | 'dag' | 'abonelikler'>('genel');
+  const [activeTab, setActiveTab] = useState<'genel' | 'dag' | 'abonelikler' | 'ai-edit' | 'kullanicilar'>('genel');
 
   // Redirect non-admin users
   useEffect(() => {
@@ -289,21 +291,43 @@ export default function AdminPage() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 relative z-10">
+      <div className="flex gap-2 relative z-10 overflow-x-auto">
         <button
           onClick={() => setActiveTab('genel')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black tracking-wider transition-all ${
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black tracking-wider transition-all whitespace-nowrap ${
             activeTab === 'genel'
               ? 'bg-gradient-to-r from-pink-500/20 to-cyan-500/20 text-white border border-pink-500/20 shadow-[0_0_15px_rgba(255,42,133,0.15)]'
               : 'bg-white/[0.03] text-white/50 border border-white/5 hover:bg-white/[0.06]'
           }`}
         >
           <Shield size={16} />
-          GENEL YÖNETİM
+          GENEL
+        </button>
+        <button
+          onClick={() => setActiveTab('kullanicilar')}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black tracking-wider transition-all whitespace-nowrap ${
+            activeTab === 'kullanicilar'
+              ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-white border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
+              : 'bg-white/[0.03] text-white/50 border border-white/5 hover:bg-white/[0.06]'
+          }`}
+        >
+          <Users size={16} />
+          KULLANICILAR
+        </button>
+        <button
+          onClick={() => setActiveTab('ai-edit')}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black tracking-wider transition-all whitespace-nowrap ${
+            activeTab === 'ai-edit'
+              ? 'bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-white border border-violet-500/20 shadow-[0_0_15px_rgba(139,92,246,0.15)]'
+              : 'bg-white/[0.03] text-white/50 border border-white/5 hover:bg-white/[0.06]'
+          }`}
+        >
+          <Wand2 size={16} />
+          AI DÜZENLEME
         </button>
         <button
           onClick={() => setActiveTab('abonelikler')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black tracking-wider transition-all ${
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black tracking-wider transition-all whitespace-nowrap ${
             activeTab === 'abonelikler'
               ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
               : 'bg-white/[0.03] text-white/50 border border-white/5 hover:bg-white/[0.06]'
@@ -314,14 +338,14 @@ export default function AdminPage() {
         </button>
         <button
           onClick={() => setActiveTab('dag')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black tracking-wider transition-all ${
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black tracking-wider transition-all whitespace-nowrap ${
             activeTab === 'dag'
               ? 'bg-gradient-to-r from-violet-500/20 to-cyan-500/20 text-white border border-violet-500/20 shadow-[0_0_15px_rgba(139,92,246,0.15)]'
               : 'bg-white/[0.03] text-white/50 border border-white/5 hover:bg-white/[0.06]'
           }`}
         >
           <Network size={16} />
-          BİLİŞSEL ÇİZGE (DAG)
+          DAG
         </button>
       </div>
 
@@ -667,6 +691,17 @@ export default function AdminPage() {
       {/* ====== Müfredat Yönetimi ====== */}
       <MufredatManager />
       </>)}
+
+      {activeTab === 'kullanicilar' && (
+        <UserOverview />
+      )}
+
+      {activeTab === 'ai-edit' && (
+        <div className="flex flex-col gap-8 relative z-10">
+          <AICurriculumEditor />
+          <MufredatManager />
+        </div>
+      )}
 
       {activeTab === 'abonelikler' && (
         <SubscriptionManager />
