@@ -11,6 +11,7 @@ import {
   FileAudio,
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 import { useContinuousVoiceInput } from "@/hooks/useContinuousVoiceInput";
@@ -63,7 +64,9 @@ interface SubjectFull {
 
 export default function VoiceAssessmentPage() {
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<Step>("select");
+  const autoStartRef = React.useRef(false);
   const [subjects, setSubjects] = useState<SubjectFull[]>([]);
   const [subjectOptions, setSubjectOptions] = useState<SubjectOption[]>([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
@@ -142,6 +145,18 @@ export default function VoiceAssessmentPage() {
       // non-critical
     }
   };
+
+  // ------ Auto-start from URL params (e.g., from strategy page) ------
+  useEffect(() => {
+    if (autoStartRef.current || subjects.length === 0) return;
+    const subjectId = searchParams.get("subjectId");
+    const mode = searchParams.get("mode");
+    if (subjectId && subjects.some((s) => s.id === subjectId)) {
+      autoStartRef.current = true;
+      setSelectedSubjectId(subjectId);
+      setStep(mode === "quick" ? "quick-assess" : "quick-assess"); // default to quick
+    }
+  }, [subjects, searchParams]);
 
   // ------ Computed data ------
 
