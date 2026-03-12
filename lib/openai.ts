@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 
 let _openai: OpenAI | null = null;
+let _openaiLong: OpenAI | null = null;
 
 export function getOpenAI(): OpenAI {
   if (!_openai) {
@@ -13,6 +14,20 @@ export function getOpenAI(): OpenAI {
     _openai = new OpenAI({ apiKey, timeout: 45_000, maxRetries: 1 });
   }
   return _openai;
+}
+
+/** Longer timeout client for voice assessment (large curriculum payloads) */
+export function getOpenAILong(): OpenAI {
+  if (!_openaiLong) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error(
+        "OPENAI_API_KEY environment variable is not set. AI features will not work."
+      );
+    }
+    _openaiLong = new OpenAI({ apiKey, timeout: 120_000, maxRetries: 2 });
+  }
+  return _openaiLong;
 }
 
 export const AI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";

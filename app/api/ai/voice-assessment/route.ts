@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOpenAI, AI_MODEL, SYSTEM_PROMPT_VOICE_ASSESSMENT } from "@/lib/openai";
-import { checkAIAccess, isAIGuardError } from "@/lib/ai-guard";
+import { getOpenAILong, SYSTEM_PROMPT_VOICE_ASSESSMENT } from "@/lib/openai";
+import { auth } from "@/lib/auth";
 import { logApiError } from "@/lib/logger";
 
-const MAX_RETRIES = 1;
+const MAX_RETRIES = 2;
+const VOICE_MODEL = "gpt-4o";
 
 export async function POST(request: NextRequest) {
   try {
-    const guard = await checkAIAccess();
-    if (isAIGuardError(guard)) return guard;
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
+    }
 
     const { transcript, curriculum } = await request.json();
 
@@ -86,10 +89,10 @@ Aşağıdaki JSON formatında yanıt ver:
     let lastError: string | null = null;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const response = await getOpenAI().chat.completions.create({
-          model: AI_MODEL,
+        const response = await getOpenAILong().chat.completions.create({
+          model: VOICE_MODEL,
           messages,
-          temperature: 1,
+          temperature: 0.7,
           response_format: { type: "json_object" },
         });
 
