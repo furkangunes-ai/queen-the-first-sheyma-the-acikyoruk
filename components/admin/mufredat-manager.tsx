@@ -810,18 +810,18 @@ export default function MufredatManager() {
               <div className="flex items-center gap-2">
                 <Upload size={14} className="text-emerald-400" />
                 <span className="text-xs font-black tracking-wider text-white/70">
-                  JSON ILE TOPLU KAZANIM EKLE / GUNCELLE
+                  JSON İLE TOPLU KAZANIM EKLE / GÜNCELLE
                 </span>
               </div>
               <button
                 onClick={() => {
                   setJsonInput(EXAMPLE_JSON);
-                  toast.info("Ornek JSON yapistirildi");
+                  toast.info("Örnek JSON yapıştırıldı");
                 }}
                 className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold text-white/40 hover:text-white/60 hover:bg-white/[0.04] transition-colors"
               >
                 <Copy size={10} />
-                Ornek
+                Örnek
               </button>
             </div>
 
@@ -832,7 +832,7 @@ export default function MufredatManager() {
             {/* File upload */}
             <label className="flex items-center justify-center gap-2 px-4 py-2.5 mb-2 rounded-xl border border-dashed border-white/10 bg-white/[0.02] text-[11px] text-white/40 cursor-pointer hover:bg-white/[0.04] hover:border-white/20 transition-colors">
               <Upload size={14} />
-              <span>JSON dosyasi yukle</span>
+              <span>JSON dosyası yükle</span>
               <input
                 type="file"
                 accept=".json"
@@ -844,9 +844,9 @@ export default function MufredatManager() {
                     const text = await file.text();
                     JSON.parse(text); // validate
                     setJsonInput(text);
-                    toast.success(`${file.name} yuklendi`);
+                    toast.success(`${file.name} yüklendi`);
                   } catch {
-                    toast.error("Gecersiz JSON dosyasi");
+                    toast.error("Geçersiz JSON dosyası");
                   }
                   e.target.value = "";
                 }}
