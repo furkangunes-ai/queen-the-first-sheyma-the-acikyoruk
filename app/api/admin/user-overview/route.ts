@@ -169,12 +169,12 @@ export async function GET(request: NextRequest) {
       }),
 
       // Streaks
-      prisma.streak.findMany({
+      prisma.userStreak.findMany({
         where: { userId },
         select: {
           currentStreak: true,
           longestStreak: true,
-          lastStudyDate: true,
+          lastActiveDate: true,
         },
       }),
     ]);
