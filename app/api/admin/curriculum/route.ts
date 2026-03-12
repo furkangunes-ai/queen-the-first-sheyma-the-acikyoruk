@@ -260,7 +260,7 @@ export async function DELETE(request: NextRequest) {
             select: {
               kazanimlar: true,
               conceptNodes: true,
-              wrongQuestions: true,
+              cognitiveVoids: true,
               dailyStudies: true,
               topicKnowledge: true,
             },

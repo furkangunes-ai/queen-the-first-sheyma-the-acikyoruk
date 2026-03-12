@@ -15,8 +15,8 @@ export async function GET(request: NextRequest) {
     const examTypeId = searchParams.get("examTypeId");
     const subjectId = searchParams.get("subjectId");
 
-    // Get all wrong questions for the user's exams, grouped by topic
-    const wrongQuestions = await prisma.examWrongQuestion.findMany({
+    // CognitiveVoid'lerden konu bazlı zafiyet analizi
+    const voids = await prisma.cognitiveVoid.findMany({
       where: {
         exam: {
           userId,
@@ -27,13 +27,10 @@ export async function GET(request: NextRequest) {
       include: {
         subject: true,
         topic: true,
-        exam: {
-          select: { date: true },
-        },
       },
     });
 
-    // Group by topic
+    // Konu bazında grupla
     const topicMap = new Map<
       string,
       {
@@ -41,41 +38,43 @@ export async function GET(request: NextRequest) {
         topicName: string;
         subjectId: string;
         subjectName: string;
-        count: number;
-        questions: typeof wrongQuestions;
+        totalMagnitude: number;
+        totalSeverity: number;
+        unresolvedCount: number;
+        resolvedCount: number;
       }
     >();
 
-    for (const wq of wrongQuestions) {
-      const key = wq.topicId || "unknown";
+    for (const v of voids) {
+      const key = v.topicId || "unknown";
       const existing = topicMap.get(key);
 
       if (existing) {
-        existing.count += 1;
-        existing.questions.push(wq);
+        existing.totalMagnitude += v.magnitude;
+        existing.totalSeverity += v.severity;
+        if (v.status === 'UNRESOLVED') existing.unresolvedCount += v.magnitude;
+        if (v.status === 'RESOLVED') existing.resolvedCount += v.magnitude;
       } else {
         topicMap.set(key, {
-          topicId: wq.topicId || "unknown",
-          topicName: wq.topic?.name || "Belirtilmemiş",
-          subjectId: wq.subjectId,
-          subjectName: wq.subject.name,
-          count: 1,
-          questions: [wq],
+          topicId: v.topicId || "unknown",
+          topicName: v.topic?.name || "Belirtilmemiş",
+          subjectId: v.subjectId,
+          subjectName: v.subject.name,
+          totalMagnitude: v.magnitude,
+          totalSeverity: v.severity,
+          unresolvedCount: v.status === 'UNRESOLVED' ? v.magnitude : 0,
+          resolvedCount: v.status === 'RESOLVED' ? v.magnitude : 0,
         });
       }
     }
 
-    // Sort by count descending
+    // Severity'ye göre sırala (en acil zafiyet en üstte)
     const topicAnalysis = Array.from(topicMap.values())
-      .sort((a, b) => b.count - a.count)
-      .map(({ questions, ...rest }) => rest);
+      .sort((a, b) => b.totalSeverity - a.totalSeverity);
 
     return NextResponse.json(topicAnalysis);
   } catch (error) {
     logApiError("analytics/topics", error);
-    return NextResponse.json(
-      { error: "Sunucu hatası" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

@@ -24,18 +24,12 @@ export async function GET(
             subject: true,
           },
         },
-        wrongQuestions: {
-          include: {
-            subject: true,
-            topic: true,
-            errorReason: true,
-          },
-        },
-        emptyQuestions: {
+        cognitiveVoids: {
           include: {
             subject: true,
             topic: true,
           },
+          orderBy: [{ severity: "desc" }, { magnitude: "desc" }],
         },
       },
     });
@@ -81,7 +75,9 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { title, date, notes, examTypeId, examCategory } = body;
+    const { title, date, notes, examTypeId, examCategory,
+            timeOfDay, environment, perceivedDifficulty, biologicalState,
+            coldPhaseCompleted } = body;
 
     const exam = await prisma.exam.update({
       where: { id },
@@ -91,6 +87,14 @@ export async function PATCH(
         ...(notes !== undefined && { notes }),
         ...(examTypeId !== undefined && { examTypeId }),
         ...(examCategory !== undefined && { examCategory: examCategory || null }),
+        ...(timeOfDay !== undefined && { timeOfDay }),
+        ...(environment !== undefined && { environment }),
+        ...(perceivedDifficulty !== undefined && { perceivedDifficulty }),
+        ...(biologicalState !== undefined && { biologicalState }),
+        ...(coldPhaseCompleted !== undefined && {
+          coldPhaseCompleted,
+          coldPhaseCompletedAt: coldPhaseCompleted ? new Date() : null,
+        }),
       },
       include: {
         examType: true,

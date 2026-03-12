@@ -129,8 +129,7 @@ Mola tercihi: ${breakLabel}${studentProfile.targetRank ? `\nHedef sıralama: ${s
         where: { userId },
         include: {
           subjectResults: { include: { subject: true } },
-          wrongQuestions: { include: { subject: true, topic: true } },
-          emptyQuestions: { include: { subject: true, topic: true } },
+          cognitiveVoids: { include: { subject: true, topic: true } },
           examType: true,
         },
         orderBy: { date: "desc" },
@@ -215,11 +214,11 @@ Mola tercihi: ${breakLabel}${studentProfile.targetRank ? `\nHedef sıralama: ${s
         const results = exam.subjectResults
           .map((r) => `${r.subject.name}: ${r.netScore.toFixed(1)} net`)
           .join(", ");
-        const wrongTopics = exam.wrongQuestions
-          .filter((w) => w.topic)
-          .map((w) => `${w.subject.name}-${w.topic!.name}`)
+        const voidTopics = exam.cognitiveVoids
+          .filter((v: any) => v.topic)
+          .map((v: any) => `${v.subject.name}-${v.topic!.name}`)
           .join(", ");
-        return `${exam.examType.name} "${exam.title}" (${format(exam.date, "d MMM", { locale: tr })}): ${results}${wrongTopics ? ` | Yanlış konular: ${wrongTopics}` : ""}`;
+        return `${exam.examType.name} "${exam.title}" (${format(exam.date, "d MMM", { locale: tr })}): ${results}${voidTopics ? ` | Zafiyet konuları: ${voidTopics}` : ""}`;
       })
       .join("\n");
 
