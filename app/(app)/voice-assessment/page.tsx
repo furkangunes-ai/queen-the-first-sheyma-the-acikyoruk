@@ -27,12 +27,14 @@ import {
   AssessmentResult,
   type AssessmentData,
 } from "@/components/voice-assessment/assessment-result";
+import { QuickAssessor } from "@/components/voice-assessment/quick-assessor";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type Step = "select" | "record" | "transcribing" | "processing" | "review" | "done";
+type Step = "select" | "record" | "transcribing" | "processing" | "review" | "quick-assess" | "done";
+type AssessMode = "voice" | "quick";
 
 const AI_FETCH_TIMEOUT = 120_000; // 120 seconds
 
@@ -193,9 +195,9 @@ export default function VoiceAssessmentPage() {
 
   // ------ Handlers ------
 
-  const handleSubjectSelect = (subjectId: string) => {
+  const handleSubjectSelect = (subjectId: string, mode: AssessMode = "voice") => {
     setSelectedSubjectId(subjectId);
-    setStep("record");
+    setStep(mode === "quick" ? "quick-assess" : "record");
   };
 
   const handleRecordingComplete = async () => {
@@ -364,6 +366,45 @@ export default function VoiceAssessmentPage() {
     }
   };
 
+  const handleQuickAssessComplete = async (results: Map<string, number>) => {
+    if (results.size === 0) {
+      toast.error("Hiçbir konu değerlendirilmedi");
+      setStep("select");
+      return;
+    }
+
+    setSaving(true);
+    setStep("processing");
+    setProcessingMessage("Değerlendirme kaydediliyor...");
+
+    try {
+      const payload = {
+        topics: Array.from(results.entries()).map(([topicId, level]) => ({
+          topicId,
+          suggestedLevel: level,
+          kazanimlar: [],
+        })),
+      };
+
+      const res = await fetch("/api/voice-assessment/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Kaydetme başarısız");
+
+      const result = await res.json();
+      toast.success(`${result.topicKnowledgeUpdated} konu güncellendi`);
+      setStep("done");
+    } catch (err: any) {
+      toast.error(err.message || "Kaydetme sırasında hata oluştu");
+      setStep("select");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleConfirmAndSave = async () => {
     if (!assessmentData) return;
     setSaving(true);
@@ -408,7 +449,7 @@ export default function VoiceAssessmentPage() {
   };
 
   // ------ Step order helper ------
-  const stepOrder: Step[] = ["select", "record", "transcribing", "processing", "review", "done"];
+  const stepOrder: Step[] = ["select", "record", "quick-assess", "transcribing", "processing", "review", "done"];
   const stepIndex = (s: Step) => stepOrder.indexOf(s);
 
   // ------ Render ------
@@ -417,7 +458,7 @@ export default function VoiceAssessmentPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        {step !== "select" && step !== "done" && step !== "transcribing" && step !== "processing" && (
+        {step !== "select" && step !== "done" && step !== "transcribing" && step !== "processing" && step !== "quick-assess" && (
           <button
             onClick={() => {
               if (step === "record") {
@@ -438,10 +479,11 @@ export default function VoiceAssessmentPage() {
             Sesli Değerlendirme
           </h1>
           <p className="text-white/50 text-sm mt-0.5">
-            {step === "select" && "Müfredat hakimiyetini sesli olarak değerlendir"}
+            {step === "select" && "Müfredat hakimiyetini değerlendir"}
             {step === "record" && "Konuları görüntülerken durumunu anlat"}
             {step === "transcribing" && "Ses kaydı işleniyor..."}
             {step === "processing" && "Değerlendirme işleniyor..."}
+            {step === "quick-assess" && "Her konu için seviye seç (0-5)"}
             {step === "review" && "Sonuçları kontrol et ve onayla"}
             {step === "done" && "Değerlendirme tamamlandı!"}
           </p>
@@ -608,6 +650,22 @@ export default function VoiceAssessmentPage() {
                 İptal
               </button>
             </div>
+          )}
+
+          {/* Quick assess mode */}
+          {step === "quick-assess" && (
+            <QuickAssessor
+              topics={selectedCurriculum.flatMap((s) =>
+                s.topics.map((t) => ({
+                  id: t.id,
+                  name: t.name,
+                  subjectName: s.name,
+                  currentLevel: knowledgeMap.get(t.id),
+                }))
+              )}
+              onComplete={handleQuickAssessComplete}
+              onCancel={() => setStep("select")}
+            />
           )}
 
           {/* Transcribing step — "Please wait" */}
