@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       date, subjectId, topicId, questionCount, correctCount, wrongCount,
-      emptyCount, difficulty, source, duration, photoUrl, photoR2Key, notes,
+      emptyCount, difficulty, source, duration, notes,
     } = body;
 
     if (!subjectId || !questionCount) {
@@ -79,8 +79,6 @@ export async function POST(request: NextRequest) {
         difficulty: difficulty || null,
         source: source || null,
         duration: duration || null,
-        photoUrl: photoUrl || null,
-        photoR2Key: photoR2Key || null,
         notes: notes || null,
       },
       include: {

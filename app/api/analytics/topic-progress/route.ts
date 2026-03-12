@@ -83,8 +83,8 @@ export async function GET(request: NextRequest) {
           take: 2000,
         }),
 
-        // Exam wrong questions (last 1 year)
-        prisma.examWrongQuestion.findMany({
+        // Cognitive voids (last 1 year)
+        prisma.cognitiveVoid.findMany({
           where: {
             exam: {
               userId,
@@ -98,6 +98,7 @@ export async function GET(request: NextRequest) {
             topicId: true,
             subjectId: true,
             examId: true,
+            magnitude: true,
             subject: { select: { name: true, examType: { select: { name: true } } } },
             topic: { select: { name: true } },
             exam: { select: { date: true, title: true } },
@@ -260,7 +261,7 @@ export async function GET(request: NextRequest) {
       entry.lastReview = dateStr;
     }
 
-    // Process exam wrongs (group by exam for timeline)
+    // Process cognitive voids (group by exam for timeline)
     const examWrongsByTopicAndExam = new Map<string, Map<string, { date: string; examTitle: string; count: number }>>();
     for (const ew of examWrongs) {
       if (!ew.topicId || !ew.topic) continue;
@@ -271,7 +272,7 @@ export async function GET(request: NextRequest) {
         ew.subject.name,
         ew.subject.examType.name
       );
-      entry.totalExamWrongs++;
+      entry.totalExamWrongs += ew.magnitude;
 
       // Group by exam for chart
       const examKey = ew.examId;
@@ -286,7 +287,7 @@ export async function GET(request: NextRequest) {
           count: 0,
         });
       }
-      examMap.get(examKey)!.count++;
+      examMap.get(examKey)!.count += ew.magnitude;
     }
 
     // Assign exam wrong history
