@@ -65,7 +65,7 @@ export default function VoiceAssessmentPage() {
   const [step, setStep] = useState<Step>("select");
   const [subjects, setSubjects] = useState<SubjectFull[]>([]);
   const [subjectOptions, setSubjectOptions] = useState<SubjectOption[]>([]);
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string | "all" | null>(null);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
   const [knowledgeMap, setKnowledgeMap] = useState<Map<string, number>>(new Map());
   const [loadingSubjects, setLoadingSubjects] = useState(true);
   const [assessmentData, setAssessmentData] = useState<AssessmentData | null>(null);
@@ -144,10 +144,7 @@ export default function VoiceAssessmentPage() {
   // ------ Computed data ------
 
   const selectedCurriculum: CurriculumSubjectData[] = useMemo(() => {
-    const filtered =
-      selectedSubjectId === "all"
-        ? subjects
-        : subjects.filter((s) => s.id === selectedSubjectId);
+    const filtered = subjects.filter((s) => s.id === selectedSubjectId);
 
     return filtered.map((s) => ({
       id: s.id,
@@ -175,7 +172,7 @@ export default function VoiceAssessmentPage() {
 
   // ------ Handlers ------
 
-  const handleSubjectSelect = (subjectId: string | "all") => {
+  const handleSubjectSelect = (subjectId: string) => {
     setSelectedSubjectId(subjectId);
     setStep("record");
   };

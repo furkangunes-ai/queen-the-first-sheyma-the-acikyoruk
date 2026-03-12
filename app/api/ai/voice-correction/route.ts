@@ -80,6 +80,7 @@ Düzeltmeleri uygula ve güncellenmiş değerlendirmeyi aynı JSON formatında d
           model: VOICE_MODEL,
           messages,
           temperature: 0.7,
+          max_completion_tokens: 16384,
           response_format: { type: "json_object" },
         });
 
