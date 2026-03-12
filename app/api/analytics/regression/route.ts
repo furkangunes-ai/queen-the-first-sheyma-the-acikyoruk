@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getTurkeyDateString } from "@/lib/utils";
 import { logApiError } from "@/lib/logger";
 
-// ─── OLS Linear Regression (pure TypeScript) ───────────────────────
+// ─── OLS Linear Regression + Asimptotik Sönümleme ───────────────────
 
 interface DataPoint {
   x: number; // days since first exam
@@ -25,14 +25,23 @@ interface RegressionResult {
     targetNet: number;
     estimatedDate: string | null;
     daysFromNow: number | null;
-    confidence: number; // percentage
+    confidence: number;
     lowerDate: string | null;
     upperDate: string | null;
   }>;
   weeklyGrowth: number;
   dailyGrowth: number;
   currentEstimate: number;
+  ceiling: number; // Mutlak tavan net
 }
+
+// ─── Tavan (Ceiling) Değerleri ───
+// TYT: 120 net mutlak sınır
+// AYT: 80 net genel projeksiyon tavanı
+// Ders bazlı: dersin soru sayısı
+const CEILING_TYT = 120;
+const CEILING_AYT = 80;
+const DEFAULT_CEILING = 120;
 
 function linearRegression(points: DataPoint[]): {
   slope: number;
@@ -63,7 +72,6 @@ function linearRegression(points: DataPoint[]): {
   const slope = (n * sumXY - sumX * sumY) / denom;
   const intercept = (sumY - slope * sumX) / n;
 
-  // R-squared
   const meanY = sumY / n;
   let ssTot = 0, ssRes = 0;
   for (const p of points) {
@@ -72,8 +80,6 @@ function linearRegression(points: DataPoint[]): {
     ssRes += (p.y - predicted) ** 2;
   }
   const rSquared = ssTot === 0 ? 0 : 1 - ssRes / ssTot;
-
-  // Standard error of estimate
   const standardError = n > 2 ? Math.sqrt(ssRes / (n - 2)) : 0;
 
   const meanX = sumX / n;
@@ -82,10 +88,55 @@ function linearRegression(points: DataPoint[]): {
   return { slope, intercept, rSquared, standardError, meanX, ssX };
 }
 
-// t-distribution critical value approximation (two-tailed, 95%)
+/**
+ * Asimptotik Sönümleme (Damping) Fonksiyonu
+ *
+ * Aksiyom: İnsan öğrenmesi doğrusal değildir. Tavana yaklaştıkça eğim azalır.
+ * Model: damped_y = ceiling * (1 - e^(-k * linear_y / ceiling))
+ *
+ * Bu, lineer tahmin değerini lojistik benzeri bir eğriye dönüştürür.
+ * - linear_y düşükken: damped_y ≈ linear_y (neredeyse lineer)
+ * - linear_y tavana yaklaştıkça: damped_y → ceiling (asimptotik)
+ *
+ * k parametresi: sönümleme agresifliği (1.0-2.0 arası)
+ */
+function applyDamping(linearY: number, ceiling: number, k: number = 1.5): number {
+  if (ceiling <= 0) return linearY;
+  if (linearY <= 0) return 0;
+
+  // Normalize: linearY'nin tavana oranı
+  const ratio = linearY / ceiling;
+
+  // Sönümlenmiş değer: ceiling * (1 - e^(-k * ratio))
+  const dampedRatio = 1 - Math.exp(-k * ratio);
+  const dampedY = ceiling * dampedRatio;
+
+  // Negatif olamaz, tavandan büyük olamaz
+  return Math.max(0, Math.min(ceiling, dampedY));
+}
+
+/**
+ * Sönümlenmiş modelden "hedef nete kaç gün?" hesapla
+ * Lineer modelde: x = (target - intercept) / slope
+ * Sönümlenmiş modelde: ters fonksiyon ile çöz
+ *
+ * damped_y = ceiling * (1 - e^(-k * (slope * x + intercept) / ceiling))
+ * Ters çöz: x = (ceiling * (-ln(1 - target/ceiling)) / k - intercept) / slope
+ */
+function inverseDamping(targetY: number, ceiling: number, k: number = 1.5): number | null {
+  if (targetY >= ceiling) return null; // Tavana ulaşılamaz
+  if (targetY <= 0) return 0;
+
+  const ratio = targetY / ceiling;
+  if (ratio >= 1) return null;
+
+  // Ters formül: linear_y = ceiling * (-ln(1 - ratio)) / k
+  const linearY = ceiling * (-Math.log(1 - ratio)) / k;
+  return linearY;
+}
+
 function tCritical(df: number): number {
   if (df <= 0) return 2.0;
-  // Approximate t-distribution critical values for 95% CI
   const tValues: Record<number, number> = {
     1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571,
     6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228,
@@ -93,16 +144,14 @@ function tCritical(df: number): number {
     60: 2.000, 120: 1.980,
   };
   if (tValues[df]) return tValues[df];
-  // Find closest
   const keys = Object.keys(tValues).map(Number).sort((a, b) => a - b);
   for (let i = 0; i < keys.length - 1; i++) {
     if (df >= keys[i] && df <= keys[i + 1]) {
-      // Linear interpolation
       const ratio = (df - keys[i]) / (keys[i + 1] - keys[i]);
       return tValues[keys[i]] + ratio * (tValues[keys[i + 1]] - tValues[keys[i]]);
     }
   }
-  return 1.96; // large sample approximation
+  return 1.96;
 }
 
 function addDays(date: Date, days: number): Date {
@@ -129,7 +178,6 @@ export async function GET(request: NextRequest) {
     const targetsParam = searchParams.get("targets") || "70,80,90,100";
     const targets = targetsParam.split(",").map(Number).filter(n => !isNaN(n));
 
-    // Fetch exams with subject results
     const exams = await prisma.exam.findMany({
       where: {
         userId,
@@ -154,18 +202,21 @@ export async function GET(request: NextRequest) {
 
     if (exams.length === 0) {
       return NextResponse.json({
-        slope: 0,
-        intercept: 0,
-        rSquared: 0,
-        standardError: 0,
-        n: 0,
-        dataPoints: [],
-        trendLine: [],
-        predictions: [],
-        weeklyGrowth: 0,
-        dailyGrowth: 0,
-        currentEstimate: 0,
+        slope: 0, intercept: 0, rSquared: 0, standardError: 0, n: 0,
+        dataPoints: [], trendLine: [], predictions: [],
+        weeklyGrowth: 0, dailyGrowth: 0, currentEstimate: 0, ceiling: DEFAULT_CEILING,
       });
+    }
+
+    // Determine ceiling
+    let ceiling = DEFAULT_CEILING;
+    if (subjectId) {
+      // Ders bazlı: dersin soru sayısı
+      const subject = await prisma.subject.findUnique({ where: { id: subjectId }, select: { questionCount: true } });
+      if (subject) ceiling = subject.questionCount;
+    } else if (examTypeId) {
+      const examType = await prisma.examType.findUnique({ where: { id: examTypeId }, select: { slug: true } });
+      ceiling = examType?.slug === 'ayt' ? CEILING_AYT : CEILING_TYT;
     }
 
     // Convert exams to data points
@@ -175,52 +226,51 @@ export async function GET(request: NextRequest) {
       const daysDiff = Math.round(
         (new Date(exam.date).getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)
       );
-      return {
-        x: daysDiff,
-        y: totalNet,
-        date: formatDate(new Date(exam.date)),
-        examTitle: exam.title,
-      };
+      return { x: daysDiff, y: totalNet, date: formatDate(new Date(exam.date)), examTitle: exam.title };
     });
 
-    // Run regression
+    // Run OLS regression (lineer temel)
     const { slope, intercept, rSquared, standardError, meanX, ssX } = linearRegression(dataPoints);
 
     const n = dataPoints.length;
     const today = new Date();
-    const todayX = Math.round(
-      (today.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const todayX = Math.round((today.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24));
     const t = tCritical(Math.max(1, n - 2));
 
-    // Generate trend line: from first exam to 90 days in the future
-    const lastX = dataPoints[dataPoints.length - 1].x;
+    // Sönümleme parametresi (agresiflik)
+    const k = 1.5;
+
+    // Trend line: lineer tahmin → sönümlenmiş tahmin
     const futureEnd = todayX + 90;
     const trendLine: Array<{ date: string; predicted: number; lower: number; upper: number }> = [];
+    const step = Math.max(1, Math.round((futureEnd - 0) / 60));
 
-    // Sample points for the trend line
-    const step = Math.max(1, Math.round((futureEnd - 0) / 60)); // ~60 data points
     for (let x = 0; x <= futureEnd; x += step) {
-      const predicted = slope * x + intercept;
-      // Prediction interval
+      const linearY = slope * x + intercept;
+      const predicted = applyDamping(linearY, ceiling, k);
+
+      // Confidence interval: sönümlenmiş sınırlar
       const margin = n > 2
         ? t * standardError * Math.sqrt(1 + 1 / n + ((x - meanX) ** 2) / (ssX || 1))
         : standardError * 2;
+
+      const lower = applyDamping(linearY - margin, ceiling, k);
+      const upper = applyDamping(linearY + margin, ceiling, k);
+
       trendLine.push({
         date: formatDate(addDays(firstDate, x)),
         predicted: Number(predicted.toFixed(2)),
-        lower: Number((predicted - margin).toFixed(2)),
-        upper: Number((predicted + margin).toFixed(2)),
+        lower: Number(lower.toFixed(2)),
+        upper: Number(upper.toFixed(2)),
       });
     }
 
-    // Predictions for target nets
+    // Predictions with damping
     const predictions = targets.map(targetNet => {
-      if (slope <= 0) {
-        // No positive progress — can't predict
+      if (slope <= 0 || targetNet >= ceiling) {
         return {
           targetNet,
-          estimatedDate: null,
+          estimatedDate: targetNet >= ceiling ? null : null,
           daysFromNow: null,
           confidence: 0,
           lowerDate: null,
@@ -228,13 +278,11 @@ export async function GET(request: NextRequest) {
         };
       }
 
-      const targetX = (targetNet - intercept) / slope;
-      const targetDate = addDays(firstDate, Math.round(targetX));
-      const daysFromNow = Math.round(targetX) - todayX;
+      // Current damped estimate
+      const currentLinearY = slope * todayX + intercept;
+      const currentDampedY = applyDamping(currentLinearY, ceiling, k);
 
-      // Is the target already achieved?
-      const currentEstimate = slope * todayX + intercept;
-      if (currentEstimate >= targetNet) {
+      if (currentDampedY >= targetNet) {
         return {
           targetNet,
           estimatedDate: formatDate(today),
@@ -245,21 +293,41 @@ export async function GET(request: NextRequest) {
         };
       }
 
-      // Confidence interval on the date
+      // Inverse damping: hedef nete karşılık gelen lineer Y değerini bul
+      const requiredLinearY = inverseDamping(targetNet, ceiling, k);
+      if (requiredLinearY === null) {
+        // Tavana çok yakın, ulaşılamaz
+        return {
+          targetNet,
+          estimatedDate: null,
+          daysFromNow: null,
+          confidence: 0,
+          lowerDate: null,
+          upperDate: null,
+        };
+      }
+
+      // Lineer modelde bu Y'ye ne zaman ulaşılır?
+      const targetX = (requiredLinearY - intercept) / slope;
+      const targetDate = addDays(firstDate, Math.round(targetX));
+      const daysFromNow = Math.round(targetX) - todayX;
+
+      // Confidence interval
       let lowerDate: string | null = null;
       let upperDate: string | null = null;
       if (n > 2 && standardError > 0) {
-        // Upper bound net arrives earlier (optimistic)
         const marginAtTarget = t * standardError * Math.sqrt(
           1 + 1 / n + ((targetX - meanX) ** 2) / (ssX || 1)
         );
-        const optimisticX = (targetNet - marginAtTarget - intercept) / slope;
-        const pessimisticX = (targetNet + marginAtTarget - intercept) / slope;
-
-        if (optimisticX > 0) {
-          lowerDate = formatDate(addDays(firstDate, Math.round(Math.min(optimisticX, pessimisticX))));
+        const optimisticLinearY = inverseDamping(targetNet, ceiling, k);
+        if (optimisticLinearY !== null) {
+          const optimisticX = (optimisticLinearY - marginAtTarget - intercept) / slope;
+          const pessimisticX = (optimisticLinearY + marginAtTarget - intercept) / slope;
+          if (optimisticX > 0) {
+            lowerDate = formatDate(addDays(firstDate, Math.round(Math.min(optimisticX, pessimisticX))));
+          }
+          upperDate = formatDate(addDays(firstDate, Math.round(Math.max(optimisticX, pessimisticX))));
         }
-        upperDate = formatDate(addDays(firstDate, Math.round(Math.max(optimisticX, pessimisticX))));
       }
 
       return {
@@ -272,7 +340,9 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    const currentEstimate = slope * todayX + intercept;
+    // Current damped estimate
+    const currentLinearY = slope * todayX + intercept;
+    const currentEstimate = applyDamping(currentLinearY, ceiling, k);
 
     const result: RegressionResult = {
       slope,
@@ -286,14 +356,12 @@ export async function GET(request: NextRequest) {
       weeklyGrowth: Number((slope * 7).toFixed(2)),
       dailyGrowth: Number(slope.toFixed(4)),
       currentEstimate: Number(currentEstimate.toFixed(1)),
+      ceiling,
     };
 
     return NextResponse.json(result);
   } catch (error) {
     logApiError("analytics/regression", error);
-    return NextResponse.json(
-      { error: "Sunucu hatası" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

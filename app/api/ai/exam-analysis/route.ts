@@ -5,14 +5,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { logApiError } from "@/lib/logger";
+import { ERROR_REASON_LABELS, type ErrorReasonType } from "@/lib/severity";
 
-const SYSTEM_PROMPT_EXAM = `Sen bir YKS deneme sınavı analisti. Türkçe konuş.
-Deneme sonuçlarını detaylı analiz et:
+const SYSTEM_PROMPT_EXAM = `Sen bir YKS deneme sınavı analisti ve kognitif zafiyet uzmanısın. Türkçe konuş.
+Deneme sonuçlarını ve kognitif zafiyetleri (Cognitive Voids) detaylı analiz et:
 - Güçlü ve zayıf yönleri belirle
-- Konu bazlı yanlış dağılımını yorumla
-- Hata nedenlerini değerlendir (dikkatsizlik vs bilgi eksikliği)
+- Konu bazlı zafiyet dağılımını ve severity (şiddet) skorlarını yorumla
+- Hata kök nedenlerini (ErrorReason) değerlendir ve birbirleriyle karşılaştır
+- Çevresel bağlamı (zaman, ortam, enerji durumu) performansla ilişkilendir
 - Geçmiş deneme trendini yorumla (varsa)
-- Somut çalışma önerileri sun
+- Somut ve eyleme geçirilebilir (actionable) çalışma önerileri sun
+- En yüksek severity'ye sahip zafiyetleri önceliklendir
 
 Kısa ve öz ol. Markdown formatında yanıtla. Başlıklar ve listeler kullan.`;
 
@@ -39,7 +42,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 1. Load exam data
+    // 1. Load exam data with cognitive voids
     const exam = await prisma.exam.findUnique({
       where: { id: examId },
       include: {
@@ -48,15 +51,12 @@ export async function POST(request: NextRequest) {
           include: { subject: true },
           orderBy: { subject: { sortOrder: "asc" } },
         },
-        wrongQuestions: {
+        cognitiveVoids: {
           include: {
             subject: true,
             topic: true,
-            errorReason: true,
           },
-        },
-        emptyQuestions: {
-          include: { subject: true, topic: true },
+          orderBy: { severity: "desc" },
         },
       },
     });
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Deneme bulunamadı" }, { status: 404 });
     }
 
-    // 2. Get previous exams for trend comparison (same exam type, last 3)
+    // 2. Get previous exams for trend comparison
     const previousExams = await prisma.exam.findMany({
       where: {
         userId,
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       take: 3,
     });
 
-    // 3. Build compact context (~600 tokens)
+    // 3. Build context
     const totalNet = exam.subjectResults.reduce((sum, r) => sum + r.netScore, 0);
 
     const resultsStr = exam.subjectResults
@@ -89,39 +89,36 @@ export async function POST(request: NextRequest) {
       )
       .join("\n");
 
-    // Group wrong questions by subject and topic
-    const wrongBySubject: Record<string, string[]> = {};
-    for (const wq of exam.wrongQuestions) {
-      const key = wq.subject.name;
-      if (!wrongBySubject[key]) wrongBySubject[key] = [];
+    // Group cognitive voids by subject
+    const voidsBySubject: Record<string, string[]> = {};
+    for (const v of exam.cognitiveVoids) {
+      const key = v.subject.name;
+      if (!voidsBySubject[key]) voidsBySubject[key] = [];
+      const reasonLabel = ERROR_REASON_LABELS[v.errorReason as ErrorReasonType] || v.errorReason;
       const detail = [
-        wq.topic?.name || "Belirtilmemiş",
-        wq.errorReason ? `(${wq.errorReason.label})` : "",
+        v.topic?.name || "Belirtilmemiş",
+        `(${reasonLabel})`,
+        v.magnitude > 1 ? `x${v.magnitude}` : "",
+        `[severity: ${v.severity.toFixed(1)}]`,
+        `[${v.status}]`,
+        v.source === "EMPTY" ? "[Boş]" : "",
       ]
         .filter(Boolean)
         .join(" ");
-      wrongBySubject[key].push(detail);
+      voidsBySubject[key].push(detail);
     }
 
-    const wrongStr = Object.entries(wrongBySubject)
-      .map(([subj, details]) => {
-        // Count occurrences
-        const counts: Record<string, number> = {};
-        for (const d of details) {
-          counts[d] = (counts[d] || 0) + 1;
-        }
-        const summary = Object.entries(counts)
-          .map(([desc, count]) => (count > 1 ? `${desc} x${count}` : desc))
-          .join(", ");
-        return `${subj}: ${summary}`;
-      })
+    const voidsStr = Object.entries(voidsBySubject)
+      .map(([subj, details]) => `${subj}: ${details.join(", ")}`)
       .join("\n");
 
-    const emptyStr = exam.emptyQuestions.length > 0
-      ? `Boş bırakılanlar: ${exam.emptyQuestions
-          .map((eq) => `${eq.subject.name}-${eq.topic?.name || "?"}`)
-          .join(", ")}`
-      : "";
+    // Context fields
+    const contextFields = [
+      exam.timeOfDay && `Zaman: ${exam.timeOfDay}`,
+      exam.environment && `Ortam: ${exam.environment}`,
+      exam.perceivedDifficulty && `Algılanan Zorluk: ${exam.perceivedDifficulty}/5`,
+      exam.biologicalState && `Biyolojik Durum: ${exam.biologicalState}`,
+    ].filter(Boolean).join(", ");
 
     // Trend info
     let trendStr = "";
@@ -135,14 +132,13 @@ export async function POST(request: NextRequest) {
 
     const contextMessage = `Deneme: ${exam.title} (${exam.examType.name}) — ${format(exam.date, "d MMMM yyyy", { locale: tr })}
 Toplam Net: ${totalNet.toFixed(1)}
+${contextFields ? `Bağlam: ${contextFields}` : ""}
 
 Ders Bazlı Sonuçlar:
 ${resultsStr}
 
-Yanlış Soru Detayları:
-${wrongStr || "Yanlış soru detayı girilmemiş."}
-
-${emptyStr}
+Kognitif Zafiyetler (Severity sıralı):
+${voidsStr || "Zafiyet analizi henüz yapılmamış."}
 
 ${trendStr}`.trim();
 
@@ -164,7 +160,7 @@ ${trendStr}`.trim();
         type: "exam_analysis",
         title: `${exam.title} Analizi`,
         content: analysis,
-        context: { totalNet, subjectCount: exam.subjectResults.length, wrongCount: exam.wrongQuestions.length },
+        context: { totalNet, subjectCount: exam.subjectResults.length, voidCount: exam.cognitiveVoids.length },
         metadata: { examId: exam.id, examTypeId: exam.examTypeId },
       },
     });

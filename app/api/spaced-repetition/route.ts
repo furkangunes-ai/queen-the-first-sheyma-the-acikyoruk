@@ -28,10 +28,9 @@ export async function GET() {
         nextReviewDate: { lte: todayEnd },
       },
       include: {
-        wrongQuestion: {
+        cognitiveVoid: {
           include: {
             exam: { select: { title: true } },
-            errorReason: true,
           },
         },
         subject: true,
@@ -97,11 +96,10 @@ export async function POST(request: NextRequest) {
     let newInterval = item.interval;
     let newEaseFactor = item.easeFactor;
     let newStatus = item.status;
-    const rep = item.repetitionCount; // 0-based: how many reviews done so far
+    const rep = item.repetitionCount;
 
     switch (quality) {
       case "easy":
-        // SM-2: first review → 1 day, second → 6 days, then interval * easeFactor
         if (rep === 0) {
           newInterval = 1;
         } else if (rep === 1) {
@@ -115,7 +113,6 @@ export async function POST(request: NextRequest) {
         }
         break;
       case "hard":
-        // Correct but hard: first review → 1 day, second → 3 days, then interval * 1.2
         if (rep === 0) {
           newInterval = 1;
         } else if (rep === 1) {
@@ -126,7 +123,6 @@ export async function POST(request: NextRequest) {
         newEaseFactor = Math.max(1.3, item.easeFactor - 0.1);
         break;
       case "wrong":
-        // Wrong: reset to 1 day, decrease ease
         newInterval = 1;
         newEaseFactor = Math.max(1.3, item.easeFactor - 0.2);
         break;
@@ -134,7 +130,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Geçersiz kalite değeri" }, { status: 400 });
     }
 
-    // Calculate next review date
     const nextReviewDate = new Date();
     nextReviewDate.setDate(nextReviewDate.getDate() + newInterval);
 
@@ -153,7 +148,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Bilişsel çizge güncelleme: review kalitesine göre mastery güncelle
+    // Bilişsel çizge güncelleme
     if (updated.topicId) {
       const correctRatio = quality === "easy" ? 1.0 : quality === "hard" ? 0.6 : 0.0;
       recordStudyForTopic(userId, updated.topicId, correctRatio).catch((err) =>
@@ -170,8 +165,8 @@ export async function POST(request: NextRequest) {
 
 /**
  * PUT /api/spaced-repetition
- * Enqueue wrong questions from an exam into spaced repetition
- * Body: { examId } — adds all wrong questions from that exam
+ * Enqueue cognitive voids from an exam into spaced repetition
+ * Body: { examId } — adds all unresolved voids from that exam
  */
 export async function PUT(request: NextRequest) {
   try {
@@ -186,15 +181,16 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Sınav seçimi gerekli" }, { status: 400 });
     }
 
-    // Get wrong questions from the exam
-    const wrongQuestions = await prisma.examWrongQuestion.findMany({
+    // Get cognitive voids from the exam (only unresolved)
+    const voids = await prisma.cognitiveVoid.findMany({
       where: {
         examId,
         exam: { userId },
+        status: { not: "RESOLVED" },
       },
     });
 
-    if (wrongQuestions.length === 0) {
+    if (voids.length === 0) {
       return NextResponse.json({ added: 0 });
     }
 
@@ -204,24 +200,23 @@ export async function PUT(request: NextRequest) {
         await prisma.spacedRepetitionItem.findMany({
           where: {
             userId,
-            wrongQuestionId: { in: wrongQuestions.map((q) => q.id) },
+            cognitiveVoidId: { in: voids.map((v) => v.id) },
           },
-          select: { wrongQuestionId: true },
+          select: { cognitiveVoidId: true },
         })
-      ).map((e) => e.wrongQuestionId)
+      ).map((e) => e.cognitiveVoidId)
     );
 
-    // Add new items
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const newItems = wrongQuestions
-      .filter((q) => !existingIds.has(q.id))
-      .map((q) => ({
+    const newItems = voids
+      .filter((v) => !existingIds.has(v.id))
+      .map((v) => ({
         userId,
-        wrongQuestionId: q.id,
-        subjectId: q.subjectId,
-        topicId: q.topicId || undefined,
+        cognitiveVoidId: v.id,
+        subjectId: v.subjectId,
+        topicId: v.topicId || undefined,
         nextReviewDate: tomorrow,
         interval: 1,
         repetitionCount: 0,
