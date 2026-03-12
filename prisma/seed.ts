@@ -288,22 +288,9 @@ async function main() {
   console.log("✅ AYT dersleri ve konuları oluşturuldu");
 
   // ==================== HATA NEDENLERİ ====================
-  const errorReasons = [
-    "Bilgi eksikliği",
-    "Dikkatsizlik / Acelecilik",
-    "Soruyu yanlış anlama",
-    "Süre yetmedi",
-    "Konuyu hiç bilmiyorum",
-    "Formül karıştırma",
-  ];
-
-  for (const label of errorReasons) {
-    await prisma.errorReason.create({
-      data: { label, isDefault: true },
-    });
-  }
-
-  console.log("✅ Hata nedenleri oluşturuldu");
+  // ErrorReason artık enum (ErrorReasonType) olarak CognitiveVoid modelinde tanımlı.
+  // Ayrı tablo seed'e gerek yok.
+  console.log("✅ Hata nedenleri enum olarak tanımlı (seed gerekmez)");
 
   // ==================== KLASÖRLER ====================
   const folders = [

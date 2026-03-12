@@ -225,7 +225,6 @@ export default function PlateauBreaker({
             />
             <XAxis
               dataKey="date"
-              data={chartData}
               tick={{ fontSize: 10, fill: "rgba(255,255,255,0.5)" }}
               tickLine={false}
               axisLine={false}
