@@ -86,9 +86,73 @@ export async function GET(request: NextRequest) {
     const examFilter = searchParams.get("exam");
     const subjectFilter = searchParams.get("subject");
     const topicId = searchParams.get("topicId");
+    const mode = searchParams.get("mode"); // "export" for full export
+
+    // Export mode — full JSON export of all kazanımlar grouped by exam/subject/topic
+    if (mode === "export") {
+      const examTypes = await prisma.examType.findMany({
+        include: {
+          subjects: {
+            include: {
+              topics: {
+                orderBy: { sortOrder: "asc" },
+                include: {
+                  kazanimlar: {
+                    orderBy: { sortOrder: "asc" },
+                    select: {
+                      code: true,
+                      subTopicName: true,
+                      description: true,
+                      details: true,
+                      isKeyKazanim: true,
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: { sortOrder: "asc" },
+          },
+        },
+        orderBy: { name: "asc" },
+      });
+
+      const exportData = examTypes.flatMap((et) =>
+        et.subjects.flatMap((sub) =>
+          sub.topics
+            .filter((t) => t.kazanimlar.length > 0)
+            .map((t) => ({
+              exam: et.name,
+              subject: sub.name,
+              topic: t.name,
+              kazanimlar: t.kazanimlar.map((k) => ({
+                code: k.code,
+                description: k.description,
+                subTopicName: k.subTopicName || undefined,
+                details: k.details || undefined,
+                isKey: k.isKeyKazanim || undefined,
+              })),
+            }))
+        )
+      );
+
+      return NextResponse.json(exportData);
+    }
 
     // Single topic detail mode
     if (topicId) {
+      const topic = await prisma.topic.findUnique({
+        where: { id: topicId },
+        select: {
+          id: true,
+          name: true,
+          difficulty: true,
+          estimatedHours: true,
+          gradeLevel: true,
+          learningArea: true,
+          sortOrder: true,
+        },
+      });
+
       const kazanimlar = await prisma.topicKazanim.findMany({
         where: { topicId },
         orderBy: { sortOrder: "asc" },
@@ -102,7 +166,7 @@ export async function GET(request: NextRequest) {
           sortOrder: true,
         },
       });
-      return NextResponse.json(kazanimlar);
+      return NextResponse.json({ topic, kazanimlar });
     }
 
     // Full tree mode with counts
@@ -290,6 +354,95 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logApiError("admin/kazanimlar", error);
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// PATCH — Kazanım veya Topic güncelleme
+// Body: { type: "kazanim", id, data: { code?, description?, ... } }
+//    or { type: "topic", id, data: { name?, difficulty?, ... } }
+// ---------------------------------------------------------------------------
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await auth();
+    const guard = adminGuard(session);
+    if (guard) return NextResponse.json({ error: guard.error }, { status: guard.status });
+
+    const body = await request.json();
+    const { type, id, data } = body;
+
+    if (!type || !id || !data) {
+      return NextResponse.json(
+        { error: "type, id ve data alanları gerekli" },
+        { status: 400 }
+      );
+    }
+
+    if (type === "kazanim") {
+      const allowed = ["code", "description", "subTopicName", "details", "isKeyKazanim", "sortOrder"];
+      const updateData: Record<string, any> = {};
+      for (const key of allowed) {
+        if (data[key] !== undefined) updateData[key] = data[key];
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return NextResponse.json({ error: "Güncellenecek alan yok" }, { status: 400 });
+      }
+
+      const updated = await prisma.topicKazanim.update({
+        where: { id },
+        data: updateData,
+      });
+
+      await logAdminAction((session!.user as any).id, "update_kazanim", "TopicKazanim", id, updateData);
+      return NextResponse.json({ success: true, updated });
+    }
+
+    if (type === "topic") {
+      const allowed = ["name", "difficulty", "estimatedHours", "gradeLevel", "learningArea", "sortOrder"];
+      const updateData: Record<string, any> = {};
+      for (const key of allowed) {
+        if (data[key] !== undefined) updateData[key] = data[key];
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return NextResponse.json({ error: "Güncellenecek alan yok" }, { status: 400 });
+      }
+
+      const updated = await prisma.topic.update({
+        where: { id },
+        data: updateData,
+      });
+
+      await logAdminAction((session!.user as any).id, "update_topic", "Topic", id, updateData);
+      return NextResponse.json({ success: true, updated });
+    }
+
+    if (type === "subject") {
+      const allowed = ["name", "questionCount", "sortOrder"];
+      const updateData: Record<string, any> = {};
+      for (const key of allowed) {
+        if (data[key] !== undefined) updateData[key] = data[key];
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return NextResponse.json({ error: "Güncellenecek alan yok" }, { status: 400 });
+      }
+
+      const updated = await prisma.subject.update({
+        where: { id },
+        data: updateData,
+      });
+
+      await logAdminAction((session!.user as any).id, "update_subject", "Subject", id, updateData);
+      return NextResponse.json({ success: true, updated });
+    }
+
+    return NextResponse.json({ error: "Geçersiz type. kazanim, topic veya subject olmalı" }, { status: 400 });
+  } catch (error) {
+    logApiError("admin/kazanimlar PATCH", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }

@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import {
   BookOpen, ChevronRight, ChevronDown, Trash2, Plus, Loader2,
-  CheckCircle2, XCircle, FileJson, Copy,
+  CheckCircle2, XCircle, FileJson, Copy, Pencil, Save, X,
+  Download, Upload, Settings2, Star,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -40,8 +41,18 @@ interface KazanimDetail {
   sortOrder: number;
 }
 
+interface TopicDetail {
+  id: string;
+  name: string;
+  difficulty: number;
+  estimatedHours: number;
+  gradeLevel: number | null;
+  learningArea: string | null;
+  sortOrder: number;
+}
+
 // ---------------------------------------------------------------------------
-// Örnek JSON
+// Ornek JSON
 // ---------------------------------------------------------------------------
 
 const EXAMPLE_JSON = `[
@@ -52,18 +63,94 @@ const EXAMPLE_JSON = `[
     "kazanimlar": [
       {
         "code": "10.3.1.1",
-        "description": "Bir değişkenli polinom kavramını açıklar.",
-        "subTopicName": "Polinom Kavramı",
+        "description": "Bir degiskenli polinom kavramini aciklar.",
+        "subTopicName": "Polinom Kavrami",
         "isKey": true
       },
       {
         "code": "10.3.1.2",
-        "description": "Polinomlarla toplama, çıkarma ve çarpma işlemlerini yapar.",
-        "details": "a) Polinomların toplamı ve farkı.\\nb) Polinomların çarpımı."
+        "description": "Polinomlarla toplama, cikarma ve carpma islemlerini yapar.",
+        "details": "a) Polinomlarin toplami ve farki.\\nb) Polinomlarin carpimi."
       }
     ]
   }
 ]`;
+
+// ---------------------------------------------------------------------------
+// Inline input component
+// ---------------------------------------------------------------------------
+
+function InlineInput({
+  value,
+  onSave,
+  multiline = false,
+  className = "",
+}: {
+  value: string;
+  onSave: (v: string) => void;
+  multiline?: boolean;
+  className?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  const save = () => {
+    if (draft.trim() !== value) onSave(draft.trim());
+    setEditing(false);
+  };
+
+  const cancel = () => {
+    setDraft(value);
+    setEditing(false);
+  };
+
+  if (!editing) {
+    return (
+      <span
+        onClick={() => { setDraft(value); setEditing(true); }}
+        className={`cursor-pointer hover:bg-white/[0.06] rounded px-1 -mx-1 transition-colors ${className}`}
+        title="Duzenlemek icin tikla"
+      >
+        {value || <span className="italic text-white/20">bos</span>}
+      </span>
+    );
+  }
+
+  if (multiline) {
+    return (
+      <div className="flex flex-col gap-1">
+        <textarea
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Escape") cancel(); }}
+          className="w-full px-2 py-1 bg-white/[0.06] border border-emerald-500/30 rounded text-xs text-white/80 font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500/40 resize-y min-h-[60px]"
+          rows={3}
+        />
+        <div className="flex gap-1">
+          <button onClick={save} className="p-1 rounded bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"><Save size={10} /></button>
+          <button onClick={cancel} className="p-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30"><X size={10} /></button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1">
+      <input
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") save();
+          if (e.key === "Escape") cancel();
+        }}
+        onBlur={save}
+        className="px-1.5 py-0.5 bg-white/[0.06] border border-emerald-500/30 rounded text-xs text-white/80 focus:outline-none focus:ring-1 focus:ring-emerald-500/40 min-w-[80px]"
+      />
+    </span>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -81,8 +168,11 @@ export default function MufredatManager() {
     exam: string;
     subject: string;
   } | null>(null);
+  const [topicDetail, setTopicDetail] = useState<TopicDetail | null>(null);
   const [topicKazanimlar, setTopicKazanimlar] = useState<KazanimDetail[]>([]);
   const [loadingKazanimlar, setLoadingKazanimlar] = useState(false);
+  const [showTopicEdit, setShowTopicEdit] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // JSON input
   const [jsonInput, setJsonInput] = useState("");
@@ -101,11 +191,10 @@ export default function MufredatManager() {
       if (res.ok) {
         const data: ExamTypeInfo[] = await res.json();
         setTree(data);
-        // Auto-expand all exams
         setExpandedExams(new Set(data.map((et) => et.id)));
       }
     } catch {
-      toast.error("Topic ağacı yüklenemedi");
+      toast.error("Topic agaci yuklenemedi");
     }
     setLoading(false);
   }, []);
@@ -114,16 +203,18 @@ export default function MufredatManager() {
     fetchTree();
   }, [fetchTree]);
 
-  // --- Fetch kazanımlar for selected topic ---
+  // --- Fetch kazanimlar for selected topic ---
   const fetchTopicKazanimlar = useCallback(async (topicId: string) => {
     setLoadingKazanimlar(true);
     try {
       const res = await fetch(`/api/admin/kazanimlar?topicId=${topicId}`);
       if (res.ok) {
-        setTopicKazanimlar(await res.json());
+        const data = await res.json();
+        setTopicDetail(data.topic || null);
+        setTopicKazanimlar(data.kazanimlar || []);
       }
     } catch {
-      toast.error("Kazanımlar yüklenemedi");
+      toast.error("Kazanimlar yuklenemedi");
     }
     setLoadingKazanimlar(false);
   }, []);
@@ -131,10 +222,56 @@ export default function MufredatManager() {
   useEffect(() => {
     if (selectedTopic) {
       fetchTopicKazanimlar(selectedTopic.id);
+      setShowTopicEdit(false);
     }
   }, [selectedTopic, fetchTopicKazanimlar]);
 
-  // --- Delete single kazanım ---
+  // --- Update kazanim ---
+  const updateKazanim = async (kazanimId: string, field: string, value: any) => {
+    try {
+      const res = await fetch("/api/admin/kazanimlar", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "kazanim", id: kazanimId, data: { [field]: value } }),
+      });
+      if (res.ok) {
+        setTopicKazanimlar((prev) =>
+          prev.map((k) => (k.id === kazanimId ? { ...k, [field]: value } : k))
+        );
+        toast.success("Kazanim guncellendi");
+      } else {
+        toast.error("Guncelleme basarisiz");
+      }
+    } catch {
+      toast.error("Ag hatasi");
+    }
+  };
+
+  // --- Update topic ---
+  const updateTopic = async (field: string, value: any) => {
+    if (!topicDetail) return;
+    try {
+      const res = await fetch("/api/admin/kazanimlar", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "topic", id: topicDetail.id, data: { [field]: value } }),
+      });
+      if (res.ok) {
+        setTopicDetail((prev) => prev ? { ...prev, [field]: value } : prev);
+        if (field === "name" && selectedTopic) {
+          setSelectedTopic({ ...selectedTopic, name: value });
+        }
+        toast.success("Konu guncellendi");
+        if (field === "name") fetchTree();
+      } else {
+        toast.error("Guncelleme basarisiz");
+      }
+    } catch {
+      toast.error("Ag hatasi");
+    }
+  };
+
+  // --- Delete single kazanim ---
   const deleteKazanim = async (kazanimId: string) => {
     try {
       const res = await fetch(`/api/admin/kazanimlar?kazanimId=${kazanimId}`, {
@@ -142,18 +279,18 @@ export default function MufredatManager() {
       });
       if (res.ok) {
         setTopicKazanimlar((prev) => prev.filter((k) => k.id !== kazanimId));
-        toast.success("Kazanım silindi");
-        fetchTree(); // refresh counts
+        toast.success("Kazanim silindi");
+        fetchTree();
       }
     } catch {
-      toast.error("Silme başarısız");
+      toast.error("Silme basarisiz");
     }
   };
 
-  // --- Delete all kazanımlar for topic ---
+  // --- Delete all kazanimlar for topic ---
   const deleteAllForTopic = async () => {
     if (!selectedTopic) return;
-    if (!confirm(`"${selectedTopic.name}" konusunun TÜM kazanımlarını silmek istediğinize emin misiniz?`))
+    if (!confirm(`"${selectedTopic.name}" konusunun TUM kazanimlarini silmek istediginize emin misiniz?`))
       return;
 
     try {
@@ -168,23 +305,65 @@ export default function MufredatManager() {
         fetchTree();
       }
     } catch {
-      toast.error("Silme başarısız");
+      toast.error("Silme basarisiz");
     }
+  };
+
+  // --- Export JSON ---
+  const exportJson = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/admin/kazanimlar?mode=export");
+      if (res.ok) {
+        const data = await res.json();
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `mufredat-export-${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success(`${data.length} konu icin kazanimlar indirildi`);
+      }
+    } catch {
+      toast.error("Export basarisiz");
+    }
+    setExporting(false);
+  };
+
+  // --- Export selected topic as JSON (copy to clipboard) ---
+  const exportTopicJson = () => {
+    if (!selectedTopic || topicKazanimlar.length === 0) return;
+    const exportData = [{
+      exam: selectedTopic.exam,
+      subject: selectedTopic.subject,
+      topic: selectedTopic.name,
+      kazanimlar: topicKazanimlar.map((k) => ({
+        code: k.code,
+        description: k.description,
+        ...(k.subTopicName ? { subTopicName: k.subTopicName } : {}),
+        ...(k.details ? { details: k.details } : {}),
+        ...(k.isKeyKazanim ? { isKey: true } : {}),
+      })),
+    }];
+    navigator.clipboard.writeText(JSON.stringify(exportData, null, 2));
+    toast.success("Kazanimlar JSON olarak kopyalandi");
   };
 
   // --- Submit JSON ---
   const submitJson = async () => {
     setResult(null);
-    let parsed: any;
     try {
-      parsed = JSON.parse(jsonInput);
+      JSON.parse(jsonInput);
     } catch {
-      setResult({ success: false, message: "Geçersiz JSON formatı. Kontrol edip tekrar deneyin." });
+      setResult({ success: false, message: "Gecersiz JSON formati. Kontrol edip tekrar deneyin." });
       return;
     }
 
+    const parsed = JSON.parse(jsonInput);
     if (!Array.isArray(parsed)) {
-      setResult({ success: false, message: "JSON bir array olmalı: [{ exam, subject, topic, kazanimlar }]" });
+      setResult({ success: false, message: "JSON bir array olmali: [{ exam, subject, topic, kazanimlar }]" });
       return;
     }
 
@@ -210,12 +389,12 @@ export default function MufredatManager() {
       } else {
         setResult({
           success: false,
-          message: data.error || "Bir hata oluştu",
+          message: data.error || "Bir hata olustu",
           notFound: data.details,
         });
       }
     } catch {
-      setResult({ success: false, message: "Ağ hatası" });
+      setResult({ success: false, message: "Ag hatasi" });
     }
     setSubmitting(false);
   };
@@ -266,18 +445,28 @@ export default function MufredatManager() {
           </div>
           <div>
             <h2 className="text-base font-black tracking-wider text-white/90">
-              MÜFREDAT YÖNETİMİ
+              MUFREDAT YONETIMI
             </h2>
             <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mt-0.5">
               {filledTopics}/{totalTopics} konu dolu
             </p>
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={exportJson}
+            disabled={exporting}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold tracking-wide bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors disabled:opacity-50"
+          >
+            {exporting ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+            TUM MUFREDATI INDIR
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-white/10">
         {/* =============== LEFT: Topic Tree =============== */}
-        <div className="lg:w-[380px] max-h-[600px] overflow-y-auto p-3">
+        <div className="lg:w-[380px] max-h-[700px] overflow-y-auto p-3">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-5 h-5 text-emerald-400 animate-spin" />
@@ -385,12 +574,13 @@ export default function MufredatManager() {
         </div>
 
         {/* =============== RIGHT: Detail + JSON =============== */}
-        <div className="flex-1 p-4 space-y-4 max-h-[600px] overflow-y-auto">
+        <div className="flex-1 p-4 space-y-4 max-h-[700px] overflow-y-auto">
           {/* Selected topic detail */}
           {selectedTopic ? (
             <div>
+              {/* Topic header */}
               <div className="flex items-center justify-between mb-3">
-                <div>
+                <div className="flex-1">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">
                     {selectedTopic.exam} &gt; {selectedTopic.subject}
                   </p>
@@ -398,62 +588,204 @@ export default function MufredatManager() {
                     {selectedTopic.name}
                   </h3>
                 </div>
-                {topicKazanimlar.length > 0 && (
+                <div className="flex items-center gap-1.5">
                   <button
-                    onClick={deleteAllForTopic}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold tracking-wide bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors"
+                    onClick={() => setShowTopicEdit(!showTopicEdit)}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold tracking-wide border transition-colors ${
+                      showTopicEdit
+                        ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                        : "bg-white/[0.04] text-white/50 border-white/10 hover:bg-white/[0.08]"
+                    }`}
                   >
-                    <Trash2 size={12} />
-                    Tümünü Sil
+                    <Settings2 size={11} />
+                    KONU
                   </button>
-                )}
+                  {topicKazanimlar.length > 0 && (
+                    <>
+                      <button
+                        onClick={exportTopicJson}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold tracking-wide bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors"
+                        title="Bu konunun kazanimlarini JSON olarak kopyala"
+                      >
+                        <Copy size={11} />
+                        JSON
+                      </button>
+                      <button
+                        onClick={deleteAllForTopic}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold tracking-wide bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors"
+                      >
+                        <Trash2 size={11} />
+                        SIL
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
 
-              {/* Kazanım list */}
+              {/* Topic properties edit panel */}
+              <AnimatePresence>
+                {showTopicEdit && topicDetail && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mb-4 p-3 rounded-xl bg-white/[0.03] border border-white/10 space-y-2">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">
+                        KONU OZELLIKLERI
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 text-[11px]">
+                        <div>
+                          <span className="text-white/40 text-[10px]">Ad:</span>
+                          <div className="text-white/80">
+                            <InlineInput
+                              value={topicDetail.name}
+                              onSave={(v) => updateTopic("name", v)}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-white/40 text-[10px]">Zorluk (1-5):</span>
+                          <div className="text-white/80">
+                            <InlineInput
+                              value={String(topicDetail.difficulty)}
+                              onSave={(v) => {
+                                const n = parseInt(v);
+                                if (n >= 1 && n <= 5) updateTopic("difficulty", n);
+                                else toast.error("Zorluk 1-5 arasi olmali");
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-white/40 text-[10px]">Tahmini Saat:</span>
+                          <div className="text-white/80">
+                            <InlineInput
+                              value={String(topicDetail.estimatedHours)}
+                              onSave={(v) => {
+                                const n = parseFloat(v);
+                                if (!isNaN(n) && n > 0) updateTopic("estimatedHours", n);
+                                else toast.error("Gecersiz saat degeri");
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-white/40 text-[10px]">Sinif Seviyesi:</span>
+                          <div className="text-white/80">
+                            <InlineInput
+                              value={topicDetail.gradeLevel ? String(topicDetail.gradeLevel) : ""}
+                              onSave={(v) => {
+                                const n = parseInt(v);
+                                if (n >= 9 && n <= 12) updateTopic("gradeLevel", n);
+                                else if (!v.trim()) updateTopic("gradeLevel", null);
+                                else toast.error("Sinif 9-12 arasi olmali");
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-white/40 text-[10px]">Ogrenme Alani:</span>
+                          <div className="text-white/80">
+                            <InlineInput
+                              value={topicDetail.learningArea || ""}
+                              onSave={(v) => updateTopic("learningArea", v || null)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Kazanim list */}
               {loadingKazanimlar ? (
                 <div className="flex items-center gap-2 py-4">
                   <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
-                  <span className="text-xs text-white/40">Yükleniyor...</span>
+                  <span className="text-xs text-white/40">Yukleniyor...</span>
                 </div>
               ) : topicKazanimlar.length === 0 ? (
                 <p className="text-xs text-white/30 py-3 italic">
-                  Bu konu için kazanım yok. Aşağıdaki JSON editöründen ekleyebilirsiniz.
+                  Bu konu icin kazanim yok. Asagidaki JSON editorunden ekleyebilirsiniz.
                 </p>
               ) : (
                 <div className="space-y-1.5 mb-4">
                   {topicKazanimlar.map((k) => (
                     <div
                       key={k.id}
-                      className="flex items-start gap-2 p-2 rounded-lg bg-white/[0.02] border border-white/[0.06] group"
+                      className="flex items-start gap-2 p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.06] group hover:border-white/[0.12] transition-colors"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-mono text-emerald-400/70">
-                            {k.code}
-                          </span>
-                          {k.isKeyKazanim && (
-                            <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400 font-bold">
-                              ANAHTAR
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <InlineInput
+                            value={k.code}
+                            onSave={(v) => updateKazanim(k.id, "code", v)}
+                            className="text-[10px] font-mono text-emerald-400/70"
+                          />
+                          <button
+                            onClick={() => updateKazanim(k.id, "isKeyKazanim", !k.isKeyKazanim)}
+                            className={`text-[8px] px-1 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                              k.isKeyKazanim
+                                ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
+                                : "bg-white/[0.04] text-white/20 hover:bg-white/[0.08] hover:text-white/40"
+                            }`}
+                            title={k.isKeyKazanim ? "Anahtar kazanimi kaldir" : "Anahtar kazanim yap"}
+                          >
+                            <Star size={8} className="inline mr-0.5" />
+                            {k.isKeyKazanim ? "ANAHTAR" : "ANAHTAR"}
+                          </button>
+                          {k.subTopicName !== null && (
+                            <span className="text-[9px] text-white/30">
+                              ·{" "}
+                              <InlineInput
+                                value={k.subTopicName || ""}
+                                onSave={(v) => updateKazanim(k.id, "subTopicName", v || null)}
+                                className="text-[9px] text-white/30"
+                              />
                             </span>
                           )}
-                          {k.subTopicName && (
-                            <span className="text-[9px] text-white/30">
-                              · {k.subTopicName}
-                            </span>
+                          {k.subTopicName === null && (
+                            <button
+                              onClick={() => updateKazanim(k.id, "subTopicName", "Alt Konu")}
+                              className="text-[8px] text-white/15 hover:text-white/30 transition-colors"
+                              title="Alt konu ekle"
+                            >
+                              + alt konu
+                            </button>
                           )}
                         </div>
-                        <p className="text-[11px] text-white/70 mt-0.5 leading-relaxed">
-                          {k.description}
-                        </p>
+                        <div className="mt-0.5">
+                          <InlineInput
+                            value={k.description}
+                            onSave={(v) => updateKazanim(k.id, "description", v)}
+                            multiline
+                            className="text-[11px] text-white/70 leading-relaxed"
+                          />
+                        </div>
                         {k.details && (
-                          <p className="text-[10px] text-white/40 mt-1 whitespace-pre-line">
-                            {k.details}
-                          </p>
+                          <div className="mt-1">
+                            <InlineInput
+                              value={k.details}
+                              onSave={(v) => updateKazanim(k.id, "details", v || null)}
+                              multiline
+                              className="text-[10px] text-white/40 whitespace-pre-line"
+                            />
+                          </div>
+                        )}
+                        {!k.details && (
+                          <button
+                            onClick={() => updateKazanim(k.id, "details", "Detay ekleyin...")}
+                            className="text-[8px] text-white/15 hover:text-white/30 mt-1 transition-colors"
+                          >
+                            + detay ekle
+                          </button>
                         )}
                       </div>
                       <button
                         onClick={() => deleteKazanim(k.id)}
-                        className="p-1 rounded text-white/20 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                        className="p-1 rounded text-white/20 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
                         title="Sil"
                       >
                         <XCircle size={14} />
@@ -467,7 +799,7 @@ export default function MufredatManager() {
             <div className="text-center py-8">
               <FileJson className="w-8 h-8 text-white/20 mx-auto mb-2" />
               <p className="text-xs text-white/30">
-                Soldan bir konu seçerek kazanımları görüntüleyin
+                Soldan bir konu secerek kazanimlari goruntuleyin
               </p>
             </div>
           )}
@@ -476,22 +808,50 @@ export default function MufredatManager() {
           <div className="border-t border-white/10 pt-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <Plus size={14} className="text-emerald-400" />
+                <Upload size={14} className="text-emerald-400" />
                 <span className="text-xs font-black tracking-wider text-white/70">
-                  JSON İLE KAZANIM EKLE
+                  JSON ILE TOPLU KAZANIM EKLE / GUNCELLE
                 </span>
               </div>
               <button
                 onClick={() => {
                   setJsonInput(EXAMPLE_JSON);
-                  toast.info("Örnek JSON yapıştırıldı");
+                  toast.info("Ornek JSON yapistirildi");
                 }}
                 className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold text-white/40 hover:text-white/60 hover:bg-white/[0.04] transition-colors"
               >
                 <Copy size={10} />
-                Örnek
+                Ornek
               </button>
             </div>
+
+            <p className="text-[10px] text-white/30 mb-2">
+              Dosya yukle veya JSON yapistiriniz. Format: [{"{"} exam, subject, topic, kazanimlar: [{"{"} code, description, subTopicName?, details?, isKey? {"}"}] {"}"}]
+            </p>
+
+            {/* File upload */}
+            <label className="flex items-center justify-center gap-2 px-4 py-2.5 mb-2 rounded-xl border border-dashed border-white/10 bg-white/[0.02] text-[11px] text-white/40 cursor-pointer hover:bg-white/[0.04] hover:border-white/20 transition-colors">
+              <Upload size={14} />
+              <span>JSON dosyasi yukle</span>
+              <input
+                type="file"
+                accept=".json"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    const text = await file.text();
+                    JSON.parse(text); // validate
+                    setJsonInput(text);
+                    toast.success(`${file.name} yuklendi`);
+                  } catch {
+                    toast.error("Gecersiz JSON dosyasi");
+                  }
+                  e.target.value = "";
+                }}
+              />
+            </label>
 
             <textarea
               value={jsonInput}
@@ -552,7 +912,7 @@ export default function MufredatManager() {
               ) : (
                 <Plus size={14} />
               )}
-              {submitting ? "EKLENİYOR..." : "KAZANIMLARI EKLE"}
+              {submitting ? "EKLENIYOR..." : "KAZANIMLARI EKLE"}
             </motion.button>
           </div>
         </div>
