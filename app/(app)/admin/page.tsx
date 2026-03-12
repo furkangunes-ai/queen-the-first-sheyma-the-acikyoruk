@@ -20,6 +20,7 @@ import SubscriptionManager from '@/components/admin/subscription-manager';
 import AICurriculumEditor from '@/components/admin/ai-curriculum-editor';
 import UserOverview from '@/components/admin/user-overview';
 import CurriculumManager from '@/components/admin/curriculum-manager';
+import AINodeLinker from '@/components/admin/ai-node-linker';
 
 // ---------- types ----------
 
@@ -728,6 +729,9 @@ export default function AdminPage() {
 
       {activeTab === 'dag' && (
         <div className="flex flex-col gap-8 relative z-10">
+          {/* AI Kavram Düğümü Oluşturucu */}
+          <AINodeLinker />
+
           {/* Bilişsel Durum Dashboard */}
           <CognitiveDashboard />
 
