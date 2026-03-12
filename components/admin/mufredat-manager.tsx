@@ -109,9 +109,9 @@ function InlineInput({
       <span
         onClick={() => { setDraft(value); setEditing(true); }}
         className={`cursor-pointer hover:bg-white/[0.06] rounded px-1 -mx-1 transition-colors ${className}`}
-        title="Duzenlemek icin tikla"
+        title="Düzenlemek için tıkla"
       >
-        {value || <span className="italic text-white/20">bos</span>}
+        {value || <span className="italic text-white/20">boş</span>}
       </span>
     );
   }
@@ -194,7 +194,7 @@ export default function MufredatManager() {
         setExpandedExams(new Set(data.map((et) => et.id)));
       }
     } catch {
-      toast.error("Topic agaci yuklenemedi");
+      toast.error("Konu ağacı yüklenemedi");
     }
     setLoading(false);
   }, []);
@@ -214,7 +214,7 @@ export default function MufredatManager() {
         setTopicKazanimlar(data.kazanimlar || []);
       }
     } catch {
-      toast.error("Kazanimlar yuklenemedi");
+      toast.error("Kazanımlar yüklenemedi");
     }
     setLoadingKazanimlar(false);
   }, []);
@@ -238,12 +238,12 @@ export default function MufredatManager() {
         setTopicKazanimlar((prev) =>
           prev.map((k) => (k.id === kazanimId ? { ...k, [field]: value } : k))
         );
-        toast.success("Kazanim guncellendi");
+        toast.success("Kazanım güncellendi");
       } else {
-        toast.error("Guncelleme basarisiz");
+        toast.error("Güncelleme başarısız");
       }
     } catch {
-      toast.error("Ag hatasi");
+      toast.error("Ağ hatası");
     }
   };
 
@@ -261,13 +261,13 @@ export default function MufredatManager() {
         if (field === "name" && selectedTopic) {
           setSelectedTopic({ ...selectedTopic, name: value });
         }
-        toast.success("Konu guncellendi");
+        toast.success("Konu güncellendi");
         if (field === "name") fetchTree();
       } else {
-        toast.error("Guncelleme basarisiz");
+        toast.error("Güncelleme başarısız");
       }
     } catch {
-      toast.error("Ag hatasi");
+      toast.error("Ağ hatası");
     }
   };
 
@@ -279,18 +279,18 @@ export default function MufredatManager() {
       });
       if (res.ok) {
         setTopicKazanimlar((prev) => prev.filter((k) => k.id !== kazanimId));
-        toast.success("Kazanim silindi");
+        toast.success("Kazanım silindi");
         fetchTree();
       }
     } catch {
-      toast.error("Silme basarisiz");
+      toast.error("Silme başarısız");
     }
   };
 
   // --- Delete all kazanimlar for topic ---
   const deleteAllForTopic = async () => {
     if (!selectedTopic) return;
-    if (!confirm(`"${selectedTopic.name}" konusunun TUM kazanimlarini silmek istediginize emin misiniz?`))
+    if (!confirm(`"${selectedTopic.name}" konusunun TÜM kazanımlarını silmek istediğinize emin misiniz?`))
       return;
 
     try {
@@ -305,7 +305,7 @@ export default function MufredatManager() {
         fetchTree();
       }
     } catch {
-      toast.error("Silme basarisiz");
+      toast.error("Silme başarısız");
     }
   };
 
@@ -324,10 +324,10 @@ export default function MufredatManager() {
         a.download = `mufredat-export-${new Date().toISOString().slice(0, 10)}.json`;
         a.click();
         URL.revokeObjectURL(url);
-        toast.success(`${data.length} konu icin kazanimlar indirildi`);
+        toast.success(`${data.length} konu için kazanımlar indirildi`);
       }
     } catch {
-      toast.error("Export basarisiz");
+      toast.error("Dışa aktarım başarısız");
     }
     setExporting(false);
   };
@@ -348,7 +348,7 @@ export default function MufredatManager() {
       })),
     }];
     navigator.clipboard.writeText(JSON.stringify(exportData, null, 2));
-    toast.success("Kazanimlar JSON olarak kopyalandi");
+    toast.success("Kazanımlar JSON olarak kopyalandı");
   };
 
   // --- Submit JSON ---
@@ -357,13 +357,13 @@ export default function MufredatManager() {
     try {
       JSON.parse(jsonInput);
     } catch {
-      setResult({ success: false, message: "Gecersiz JSON formati. Kontrol edip tekrar deneyin." });
+      setResult({ success: false, message: "Geçersiz JSON formatı. Kontrol edip tekrar deneyin." });
       return;
     }
 
     const parsed = JSON.parse(jsonInput);
     if (!Array.isArray(parsed)) {
-      setResult({ success: false, message: "JSON bir array olmali: [{ exam, subject, topic, kazanimlar }]" });
+      setResult({ success: false, message: "JSON bir dizi olmalı: [{ exam, subject, topic, kazanimlar }]" });
       return;
     }
 
@@ -394,7 +394,7 @@ export default function MufredatManager() {
         });
       }
     } catch {
-      setResult({ success: false, message: "Ag hatasi" });
+      setResult({ success: false, message: "Ağ hatası" });
     }
     setSubmitting(false);
   };
@@ -445,9 +445,9 @@ export default function MufredatManager() {
           </div>
           <div>
             <h2 className="text-base font-black tracking-wider text-white/90">
-              MUFREDAT YONETIMI
+              MÜFREDAT YÖNETİMİ
             </h2>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mt-0.5">
+            <p className="text-xs font-bold uppercase tracking-widest text-white/40 mt-0.5">
               {filledTopics}/{totalTopics} konu dolu
             </p>
           </div>
@@ -459,14 +459,14 @@ export default function MufredatManager() {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold tracking-wide bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors disabled:opacity-50"
           >
             {exporting ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
-            TUM MUFREDATI INDIR
+            TÜM MÜFREDATI İNDİR
           </button>
         </div>
       </div>
 
       <div className="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-white/10">
         {/* =============== LEFT: Topic Tree =============== */}
-        <div className="lg:w-[380px] max-h-[700px] overflow-y-auto p-3">
+        <div className="lg:w-[420px] max-h-[700px] overflow-y-auto p-3">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-5 h-5 text-emerald-400 animate-spin" />
@@ -548,7 +548,7 @@ export default function MufredatManager() {
                                       >
                                         <span className="truncate flex-1 mr-2">{t.name}</span>
                                         <span
-                                          className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                                             count > 0
                                               ? "bg-emerald-500/20 text-emerald-400"
                                               : "bg-red-500/15 text-red-400/70"
@@ -581,7 +581,7 @@ export default function MufredatManager() {
               {/* Topic header */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex-1">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+                  <p className="text-xs font-bold uppercase tracking-widest text-white/40">
                     {selectedTopic.exam} &gt; {selectedTopic.subject}
                   </p>
                   <h3 className="text-sm font-black tracking-wide text-white/90">
@@ -632,12 +632,12 @@ export default function MufredatManager() {
                     className="overflow-hidden"
                   >
                     <div className="mb-4 p-3 rounded-xl bg-white/[0.03] border border-white/10 space-y-2">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">
-                        KONU OZELLIKLERI
+                      <p className="text-xs font-black uppercase tracking-widest text-white/40 mb-2">
+                        KONU ÖZELLİKLERİ
                       </p>
                       <div className="grid grid-cols-2 gap-2 text-[11px]">
                         <div>
-                          <span className="text-white/40 text-[10px]">Ad:</span>
+                          <span className="text-white/40 text-xs">Ad:</span>
                           <div className="text-white/80">
                             <InlineInput
                               value={topicDetail.name}
@@ -646,33 +646,33 @@ export default function MufredatManager() {
                           </div>
                         </div>
                         <div>
-                          <span className="text-white/40 text-[10px]">Zorluk (1-5):</span>
+                          <span className="text-white/40 text-xs">Zorluk (1-5):</span>
                           <div className="text-white/80">
                             <InlineInput
                               value={String(topicDetail.difficulty)}
                               onSave={(v) => {
                                 const n = parseInt(v);
                                 if (n >= 1 && n <= 5) updateTopic("difficulty", n);
-                                else toast.error("Zorluk 1-5 arasi olmali");
+                                else toast.error("Zorluk 1-5 arası olmalı");
                               }}
                             />
                           </div>
                         </div>
                         <div>
-                          <span className="text-white/40 text-[10px]">Tahmini Saat:</span>
+                          <span className="text-white/40 text-xs">Tahmini Saat:</span>
                           <div className="text-white/80">
                             <InlineInput
                               value={String(topicDetail.estimatedHours)}
                               onSave={(v) => {
                                 const n = parseFloat(v);
                                 if (!isNaN(n) && n > 0) updateTopic("estimatedHours", n);
-                                else toast.error("Gecersiz saat degeri");
+                                else toast.error("Geçersiz saat değeri");
                               }}
                             />
                           </div>
                         </div>
                         <div>
-                          <span className="text-white/40 text-[10px]">Sinif Seviyesi:</span>
+                          <span className="text-white/40 text-xs">Sınıf Seviyesi:</span>
                           <div className="text-white/80">
                             <InlineInput
                               value={topicDetail.gradeLevel ? String(topicDetail.gradeLevel) : ""}
@@ -680,13 +680,13 @@ export default function MufredatManager() {
                                 const n = parseInt(v);
                                 if (n >= 9 && n <= 12) updateTopic("gradeLevel", n);
                                 else if (!v.trim()) updateTopic("gradeLevel", null);
-                                else toast.error("Sinif 9-12 arasi olmali");
+                                else toast.error("Sınıf 9-12 arası olmalı");
                               }}
                             />
                           </div>
                         </div>
                         <div className="col-span-2">
-                          <span className="text-white/40 text-[10px]">Ogrenme Alani:</span>
+                          <span className="text-white/40 text-xs">Öğrenme Alanı:</span>
                           <div className="text-white/80">
                             <InlineInput
                               value={topicDetail.learningArea || ""}
@@ -704,11 +704,11 @@ export default function MufredatManager() {
               {loadingKazanimlar ? (
                 <div className="flex items-center gap-2 py-4">
                   <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
-                  <span className="text-xs text-white/40">Yukleniyor...</span>
+                  <span className="text-xs text-white/40">Yükleniyor...</span>
                 </div>
               ) : topicKazanimlar.length === 0 ? (
                 <p className="text-xs text-white/30 py-3 italic">
-                  Bu konu icin kazanim yok. Asagidaki JSON editorunden ekleyebilirsiniz.
+                  Bu konu için kazanım yok. Aşağıdaki JSON editöründen ekleyebilirsiniz.
                 </p>
               ) : (
                 <div className="space-y-1.5 mb-4">
@@ -726,7 +726,7 @@ export default function MufredatManager() {
                           />
                           <button
                             onClick={() => updateKazanim(k.id, "isKeyKazanim", !k.isKeyKazanim)}
-                            className={`text-[8px] px-1 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                            className={`text-[10px] px-1 py-0.5 rounded font-bold cursor-pointer transition-colors ${
                               k.isKeyKazanim
                                 ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
                                 : "bg-white/[0.04] text-white/20 hover:bg-white/[0.08] hover:text-white/40"
@@ -749,7 +749,7 @@ export default function MufredatManager() {
                           {k.subTopicName === null && (
                             <button
                               onClick={() => updateKazanim(k.id, "subTopicName", "Alt Konu")}
-                              className="text-[8px] text-white/15 hover:text-white/30 transition-colors"
+                              className="text-[10px] text-white/15 hover:text-white/30 transition-colors"
                               title="Alt konu ekle"
                             >
                               + alt konu
@@ -777,7 +777,7 @@ export default function MufredatManager() {
                         {!k.details && (
                           <button
                             onClick={() => updateKazanim(k.id, "details", "Detay ekleyin...")}
-                            className="text-[8px] text-white/15 hover:text-white/30 mt-1 transition-colors"
+                            className="text-[10px] text-white/15 hover:text-white/30 mt-1 transition-colors"
                           >
                             + detay ekle
                           </button>
@@ -799,7 +799,7 @@ export default function MufredatManager() {
             <div className="text-center py-8">
               <FileJson className="w-8 h-8 text-white/20 mx-auto mb-2" />
               <p className="text-xs text-white/30">
-                Soldan bir konu secerek kazanimlari goruntuleyin
+                Soldan bir konu seçerek kazanımları görüntüleyin
               </p>
             </div>
           )}
