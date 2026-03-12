@@ -16,6 +16,7 @@ import {
   Star,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { filterExamTypesByTrack, type ExamTrack } from "@/lib/exam-track-filter";
 import { LEVEL_COLORS, LEVEL_BORDER_COLORS, LEVEL_LABELS, SUBJECT_GROUPS } from "@/lib/constants";
@@ -176,6 +177,7 @@ function groupSubjects(examTypeName: string, subjects: Subject[]): { label: stri
 
 export default function TopicMap() {
   const { data: session } = useSession();
+  const router = useRouter();
   const examTrack = (session?.user as any)?.examTrack as ExamTrack;
 
   // Data state
@@ -737,6 +739,17 @@ export default function TopicMap() {
 
                               <span className="text-xs text-white/30 ml-2">
                                 {topicCount} konu
+                              </span>
+
+                              <span
+                                role="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  router.push(`/voice-assessment?subjectId=${subject.id}&mode=quick`);
+                                }}
+                                className="ml-1 px-2 py-1 rounded text-[10px] font-medium bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors whitespace-nowrap"
+                              >
+                                Bilgi durumunu güncelle
                               </span>
                             </button>
 
