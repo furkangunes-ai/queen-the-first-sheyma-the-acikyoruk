@@ -3,8 +3,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
-import { ChevronRight, Save, Loader2, FileText, CheckCircle2 } from 'lucide-react';
+import { ChevronRight, Save, Loader2, FileText, CheckCircle2, Zap, Sun, Moon, Sunrise, Volume2, VolumeX, Battery, BatteryLow, BatteryFull } from 'lucide-react';
 import { BRANCH_GROUPS } from "@/lib/constants";
+import {
+  TIME_OF_DAY_OPTIONS,
+  ENVIRONMENT_OPTIONS,
+  BIOLOGICAL_STATE_OPTIONS,
+  PERCEIVED_DIFFICULTY_OPTIONS,
+} from "@/lib/severity";
 
 interface ExamType {
   id: string;
@@ -34,6 +40,13 @@ interface ExamEntryFormProps {
   onExamCreated: (examId: string) => void;
 }
 
+/**
+ * Sıcak Faz - Sınav Giriş Formu
+ * Kognitif yorgunluk sonrası minimum sürtünme ile veri girişi.
+ * Step 1: Temel bilgi (başlık, tür, tarih, kategori)
+ * Step 2: Sayısal veri (doğru/yanlış/boş - saf integer input)
+ * Step 3: Bağlam etiketleri (tek tıkla seçim)
+ */
 export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormProps) {
   const [step, setStep] = useState(1);
 
@@ -50,13 +63,18 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
   });
   const [notes, setNotes] = useState('');
 
+  // Step 3: Context tags (Sıcak Faz bağlam)
+  const [timeOfDay, setTimeOfDay] = useState<string>('');
+  const [environment, setEnvironment] = useState<string>('');
+  const [perceivedDifficulty, setPerceivedDifficulty] = useState<number>(0);
+  const [biologicalState, setBiologicalState] = useState<string>('');
+
   // Data fetching
   const [examTypes, setExamTypes] = useState<ExamType[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loadingExamTypes, setLoadingExamTypes] = useState(true);
   const [loadingSubjects, setLoadingSubjects] = useState(false);
 
-  // Computed: exam type name for BRANCH_GROUPS lookup
   const examTypeName = examTypes.find(et => et.id === examTypeId)?.name ?? '';
 
   // Step 2: Subject results
@@ -65,18 +83,14 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
   // Submission
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch exam types on mount
   useEffect(() => {
     async function fetchExamTypes() {
       try {
         const res = await fetch('/api/exam-types');
         if (!res.ok) throw new Error('Sınav türleri yüklenemedi');
         const data = await res.json();
-        if (Array.isArray(data)) {
-          setExamTypes(data);
-        } else {
-          throw new Error('Beklenmeyen veri formatı');
-        }
+        if (Array.isArray(data)) setExamTypes(data);
+        else throw new Error('Beklenmeyen veri formatı');
       } catch {
         toast.error('Sınav türleri yüklenirken hata oluştu');
         setExamTypes([]);
@@ -87,14 +101,12 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
     fetchExamTypes();
   }, []);
 
-  // Reset branch-related state when switching category or examType
   useEffect(() => {
     setBranchSubjectId('');
     setBranchMode('');
     setSelectedGroupKey('');
   }, [examCategory, examTypeId]);
 
-  // Fetch subjects when exam type changes
   useEffect(() => {
     if (!examTypeId) {
       setSubjects([]);
@@ -110,7 +122,6 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
         const data = await res.json();
         if (!Array.isArray(data)) throw new Error('Beklenmeyen veri formatı');
         setSubjects(data);
-        // Only set all results for genel mode; for brans, results are set when branch subject is selected
         if (examCategory === 'genel') {
           setResults(
             data.map((s: Subject) => ({
@@ -133,7 +144,6 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
     fetchSubjects();
   }, [examTypeId, examCategory]);
 
-  // When branch subject is selected, set results to only that subject
   useEffect(() => {
     if (examCategory === 'brans' && branchSubjectId) {
       const subject = subjects.find(s => s.id === branchSubjectId);
@@ -149,7 +159,6 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
     }
   }, [branchSubjectId, examCategory, subjects]);
 
-  // Calculate nets
   const nets = useMemo(() => {
     return results.map((r) => r.correctCount - r.wrongCount / 4);
   }, [results]);
@@ -158,10 +167,18 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
     return nets.reduce((sum, n) => sum + n, 0);
   }, [nets]);
 
-  function updateResult(index: number, field: 'correctCount' | 'wrongCount' | 'emptyCount', value: number) {
+  // Saf integer maskeleme - "05" gibi girdileri engelle
+  function handleIntegerInput(
+    index: number,
+    field: 'correctCount' | 'wrongCount' | 'emptyCount',
+    rawValue: string
+  ) {
+    // Sadece rakamları al, başındaki sıfırları temizle
+    const cleaned = rawValue.replace(/[^0-9]/g, '').replace(/^0+/, '') || '0';
+    const value = Math.max(0, parseInt(cleaned, 10) || 0);
     setResults((prev) => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: Math.max(0, value) };
+      updated[index] = { ...updated[index], [field]: value };
       return updated;
     });
   }
@@ -171,7 +188,7 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
     if (examCategory === 'brans') {
       if (branchMode === 'group') return baseValid && selectedGroupKey !== '';
       if (branchMode === 'tek-ders') return baseValid && branchSubjectId !== '';
-      return false; // no branch mode selected yet
+      return false;
     }
     return baseValid;
   }
@@ -187,7 +204,7 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
   async function handleSubmit() {
     setSubmitting(true);
     try {
-      // Step 1: Create exam
+      // Create exam with context fields
       const examRes = await fetch('/api/exams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -199,6 +216,11 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
           examCategory: examCategory === 'brans'
             ? (branchMode === 'group' && selectedGroupKey ? `brans-${selectedGroupKey}` : 'brans')
             : undefined,
+          // Sıcak faz bağlam alanları
+          timeOfDay: timeOfDay || undefined,
+          environment: environment || undefined,
+          perceivedDifficulty: perceivedDifficulty || undefined,
+          biologicalState: biologicalState || undefined,
         }),
       });
 
@@ -209,7 +231,7 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
 
       const exam = await examRes.json();
 
-      // Step 2: Save subject results
+      // Save subject results
       const resultsRes = await fetch(`/api/exams/${exam.id}/results`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -228,7 +250,7 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
         throw new Error(err.error || 'Sonuçlar kaydedilemedi');
       }
 
-      toast.success('Sınav başarıyla kaydedildi!');
+      toast.success('Sınav kaydedildi! Dinlendikten sonra zafiyet analizini yapabilirsin.');
       onExamCreated(exam.id);
     } catch (err: any) {
       toast.error(err.message || 'Bir hata oluştu');
@@ -240,35 +262,80 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
   const inputClassName = "w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-[15px] font-medium text-white placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-pink-400/50 focus:border-pink-400/30 transition-all hover:border-white/20";
   const buttonClassName = "bg-gradient-to-r from-pink-500 to-pink-600 text-white px-6 py-3 rounded-xl shadow-[0_0_15px_rgba(255,42,133,0.3)] hover:shadow-[0_0_25px_rgba(255,42,133,0.5)] border border-pink-400/20 transition-all font-bold tracking-wide text-sm flex items-center justify-center gap-2";
 
+  // Context tag button component
+  function ContextTag({
+    selected,
+    onClick,
+    children,
+    color = 'pink',
+  }: {
+    selected: boolean;
+    onClick: () => void;
+    children: React.ReactNode;
+    color?: 'pink' | 'amber' | 'cyan' | 'emerald';
+  }) {
+    const colors = {
+      pink: selected
+        ? 'bg-pink-500/20 text-pink-400 border-pink-500/30 shadow-[0_0_10px_rgba(255,42,133,0.15)]'
+        : 'bg-white/[0.03] text-white/50 border-white/10 hover:bg-white/[0.06] hover:text-white/70',
+      amber: selected
+        ? 'bg-amber-500/20 text-amber-400 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.15)]'
+        : 'bg-white/[0.03] text-white/50 border-white/10 hover:bg-white/[0.06] hover:text-white/70',
+      cyan: selected
+        ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30 shadow-[0_0_10px_rgba(34,211,238,0.15)]'
+        : 'bg-white/[0.03] text-white/50 border-white/10 hover:bg-white/[0.06] hover:text-white/70',
+      emerald: selected
+        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(52,211,153,0.15)]'
+        : 'bg-white/[0.03] text-white/50 border-white/10 hover:bg-white/[0.06] hover:text-white/70',
+    };
+
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`py-2.5 px-4 rounded-xl text-sm font-bold tracking-wide transition-all border ${colors[color]}`}
+      >
+        {children}
+      </button>
+    );
+  }
+
+  const timeIcons = { sabah: <Sunrise size={14} />, ogle: <Sun size={14} />, aksam: <Moon size={14} /> };
+  const envIcons = { sessiz: <VolumeX size={14} />, gurultulu: <Volume2 size={14} /> };
+  const bioIcons = { dinc: <BatteryFull size={14} />, normal: <Battery size={14} />, yorgun: <BatteryLow size={14} /> };
+
   return (
     <div className="glass-panel p-6 sm:p-8 max-w-3xl mx-auto relative overflow-hidden">
-      {/* Decorative Glows */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/10 rounded-full blur-[60px] pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-[60px] pointer-events-none" />
 
-      {/* Progress indicator */}
-      <div className="flex items-center gap-3 mb-8 relative z-10">
-        <div
-          className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all duration-300 shadow-lg ${step >= 1 ? 'bg-gradient-to-br from-pink-400 to-pink-600 text-white shadow-pink-500/30' : 'bg-white/10 text-white/50 border border-white/5'
-            }`}
-        >
-          {step > 1 ? <CheckCircle2 size={16} /> : '1'}
-        </div>
-        <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-pink-500 to-pink-400 transition-all duration-500 ease-out"
-            style={{ width: step >= 2 ? '100%' : '0%' }}
-          />
-        </div>
-        <div
-          className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all duration-300 shadow-lg ${step >= 2 ? 'bg-gradient-to-br from-pink-400 to-pink-600 text-white shadow-pink-500/30' : 'bg-white/10 text-white/50 border border-white/5'
-            }`}
-        >
-          2
-        </div>
+      {/* Progress indicator - 3 steps */}
+      <div className="flex items-center gap-2 mb-8 relative z-10">
+        {[1, 2, 3].map((s) => (
+          <React.Fragment key={s}>
+            <div
+              className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all duration-300 shadow-lg ${
+                step >= s
+                  ? 'bg-gradient-to-br from-pink-400 to-pink-600 text-white shadow-pink-500/30'
+                  : 'bg-white/10 text-white/50 border border-white/5'
+              }`}
+            >
+              {step > s ? <CheckCircle2 size={16} /> : s}
+            </div>
+            {s < 3 && (
+              <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-pink-500 to-pink-400 transition-all duration-500 ease-out"
+                  style={{ width: step > s ? '100%' : '0%' }}
+                />
+              </div>
+            )}
+          </React.Fragment>
+        ))}
       </div>
 
       <AnimatePresence mode="wait">
+        {/* ========= STEP 1: TEMEL BİLGİ ========= */}
         {step === 1 && (
           <motion.div
             key="step-1"
@@ -330,7 +397,6 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {/* Exam Type */}
                 <div>
                   <label className="block text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-2">
                     Sınav Türü
@@ -348,15 +414,12 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                     >
                       <option value="">Sınav türü seçin</option>
                       {examTypes.map((et) => (
-                        <option key={et.id} value={et.id}>
-                          {et.name}
-                        </option>
+                        <option key={et.id} value={et.id}>{et.name}</option>
                       ))}
                     </select>
                   )}
                 </div>
 
-                {/* Date */}
                 <div>
                   <label className="block text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-2">
                     Sınav Tarihi
@@ -370,16 +433,16 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                 </div>
               </div>
 
-              {/* Branch Type Picker - Stage 1: group or tek-ders */}
+              {/* Branch Type Picker */}
               {examCategory === 'brans' && examTypeId && (
                 <div>
                   <label className="block text-[11px] font-bold text-amber-400/70 uppercase tracking-widest px-1 mb-2">
-                    Brans Turu
+                    Branş Türü
                   </label>
                   {loadingSubjects ? (
                     <div className="flex items-center gap-2 text-white/40 h-[46px] px-4">
                       <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
-                      <span className="text-sm font-medium">Yukleniyor...</span>
+                      <span className="text-sm font-medium">Yükleniyor...</span>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-2">
@@ -391,7 +454,6 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                             setBranchMode('group');
                             setSelectedGroupKey(group.key);
                             setBranchSubjectId('');
-                            // Set results to the group's subjects
                             const groupSubjects = subjects.filter(s => group.subjectNames.includes(s.name));
                             setResults(groupSubjects.map(s => ({
                               subjectId: s.id,
@@ -430,22 +492,20 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                 </div>
               )}
 
-              {/* Branch Subject Picker - Stage 2: only for tek-ders mode */}
+              {/* Branch Subject Picker - tek-ders mode */}
               {examCategory === 'brans' && examTypeId && branchMode === 'tek-ders' && (
                 <div>
                   <label className="block text-[11px] font-bold text-amber-400/70 uppercase tracking-widest px-1 mb-2">
-                    Brans Dersi
+                    Branş Dersi
                   </label>
                   <select
                     value={branchSubjectId}
                     onChange={(e) => setBranchSubjectId(e.target.value)}
                     className={`${inputClassName} [color-scheme:dark] !border-amber-500/20 focus:!ring-amber-400/50 focus:!border-amber-400/30`}
                   >
-                    <option value="">Brans dersi secin</option>
+                    <option value="">Branş dersi seçin</option>
                     {subjects.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.questionCount} soru)
-                      </option>
+                      <option key={s.id} value={s.id}>{s.name} ({s.questionCount} soru)</option>
                     ))}
                   </select>
                 </div>
@@ -460,13 +520,12 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                   placeholder="Sınavla ilgili notlarınız..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
+                  rows={2}
                   className={inputClassName + " resize-none"}
                 />
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex justify-between items-center mt-10">
               <button
                 onClick={onClose}
@@ -488,6 +547,7 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
           </motion.div>
         )}
 
+        {/* ========= STEP 2: SAYISAL VERİ (NUMPAD) ========= */}
         {step === 2 && (
           <motion.div
             key="step-2"
@@ -506,8 +566,8 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                 {examCategory === 'brans' && results.length > 0 && (
                   <p className="text-sm text-amber-400/70 mt-1">
                     {branchMode === 'group'
-                      ? `${BRANCH_GROUPS[examTypeName]?.find(g => g.key === selectedGroupKey)?.label ?? ''} brans denemesi`
-                      : `${results[0].subjectName} brans denemesi`
+                      ? `${BRANCH_GROUPS[examTypeName]?.find(g => g.key === selectedGroupKey)?.label ?? ''} branş denemesi`
+                      : `${results[0].subjectName} branş denemesi`
                     }
                   </p>
                 )}
@@ -525,62 +585,50 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                   <table className="w-full border-collapse">
                     <thead>
                       <tr className="bg-white/[0.03] border-b border-white/10">
-                        <th className="text-left py-4 px-5 text-[11px] uppercase tracking-widest font-bold text-white/50">
-                          Ders
-                        </th>
-                        <th className="text-center py-4 px-3 text-[11px] uppercase tracking-widest font-bold text-emerald-400 w-24">
-                          Doğru
-                        </th>
-                        <th className="text-center py-4 px-3 text-[11px] uppercase tracking-widest font-bold text-rose-400 w-24">
-                          Yanlış
-                        </th>
-                        <th className="text-center py-4 px-3 text-[11px] uppercase tracking-widest font-bold text-white/50 w-24">
-                          Boş
-                        </th>
-                        <th className="text-center py-4 px-5 text-[11px] uppercase tracking-widest font-bold text-pink-400 w-24">
-                          Net
-                        </th>
+                        <th className="text-left py-4 px-5 text-[11px] uppercase tracking-widest font-bold text-white/50">Ders</th>
+                        <th className="text-center py-4 px-3 text-[11px] uppercase tracking-widest font-bold text-emerald-400 w-24">Doğru</th>
+                        <th className="text-center py-4 px-3 text-[11px] uppercase tracking-widest font-bold text-rose-400 w-24">Yanlış</th>
+                        <th className="text-center py-4 px-3 text-[11px] uppercase tracking-widest font-bold text-white/50 w-24">Boş</th>
+                        <th className="text-center py-4 px-5 text-[11px] uppercase tracking-widest font-bold text-pink-400 w-24">Net</th>
                       </tr>
                     </thead>
                     <tbody>
                       {results.map((r, i) => (
-                        <tr
-                          key={r.subjectId}
-                          className="border-b border-white/5 hover:bg-white/[0.02] transition-colors"
-                        >
-                          <td className="py-3 px-5 text-sm font-bold text-white/90">
-                            {r.subjectName}
-                          </td>
+                        <tr key={r.subjectId} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                          <td className="py-3 px-5 text-sm font-bold text-white/90">{r.subjectName}</td>
                           <td className="py-3 px-3">
                             <input
-                              type="number"
-                              min={0}
-                              value={r.correctCount}
-                              onChange={(e) =>
-                                updateResult(i, 'correctCount', parseInt(e.target.value) || 0)
-                              }
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={r.correctCount === 0 ? '' : r.correctCount}
+                              onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
+                              onChange={(e) => handleIntegerInput(i, 'correctCount', e.target.value)}
+                              onBlur={(e) => !e.target.value && handleIntegerInput(i, 'correctCount', '0')}
                               className="w-full py-2 px-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center text-[15px] font-bold text-white focus:outline-none focus:ring-1 focus:ring-emerald-400 transition-colors hover:border-emerald-500/40"
                             />
                           </td>
                           <td className="py-3 px-3">
                             <input
-                              type="number"
-                              min={0}
-                              value={r.wrongCount}
-                              onChange={(e) =>
-                                updateResult(i, 'wrongCount', parseInt(e.target.value) || 0)
-                              }
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={r.wrongCount === 0 ? '' : r.wrongCount}
+                              onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
+                              onChange={(e) => handleIntegerInput(i, 'wrongCount', e.target.value)}
+                              onBlur={(e) => !e.target.value && handleIntegerInput(i, 'wrongCount', '0')}
                               className="w-full py-2 px-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-center text-[15px] font-bold text-white focus:outline-none focus:ring-1 focus:ring-rose-400 transition-colors hover:border-rose-500/40"
                             />
                           </td>
                           <td className="py-3 px-3">
                             <input
-                              type="number"
-                              min={0}
-                              value={r.emptyCount}
-                              onChange={(e) =>
-                                updateResult(i, 'emptyCount', parseInt(e.target.value) || 0)
-                              }
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={r.emptyCount === 0 ? '' : r.emptyCount}
+                              onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
+                              onChange={(e) => handleIntegerInput(i, 'emptyCount', e.target.value)}
+                              onBlur={(e) => !e.target.value && handleIntegerInput(i, 'emptyCount', '0')}
                               className="w-full py-2 px-1 rounded-lg bg-white/[0.04] border border-white/10 text-center text-[15px] font-bold text-white focus:outline-none focus:ring-1 focus:ring-white/30 transition-colors hover:border-white/20"
                             />
                           </td>
@@ -592,10 +640,7 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                     </tbody>
                     <tfoot>
                       <tr className="bg-gradient-to-r from-pink-500/[0.02] to-pink-500/[0.05] border-t border-white/10">
-                        <td
-                          colSpan={4}
-                          className="py-4 px-5 text-right text-sm font-bold text-white/60 tracking-wide uppercase"
-                        >
+                        <td colSpan={4} className="py-4 px-5 text-right text-sm font-bold text-white/60 tracking-wide uppercase">
                           Toplam Net:
                         </td>
                         <td className="py-4 px-5 text-center text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400 drop-shadow-[0_2px_10px_rgba(255,42,133,0.3)]">
@@ -606,40 +651,168 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                   </table>
                 </div>
 
-                {/* Actions */}
                 <div className="flex justify-between items-center mt-8">
                   <button
                     onClick={() => setStep(1)}
                     className="text-white/40 hover:text-white/80 transition-colors text-sm font-bold tracking-wider uppercase"
                   >
-                    Geri DÖN
+                    Geri Dön
                   </button>
                   <motion.button
-                    whileHover="hover"
-                    whileTap="tap"
-                    variants={{
-                      hover: { scale: 1.02 },
-                      tap: { scale: 0.98 }
-                    }}
-                    onClick={handleSubmit}
-                    disabled={submitting}
-                    className={`${buttonClassName} opacity-100 disabled:opacity-50`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setStep(3)}
+                    className={`${buttonClassName} opacity-100`}
                   >
-                    {submitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        KAYDEDİLİYOR...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4 ml-[-4px]" />
-                        KAYDET VE GÖNDER
-                      </>
-                    )}
+                    BAĞLAM ETİKETLERİ
+                    <ChevronRight className="w-4 h-4 ml-1 relative top-[1px]" />
                   </motion.button>
                 </div>
               </>
             )}
+          </motion.div>
+        )}
+
+        {/* ========= STEP 3: BAĞLAM ETİKETLERİ (Context Tags) ========= */}
+        {step === 3 && (
+          <motion.div
+            key="step-3"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.25 }}
+            className="relative z-10"
+          >
+            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-white/5">
+              <Zap size={24} className="text-amber-400" />
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight text-white">Sınav Bağlamı</h2>
+                <p className="text-sm text-white/40 mt-1">Tek tıkla seç, AI motorunu besle</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {/* Time of Day */}
+              <div>
+                <label className="block text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-3">
+                  Sınav Zamanı
+                </label>
+                <div className="flex gap-2">
+                  {TIME_OF_DAY_OPTIONS.map((opt) => (
+                    <ContextTag
+                      key={opt.value}
+                      selected={timeOfDay === opt.value}
+                      onClick={() => setTimeOfDay(timeOfDay === opt.value ? '' : opt.value)}
+                      color="amber"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        {timeIcons[opt.value as keyof typeof timeIcons]}
+                        {opt.label}
+                      </span>
+                    </ContextTag>
+                  ))}
+                </div>
+              </div>
+
+              {/* Environment */}
+              <div>
+                <label className="block text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-3">
+                  Ortam
+                </label>
+                <div className="flex gap-2">
+                  {ENVIRONMENT_OPTIONS.map((opt) => (
+                    <ContextTag
+                      key={opt.value}
+                      selected={environment === opt.value}
+                      onClick={() => setEnvironment(environment === opt.value ? '' : opt.value)}
+                      color="cyan"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        {envIcons[opt.value as keyof typeof envIcons]}
+                        {opt.label}
+                      </span>
+                    </ContextTag>
+                  ))}
+                </div>
+              </div>
+
+              {/* Biological State */}
+              <div>
+                <label className="block text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-3">
+                  Enerji Durumu
+                </label>
+                <div className="flex gap-2">
+                  {BIOLOGICAL_STATE_OPTIONS.map((opt) => (
+                    <ContextTag
+                      key={opt.value}
+                      selected={biologicalState === opt.value}
+                      onClick={() => setBiologicalState(biologicalState === opt.value ? '' : opt.value)}
+                      color="emerald"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        {bioIcons[opt.value as keyof typeof bioIcons]}
+                        {opt.label}
+                      </span>
+                    </ContextTag>
+                  ))}
+                </div>
+              </div>
+
+              {/* Perceived Difficulty */}
+              <div>
+                <label className="block text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-3">
+                  Algılanan Zorluk
+                </label>
+                <div className="flex gap-2">
+                  {PERCEIVED_DIFFICULTY_OPTIONS.map((val) => (
+                    <ContextTag
+                      key={val}
+                      selected={perceivedDifficulty === val}
+                      onClick={() => setPerceivedDifficulty(perceivedDifficulty === val ? 0 : val)}
+                      color="pink"
+                    >
+                      {val}
+                    </ContextTag>
+                  ))}
+                </div>
+                <div className="flex justify-between text-[10px] text-white/30 mt-1.5 px-1">
+                  <span>Kolay</span>
+                  <span>Zor</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center mt-10">
+              <button
+                onClick={() => setStep(2)}
+                className="text-white/40 hover:text-white/80 transition-colors text-sm font-bold tracking-wider uppercase"
+              >
+                Geri Dön
+              </button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleSubmit}
+                disabled={submitting}
+                className={`${buttonClassName} opacity-100 disabled:opacity-50`}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    KAYDEDİLİYOR...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 ml-[-4px]" />
+                    KAYDET
+                  </>
+                )}
+              </motion.button>
+            </div>
+
+            <p className="text-center text-xs text-white/30 mt-4">
+              Zafiyet analizi dinlendikten sonra yapılabilir
+            </p>
           </motion.div>
         )}
       </AnimatePresence>
