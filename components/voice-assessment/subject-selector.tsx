@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "motion/react";
-import { BookOpen, Layers } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { SUBJECT_GROUPS } from "@/lib/constants";
 
 export interface SubjectOption {
@@ -15,7 +15,7 @@ export interface SubjectOption {
 
 interface SubjectSelectorProps {
   subjects: SubjectOption[];
-  onSelect: (subjectId: string | "all") => void;
+  onSelect: (subjectId: string) => void;
   loading?: boolean;
 }
 
@@ -55,33 +55,8 @@ export function SubjectSelector({ subjects, onSelect, loading }: SubjectSelector
       <div className="text-center space-y-2">
         <h2 className="text-xl font-semibold text-white">Ders Seçimi</h2>
         <p className="text-sm text-zinc-400">
-          Hangi ders hakkında bilgi vermek istiyorsun? Tek ders seçebilir ya da
-          tüm dersleri toplu değerlendirebilirsin.
+          Hangi ders hakkında bilgi vermek istiyorsun? Değerlendirmek istediğin dersi seç.
         </p>
-      </div>
-
-      {/* All subjects option */}
-      <motion.button
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
-        onClick={() => onSelect("all")}
-        className="w-full p-4 rounded-xl border border-cyan-500/30 bg-cyan-500/5 hover:bg-cyan-500/10 transition-colors text-left flex items-center gap-3"
-      >
-        <div className="p-2 rounded-lg bg-cyan-500/20">
-          <Layers className="w-5 h-5 text-cyan-400" />
-        </div>
-        <div>
-          <div className="font-medium text-white">Tüm Dersler (Toplu Değerlendirme)</div>
-          <div className="text-xs text-zinc-400">
-            Tüm derslerini tek seferde sesli olarak değerlendir
-          </div>
-        </div>
-      </motion.button>
-
-      <div className="relative flex items-center gap-3">
-        <div className="flex-1 h-px bg-zinc-700" />
-        <span className="text-xs text-zinc-500">veya tek ders seç</span>
-        <div className="flex-1 h-px bg-zinc-700" />
       </div>
 
       {/* Per exam type */}
