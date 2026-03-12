@@ -57,15 +57,15 @@ export default function AICurriculumEditor() {
         // Auto-select all
         setSelected(new Set(data.suggestions?.map((_: any, i: number) => i) || []));
         if (data.suggestions?.length === 0) {
-          toast.info("AI herhangi bir duzeltme onerisi bulamadi");
+          toast.info("AI herhangi bir düzeltme önerisi bulamadı");
         } else {
-          toast.success(`${data.suggestions.length} duzeltme onerisi bulundu`);
+          toast.success(`${data.suggestions.length} düzeltme önerisi bulundu`);
         }
       } else {
-        toast.error(data.error || "Hata olustu");
+        toast.error(data.error || "Hata oluştu");
       }
     } catch {
-      toast.error("Ag hatasi");
+      toast.error("Ağ hatası");
     }
     setLoading(false);
   };
@@ -77,7 +77,7 @@ export default function AICurriculumEditor() {
       .map((s) => ({ type: s.type, id: s.id, field: s.field, newValue: s.newValue }));
 
     if (edits.length === 0) {
-      toast.error("Onaylanacak duzeltme secilmedi");
+      toast.error("Onaylanacak düzeltme seçilmedi");
       return;
     }
 
@@ -94,10 +94,10 @@ export default function AICurriculumEditor() {
         toast.success(data.message);
         setApplied(true);
       } else {
-        toast.error(data.error || "Uygulama basarisiz");
+        toast.error(data.error || "Uygulama başarısız");
       }
     } catch {
-      toast.error("Ag hatasi");
+      toast.error("Ağ hatası");
     }
     setApplying(false);
   };
@@ -116,9 +116,9 @@ export default function AICurriculumEditor() {
 
   // --- Quick presets ---
   const presets = [
-    { label: "Turkce karakter duzelt", msg: "Tum konu adlarinda ve kazanim aciklamalarinda Turkce karakter eksikliklerini duzelt. Ornekler: u→u, o→o, c→c, s→s, g→g gibi. Sadece goruntulenen isimleri duzelt." },
-    { label: "Buyuk/kucuk harf duzelt", msg: "Konu adlarinda buyuk-kucuk harf kurallarini duzelt. Her kelimenin ilk harfi buyuk olmali (edatlar haric)." },
-    { label: "Yazim hatalari duzelt", msg: "Turkce yazim kurallarini uygula: ses uyumu, uzun unluler, cift unsuzler vb. Sadece yazim hatalari, anlam degisikligi yapma." },
+    { label: "Türkçe karakter düzelt", msg: "Tüm konu adlarında ve kazanım açıklamalarında Türkçe karakter eksikliklerini düzelt. Örnekler: u→ü, o→ö, c→ç, s→ş, g→ğ gibi. Sadece görüntülenen isimleri düzelt." },
+    { label: "Büyük/küçük harf düzelt", msg: "Konu adlarında büyük-küçük harf kurallarını düzelt. Her kelimenin ilk harfi büyük olmalı (edatlar hariç)." },
+    { label: "Yazım hataları düzelt", msg: "Türkçe yazım kurallarını uygula: ses uyumu, uzun ünlüler, çift ünsüzler vb. Sadece yazım hataları, anlam değişikliği yapma." },
   ];
 
   return (
@@ -130,10 +130,10 @@ export default function AICurriculumEditor() {
         </div>
         <div>
           <h2 className="text-base font-black tracking-wider text-white/90">
-            AI ILE MUFREDAT DUZENLEME
+            AI İLE MÜFREDAT DÜZENLEME
           </h2>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mt-0.5">
-            Talimat ver → AI onersin → Sen onayla
+          <p className="text-xs font-bold uppercase tracking-widest text-white/40 mt-0.5">
+            Talimat ver → AI önersin → Sen onayla
           </p>
         </div>
       </div>
@@ -145,7 +145,7 @@ export default function AICurriculumEditor() {
             <button
               key={p.label}
               onClick={() => setMessage(p.msg)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold tracking-wide bg-violet-500/10 text-violet-400 border border-violet-500/20 hover:bg-violet-500/20 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide bg-violet-500/10 text-violet-400 border border-violet-500/20 hover:bg-violet-500/20 transition-colors"
             >
               <Sparkles size={10} />
               {p.label}
@@ -158,7 +158,7 @@ export default function AICurriculumEditor() {
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Ne duzenlenmeli? Ornegin: 'Turkce karakter eksikliklerini duzelt', 'Buyuk harf kurallarini uygula'..."
+            placeholder="Ne düzenlenmeli? Örneğin: 'Türkçe karakter eksikliklerini düzelt', 'Büyük harf kurallarını uygula'..."
             className="w-full h-24 px-4 py-3 bg-white/[0.03] border border-white/10 rounded-xl text-sm text-white/80 placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-violet-500/40 resize-y"
           />
 
@@ -211,10 +211,10 @@ export default function AICurriculumEditor() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-black tracking-wider text-white/60">
-                    {suggestions.length} ONERI BULUNDU
+                    {suggestions.length} ÖNERİ BULUNDU
                   </span>
-                  <span className="text-[10px] text-white/30">
-                    ({selected.size} secili)
+                  <span className="text-xs text-white/30">
+                    ({selected.size} seçili)
                   </span>
                   {tokensUsed > 0 && (
                     <span className="text-[9px] text-white/20 font-mono">
@@ -225,14 +225,14 @@ export default function AICurriculumEditor() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={selectAll}
-                    className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold text-white/40 hover:text-white/60 hover:bg-white/[0.04] transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 rounded text-xs font-bold text-white/40 hover:text-white/60 hover:bg-white/[0.04] transition-colors"
                   >
                     <CheckCheck size={12} />
-                    Tumunu Sec
+                    Tümünü Seç
                   </button>
                   <button
                     onClick={selectNone}
-                    className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold text-white/40 hover:text-white/60 hover:bg-white/[0.04] transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 rounded text-xs font-bold text-white/40 hover:text-white/60 hover:bg-white/[0.04] transition-colors"
                   >
                     <X size={12} />
                     Temizle
@@ -269,15 +269,15 @@ export default function AICurriculumEditor() {
                       {/* Content */}
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
                             s.type === "topic"
                               ? "bg-blue-500/20 text-blue-400"
                               : "bg-emerald-500/20 text-emerald-400"
                           }`}>
                             {s.type === "topic" ? "KONU" : "KAZANIM"}
                           </span>
-                          <span className="text-[9px] text-white/30 font-mono">{s.field}</span>
-                          <span className="text-[9px] text-white/20">{s.reason}</span>
+                          <span className="text-[10px] text-white/30 font-mono">{s.field}</span>
+                          <span className="text-[10px] text-white/20">{s.reason}</span>
                         </div>
 
                         {/* Old → New */}
@@ -310,12 +310,12 @@ export default function AICurriculumEditor() {
                   ) : (
                     <Check size={14} />
                   )}
-                  {applying ? "UYGULANIYOR..." : `${selected.size} DUZELTMEYI ONAYLA VE UYGULA`}
+                  {applying ? "UYGULANIYOR..." : `${selected.size} DÜZELTMEYİ ONAYLA VE UYGULA`}
                 </motion.button>
               ) : (
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
                   <CheckCheck size={16} />
-                  Duzeltmeler basariyla uygulandi
+                  Düzeltmeler başarıyla uygulandı
                 </div>
               )}
             </motion.div>
@@ -323,10 +323,10 @@ export default function AICurriculumEditor() {
         </AnimatePresence>
 
         {/* Warning note */}
-        <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10 text-[10px] text-amber-400/60">
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10 text-xs text-amber-400/60">
           <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
           <span>
-            AI onerileri kontrol edin. Slug/id gibi teknik alanlar degistirilmez, sadece goruntulenen metinler duzeltilir.
+            AI önerilerini kontrol edin. Slug/id gibi teknik alanlar değiştirilmez, sadece görüntülenen metinler düzeltilir.
           </span>
         </div>
       </div>
