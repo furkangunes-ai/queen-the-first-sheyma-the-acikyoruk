@@ -5,8 +5,9 @@ import { logAdminAction } from "@/lib/audit-log";
 import { logApiError } from "@/lib/logger";
 import { getOpenAI } from "@/lib/openai";
 
-// Kavram düğümü oluşturma için güçlü model — konu-kavram eşleştirmesi kritik
-const AI_LINK_MODEL = process.env.OPENAI_LINK_MODEL || "gpt-4.1";
+// Kavram düğümü oluşturma için en güçlü model — konu-kavram eşleştirmesi kritik
+// GPT-5.2: 400K context, üstün reasoning, agentic tool-calling
+const AI_LINK_MODEL = process.env.OPENAI_LINK_MODEL || "gpt-5.2";
 
 function adminGuard(session: any) {
   if (!session?.user) return { error: "Unauthorized", status: 401 };
