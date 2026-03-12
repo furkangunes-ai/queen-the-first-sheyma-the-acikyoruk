@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import ExamEntryForm from '@/components/exams/exam-entry-form';
-import WrongQuestionForm from '@/components/exams/wrong-question-form';
+import ColdPhaseForm from '@/components/exams/cold-phase-form';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import {
@@ -17,6 +17,7 @@ import {
   Hash,
   Sparkles,
   GraduationCap,
+  Brain,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getBranchGroupLabel } from '@/lib/constants';
@@ -38,6 +39,7 @@ interface ExamListItem {
   title: string;
   date: string;
   examCategory?: string | null;
+  coldPhaseCompleted?: boolean;
   examType: { id: string; name: string };
   subjectResults: Array<{
     subjectId: string;
@@ -49,7 +51,7 @@ interface ExamListItem {
   }>;
 }
 
-type PageView = 'list' | 'new-exam' | 'wrong-questions';
+type PageView = 'list' | 'new-exam' | 'cold-phase' | 'portal';
 type ExamModeFilter = 'all' | 'genel' | 'brans' | 'brans-fen' | 'brans-sosyal' | 'brans-matematik' | 'brans-tek';
 
 const COLORS = ['#ff2a85', '#ff7eb3', '#00f0ff', '#bb66ff', '#ffb84d', '#ff3366', '#00e5ff', '#ff99cc', '#7c3aed', '#10b981'];
@@ -190,7 +192,8 @@ export default function ExamsPage() {
           emptyCount: sr.emptyCount,
         }))
       );
-      setView('wrong-questions');
+      // Sıcak faz tamamlandı, cold-phase'e yönlendir
+      setView('cold-phase');
     } catch {
       toast.error('Deneme detayları yüklenemedi');
       setView('list');
@@ -198,10 +201,9 @@ export default function ExamsPage() {
     }
   };
 
-  const handleWrongQuestionsComplete = () => {
+  const handleColdPhaseComplete = () => {
     setView('list');
     fetchExams();
-    toast.success('Deneme ve yanlış/boş bilgileri kaydedildi!');
   };
 
   const getTotalNet = (exam: ExamListItem) => {
@@ -457,6 +459,37 @@ export default function ExamsPage() {
               </div>
             )}
 
+            {/* Analiz Bekliyor Banner - Global Veri Bütünlüğü Uyarısı */}
+            {!loading && filteredExams.some(e => !e.coldPhaseCompleted && (e.subjectResults.some(sr => sr.wrongCount > 0 || sr.emptyCount > 0))) && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent p-5"
+              >
+                <div className="absolute inset-0 bg-amber-500/5 backdrop-blur-sm pointer-events-none" />
+                <div className="relative z-10 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
+                    <Brain size={24} className="text-amber-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-amber-400 mb-1">Kognitif Zafiyetler Bekliyor</h4>
+                    <p className="text-xs text-white/50">
+                      İşlenmemiş denemelerin var. Zafiyet haritasını tamamlamadan analitik veriler eksik kalacak.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const pendingExam = filteredExams.find(e => !e.coldPhaseCompleted && e.subjectResults.some(sr => sr.wrongCount > 0 || sr.emptyCount > 0));
+                      if (pendingExam) router.push(`/exams/${pendingExam.id}`);
+                    }}
+                    className="shrink-0 px-4 py-2 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-bold hover:bg-amber-500/30 transition-all"
+                  >
+                    Haritalandır
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
             {/* Exam Grid */}
             {loading ? (
               <div className="flex items-center justify-center py-24">
@@ -568,19 +601,19 @@ export default function ExamsPage() {
           </motion.div>
         )}
 
-        {view === 'wrong-questions' && (
+        {view === 'cold-phase' && (
           <motion.div
-            key="wrong-questions"
+            key="cold-phase"
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
             className="pb-12"
           >
-            <WrongQuestionForm
+            <ColdPhaseForm
               examId={newExamId}
-              examTypeId={newExamTypeId}
+              examDate={new Date().toISOString()}
               subjectResults={newExamSubjectResults}
-              onComplete={handleWrongQuestionsComplete}
+              onComplete={handleColdPhaseComplete}
             />
           </motion.div>
         )}

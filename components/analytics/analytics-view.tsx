@@ -6,16 +6,19 @@ import {
   AreaChart, Area, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   Legend,
 } from 'recharts';
-import { TrendingUp, Target, Award, BookOpen, AlertTriangle, Loader2, Crosshair, PieChart as PieChartIcon, Activity } from 'lucide-react';
+import { TrendingUp, Target, Award, BookOpen, AlertTriangle, Loader2, Crosshair, PieChart as PieChartIcon, Activity, Flame, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { RegressionChart, type RegressionData } from '@/components/analytics/regression-chart';
 import TopicProgress from '@/components/analytics/topic-progress';
 import TargetTracking from '@/components/analytics/target-tracking';
+import CognitiveHeatmap from '@/components/analytics/cognitive-heatmap';
+import RootCauseRadar from '@/components/analytics/root-cause-radar';
+import PlateauBreaker from '@/components/analytics/plateau-breaker';
 
 const COLORS = ['#ff2a85', '#ff7eb3', '#00f0ff', '#bb66ff', '#ffb84d', '#ff3366', '#00e5ff', '#ff99cc'];
 
-type Tab = 'trends' | 'topic-progress' | 'targets' | 'topics' | 'errors' | 'regression';
+type Tab = 'trends' | 'topic-progress' | 'targets' | 'topics' | 'errors' | 'regression' | 'heatmap' | 'radar' | 'plateau';
 
 interface TrendData {
   examId: string;
@@ -35,17 +38,21 @@ interface TopicData {
   topicName: string;
   subjectId: string;
   subjectName: string;
-  count: number;
+  totalMagnitude: number;
+  totalSeverity: number;
+  unresolvedCount: number;
+  resolvedCount: number;
 }
 
 interface ErrorData {
-  errorReasonId: string;
-  errorReasonName: string;
-  count: number;
+  errorReason: string;
+  errorReasonLabel: string;
+  totalMagnitude: number;
+  voidCount: number;
   subjectBreakdown: Array<{
     subjectId: string;
     subjectName: string;
-    count: number;
+    totalMagnitude: number;
   }>;
 }
 
@@ -63,8 +70,8 @@ export default function AnalyticsView() {
 
   const [trends, setTrends] = useState<TrendData[]>([]);
   const [topics, setTopics] = useState<TopicData[]>([]);
-  const [errors, setErrors] = useState<{ totalWrongQuestions: number; errorReasons: ErrorData[] }>({
-    totalWrongQuestions: 0,
+  const [errors, setErrors] = useState<{ totalVoids: number; errorReasons: ErrorData[] }>({
+    totalVoids: 0,
     errorReasons: [],
   });
   const [regression, setRegression] = useState<RegressionData | null>(null);
@@ -111,7 +118,7 @@ export default function AnalyticsView() {
     const params = `${typeParam}${subjectParam}`;
 
     try {
-      if (activeTab === 'topic-progress' || activeTab === 'targets') {
+      if (activeTab === 'topic-progress' || activeTab === 'targets' || activeTab === 'heatmap' || activeTab === 'radar' || activeTab === 'plateau') {
         setLoading(false);
         return;
       } else if (activeTab === 'trends') {
@@ -182,6 +189,9 @@ export default function AnalyticsView() {
     { key: 'trends', label: 'Gidişat', icon: <TrendingUp size={16} /> },
     { key: 'topic-progress', label: 'Konu Gelişimi', icon: <Activity size={16} /> },
     { key: 'targets', label: 'Hedefler', icon: <Target size={16} /> },
+    { key: 'heatmap', label: 'Isı Haritası', icon: <Flame size={16} /> },
+    { key: 'radar', label: 'Kök Neden', icon: <Crosshair size={16} /> },
+    { key: 'plateau', label: 'Plato Kırıcı', icon: <Zap size={16} /> },
     { key: 'topics', label: 'Konu Analizi', icon: <BookOpen size={16} /> },
     { key: 'errors', label: 'Hata Analizi', icon: <AlertTriangle size={16} /> },
     { key: 'regression', label: 'Projeksiyon', icon: <Crosshair size={16} /> },
@@ -377,6 +387,27 @@ export default function AnalyticsView() {
             </motion.div>
           )}
 
+          {/* HEATMAP TAB */}
+          {activeTab === 'heatmap' && (
+            <motion.div key="heatmap" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+              <CognitiveHeatmap examTypeFilter={filterType} />
+            </motion.div>
+          )}
+
+          {/* RADAR TAB */}
+          {activeTab === 'radar' && (
+            <motion.div key="radar" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+              <RootCauseRadar examTypeFilter={filterType} subjectFilter={filterSubject} />
+            </motion.div>
+          )}
+
+          {/* PLATEAU BREAKER TAB */}
+          {activeTab === 'plateau' && (
+            <motion.div key="plateau" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+              <PlateauBreaker examTypeFilter={filterType} subjectFilter={filterSubject} />
+            </motion.div>
+          )}
+
           {/* TOPICS TAB */}
           {activeTab === 'topics' && (
             <motion.div key="topics" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex flex-col gap-6">
@@ -398,8 +429,8 @@ export default function AnalyticsView() {
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,42,133,0.1)" horizontal={false} />
                         <XAxis type="number" tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.6)' }} tickLine={false} axisLine={false} />
                         <YAxis type="category" dataKey="topicName" tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.8)', fontWeight: 500 }} tickLine={false} axisLine={false} width={130} />
-                        <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [`${value} yanlış`, 'Sayı']} cursor={{ fill: 'rgba(255,42,133,0.05)' }} />
-                        <Bar dataKey="count" name="Yanlış Sayısı" radius={[0, 6, 6, 0]} barSize={24}>
+                        <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [`${value} zafiyet`, 'Magnitude']} cursor={{ fill: 'rgba(255,42,133,0.05)' }} />
+                        <Bar dataKey="totalMagnitude" name="Zafiyet Magnitude" radius={[0, 6, 6, 0]} barSize={24}>
                           {topics.slice(0, 15).map((t, i) => (
                             <Cell key={t.topicId} fill={COLORS[i % COLORS.length]} />
                           ))}
@@ -431,13 +462,13 @@ export default function AnalyticsView() {
                               <div key={t.topicId} className="flex flex-col gap-1.5">
                                 <div className="flex justify-between items-center">
                                   <span className="text-white/70 text-[13px] font-medium truncate pr-2">{t.topicName}</span>
-                                  <span className="text-pink-400 font-bold text-xs bg-pink-500/10 px-2 py-0.5 rounded-full border border-pink-500/20">{t.count}</span>
+                                  <span className="text-pink-400 font-bold text-xs bg-pink-500/10 px-2 py-0.5 rounded-full border border-pink-500/20">{t.totalMagnitude}</span>
                                 </div>
                                 <div className="w-full bg-white/[0.05] rounded-full h-1.5 overflow-hidden">
                                   <div
                                     className="h-full rounded-full transition-all duration-1000 ease-out"
                                     style={{
-                                      width: `${Math.min(100, (t.count / (topics[0]?.count || 1)) * 100)}%`,
+                                      width: `${Math.min(100, (t.totalMagnitude / (topics[0]?.totalMagnitude || 1)) * 100)}%`,
                                       backgroundColor: COLORS[idx % COLORS.length]
                                     }}
                                   />
@@ -467,8 +498,8 @@ export default function AnalyticsView() {
                 <>
                   <div className="glass-panel p-8 text-center relative overflow-hidden group">
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-pink-500/10 rounded-full blur-[80px] pointer-events-none group-hover:bg-pink-500/20 transition-all duration-700" />
-                    <span className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-pink-400 to-pink-600 tracking-tighter block mb-2 relative z-10">{errors.totalWrongQuestions}</span>
-                    <span className="text-sm font-semibold text-white/50 uppercase tracking-widest relative z-10">Toplam Yanlış Soru (Açıklamalı)</span>
+                    <span className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-pink-400 to-pink-600 tracking-tighter block mb-2 relative z-10">{errors.totalVoids}</span>
+                    <span className="text-sm font-semibold text-white/50 uppercase tracking-widest relative z-10">Toplam Zafiyet Magnitude</span>
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
@@ -480,7 +511,7 @@ export default function AnalyticsView() {
                       <div className="w-full flex-1 min-h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
-                            <Pie data={errors.errorReasons} cx="50%" cy="50%" innerRadius={80} outerRadius={120} paddingAngle={5} dataKey="count" nameKey="errorReasonName" stroke="none">
+                            <Pie data={errors.errorReasons} cx="50%" cy="50%" innerRadius={80} outerRadius={120} paddingAngle={5} dataKey="totalMagnitude" nameKey="errorReasonLabel" stroke="none">
                               {errors.errorReasons.map((_, i) => (
                                 <Cell key={i} fill={COLORS[i % COLORS.length]} />
                               ))}
@@ -499,20 +530,20 @@ export default function AnalyticsView() {
                       </h3>
                       <div className="space-y-4">
                         {errors.errorReasons.map((er, i) => (
-                          <div key={er.errorReasonId} className="glass bg-white/[0.02] rounded-2xl border border-white/5 p-5 hover:border-pink-500/20 transition-all">
+                          <div key={er.errorReason} className="glass bg-white/[0.02] rounded-2xl border border-white/5 p-5 hover:border-pink-500/20 transition-all">
                             <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
                               <div className="flex items-center gap-3">
                                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length], boxShadow: `0 0 10px ${COLORS[i % COLORS.length]}` }} />
-                                <h4 className="font-bold text-white text-[15px]">{er.errorReasonName}</h4>
+                                <h4 className="font-bold text-white text-[15px]">{er.errorReasonLabel}</h4>
                               </div>
                               <span className="text-[11px] bg-pink-500/10 px-2.5 py-1 rounded-full font-bold text-pink-400 border border-pink-500/20">
-                                {er.count} Soru
+                                ×{er.totalMagnitude}
                               </span>
                             </div>
                             <div className="flex flex-wrap gap-2.5">
                               {er.subjectBreakdown.map(sb => (
                                 <span key={sb.subjectId} className="text-[12px] glass bg-white/[0.04] border border-white/10 px-3 py-1.5 rounded-lg text-white/70 font-medium">
-                                  {sb.subjectName}: <span className="font-bold" style={{ color: COLORS[i % COLORS.length] }}>{sb.count}</span>
+                                  {sb.subjectName}: <span className="font-bold" style={{ color: COLORS[i % COLORS.length] }}>{sb.totalMagnitude}</span>
                                 </span>
                               ))}
                             </div>

@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { logApiError } from "@/lib/logger";
+import { ERROR_REASON_LABELS, type ErrorReasonType } from "@/lib/severity";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,89 +16,85 @@ export async function GET(request: NextRequest) {
     const examTypeId = searchParams.get("examTypeId");
     const subjectId = searchParams.get("subjectId");
 
-    // Get all wrong questions for the user's exams, grouped by error reason
-    const wrongQuestions = await prisma.examWrongQuestion.findMany({
+    // CognitiveVoid'lerden hata kök neden analizi
+    const voids = await prisma.cognitiveVoid.findMany({
       where: {
         exam: {
           userId,
           ...(examTypeId && { examTypeId }),
         },
         ...(subjectId && { subjectId }),
-        errorReasonId: { not: null },
       },
       include: {
-        errorReason: true,
         subject: true,
       },
     });
 
-    // Group by error reason
+    // ErrorReason'a göre grupla (magnitude'u say)
     const reasonMap = new Map<
       string,
       {
-        errorReasonId: string;
-        errorReasonName: string;
-        count: number;
-        subjectBreakdown: Map<string, { subjectId: string; subjectName: string; count: number }>;
+        errorReason: string;
+        errorReasonLabel: string;
+        totalMagnitude: number;
+        voidCount: number;
+        subjectBreakdown: Map<string, { subjectId: string; subjectName: string; totalMagnitude: number }>;
       }
     >();
 
-    for (const wq of wrongQuestions) {
-      if (!wq.errorReasonId || !wq.errorReason) continue;
-
-      const key = wq.errorReasonId;
+    for (const v of voids) {
+      const key = v.errorReason;
       const existing = reasonMap.get(key);
+      const label = ERROR_REASON_LABELS[key as ErrorReasonType] || key;
 
       if (existing) {
-        existing.count += 1;
-        const subjectEntry = existing.subjectBreakdown.get(wq.subjectId);
+        existing.totalMagnitude += v.magnitude;
+        existing.voidCount += 1;
+        const subjectEntry = existing.subjectBreakdown.get(v.subjectId);
         if (subjectEntry) {
-          subjectEntry.count += 1;
+          subjectEntry.totalMagnitude += v.magnitude;
         } else {
-          existing.subjectBreakdown.set(wq.subjectId, {
-            subjectId: wq.subjectId,
-            subjectName: wq.subject.name,
-            count: 1,
+          existing.subjectBreakdown.set(v.subjectId, {
+            subjectId: v.subjectId,
+            subjectName: v.subject.name,
+            totalMagnitude: v.magnitude,
           });
         }
       } else {
-        const subjectBreakdown = new Map<string, { subjectId: string; subjectName: string; count: number }>();
-        subjectBreakdown.set(wq.subjectId, {
-          subjectId: wq.subjectId,
-          subjectName: wq.subject.name,
-          count: 1,
+        const subjectBreakdown = new Map<string, { subjectId: string; subjectName: string; totalMagnitude: number }>();
+        subjectBreakdown.set(v.subjectId, {
+          subjectId: v.subjectId,
+          subjectName: v.subject.name,
+          totalMagnitude: v.magnitude,
         });
 
         reasonMap.set(key, {
-          errorReasonId: wq.errorReasonId,
-          errorReasonName: wq.errorReason?.label ?? "Belirtilmemiş",
-          count: 1,
+          errorReason: key,
+          errorReasonLabel: label,
+          totalMagnitude: v.magnitude,
+          voidCount: 1,
           subjectBreakdown,
         });
       }
     }
 
-    // Sort by count descending and convert maps to arrays
     const errorAnalysis = Array.from(reasonMap.values())
-      .sort((a, b) => b.count - a.count)
+      .sort((a, b) => b.totalMagnitude - a.totalMagnitude)
       .map(({ subjectBreakdown, ...rest }) => ({
         ...rest,
         subjectBreakdown: Array.from(subjectBreakdown.values()).sort(
-          (a, b) => b.count - a.count
+          (a, b) => b.totalMagnitude - a.totalMagnitude
         ),
       }));
 
-    const totalWrongQuestions = wrongQuestions.length;
+    const totalVoids = voids.reduce((sum, v) => sum + v.magnitude, 0);
 
     return NextResponse.json({
-      totalWrongQuestions,
+      totalVoids,
       errorReasons: errorAnalysis,
     });
   } catch (error) {
     logApiError("analytics/errors", error);
-    return NextResponse.json(
-      { error: "Sunucu hatası" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
