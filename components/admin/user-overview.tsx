@@ -49,7 +49,7 @@ interface UserDetail {
     avgNet: number;
     checkedKazanim: number;
     totalKazanim: number;
-    streak: { currentStreak: number; longestStreak: number; lastStudyDate: string } | null;
+    streak: { currentStreak: number; longestStreak: number; lastActiveDate: string } | null;
   };
   topicKnowledge: Array<{
     topicName: string;
