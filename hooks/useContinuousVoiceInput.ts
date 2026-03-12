@@ -21,6 +21,11 @@ export function useContinuousVoiceInput(options?: UseContinuousVoiceInputOptions
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isPausedRef = useRef(false);
 
+  // MediaRecorder for audio capture
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+
   useEffect(() => {
     setIsSupported(
       typeof window !== "undefined" &&
@@ -121,6 +126,43 @@ export function useContinuousVoiceInput(options?: UseContinuousVoiceInputOptions
     return recognition;
   }, [isSupported, options]);
 
+  // Start MediaRecorder alongside speech recognition
+  const startMediaRecorder = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      audioChunksRef.current = [];
+
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : "audio/webm",
+      });
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start(1000); // collect chunks every second
+    } catch {
+      // Audio recording not available — speech recognition still works
+      console.warn("MediaRecorder not available, falling back to speech recognition only");
+    }
+  }, []);
+
+  const stopMediaRecorder = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+  }, []);
+
   const startListening = useCallback(() => {
     if (!isSupported) return;
 
@@ -132,27 +174,33 @@ export function useContinuousVoiceInput(options?: UseContinuousVoiceInputOptions
     isPausedRef.current = false;
     shouldRestartRef.current = true;
 
+    // Start both speech recognition and audio recording
     const recognition = createRecognition();
     if (recognition) {
       recognitionRef.current = recognition;
       recognition.start();
       setIsListening(true);
     }
-  }, [isSupported, createRecognition]);
+    startMediaRecorder();
+  }, [isSupported, createRecognition, startMediaRecorder]);
 
   const stopListening = useCallback(() => {
     shouldRestartRef.current = false;
     isPausedRef.current = false;
     setIsPaused(false);
     recognitionRef.current?.stop();
+    stopMediaRecorder();
     setIsListening(false);
     setInterimText("");
-  }, []);
+  }, [stopMediaRecorder]);
 
   const pauseListening = useCallback(() => {
     isPausedRef.current = true;
     setIsPaused(true);
     recognitionRef.current?.stop();
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.pause();
+    }
   }, []);
 
   const resumeListening = useCallback(() => {
@@ -166,6 +214,9 @@ export function useContinuousVoiceInput(options?: UseContinuousVoiceInputOptions
       recognitionRef.current = recognition;
       recognition.start();
     }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "paused") {
+      mediaRecorderRef.current.resume();
+    }
   }, [isSupported, createRecognition]);
 
   const clearTranscript = useCallback(() => {
@@ -173,6 +224,13 @@ export function useContinuousVoiceInput(options?: UseContinuousVoiceInputOptions
     setFullTranscript("");
     setInterimText("");
     setElapsedSeconds(0);
+    audioChunksRef.current = [];
+  }, []);
+
+  /** Get the recorded audio as a Blob (webm format) */
+  const getAudioBlob = useCallback((): Blob | null => {
+    if (audioChunksRef.current.length === 0) return null;
+    return new Blob(audioChunksRef.current, { type: "audio/webm" });
   }, []);
 
   const formatTime = useCallback((seconds: number) => {
@@ -194,5 +252,6 @@ export function useContinuousVoiceInput(options?: UseContinuousVoiceInputOptions
     pauseListening,
     resumeListening,
     clearTranscript,
+    getAudioBlob,
   };
 }
