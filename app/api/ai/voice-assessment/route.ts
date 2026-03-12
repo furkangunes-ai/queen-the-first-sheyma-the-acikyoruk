@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOpenAI, AI_MODEL, SYSTEM_PROMPT_VOICE_ASSESSMENT } from "@/lib/openai";
-import { checkAIAccess, isAIGuardError } from "@/lib/ai-guard";
+import { getOpenAILong, SYSTEM_PROMPT_VOICE_ASSESSMENT } from "@/lib/openai";
+import { auth } from "@/lib/auth";
 import { logApiError } from "@/lib/logger";
 
-const MAX_RETRIES = 1;
+const MAX_RETRIES = 2;
+const VOICE_MODEL = "gpt-4o";
 
 export async function POST(request: NextRequest) {
   try {
-    const guard = await checkAIAccess();
-    if (isAIGuardError(guard)) return guard;
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
+    }
 
     const { transcript, curriculum } = await request.json();
 
@@ -50,16 +53,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Build the curriculum context for the AI
-    const curriculumText = buildCurriculumContext(curriculum);
+    // For large curricula, omit kazanım details to keep context manageable
+    const topicCount = validTopicIds.size;
+    const isLarge = topicCount > 80;
+    const curriculumText = buildCurriculumContext(curriculum, isLarge);
 
-    const userPrompt = `MÜFREDAT KONULARI:
-${curriculumText}
-
-ÖĞRENCİ TRANSKRİPTİ:
-${transcript}
-
-Aşağıdaki JSON formatında yanıt ver:
-{
+    // For large curricula, simplify the output format (skip kazanım-level detail)
+    const jsonFormat = isLarge
+      ? `{
+  "topics": [
+    {
+      "topicId": "string",
+      "topicName": "string",
+      "suggestedLevel": 0-5,
+      "confidence": "high" | "medium" | "low",
+      "reasoning": "kısa açıklama",
+      "needsReview": true/false
+    }
+  ],
+  "unmentionedTopics": ["topicId"],
+  "generalNotes": "string"
+}`
+      : `{
   "topics": [
     {
       "topicId": "string",
@@ -77,6 +92,15 @@ Aşağıdaki JSON formatında yanıt ver:
   "generalNotes": "string"
 }`;
 
+    const userPrompt = `MÜFREDAT KONULARI (${topicCount} konu):
+${curriculumText}
+
+ÖĞRENCİ TRANSKRİPTİ:
+${transcript}
+
+Aşağıdaki JSON formatında yanıt ver:
+${jsonFormat}`;
+
     const messages: Array<{ role: "system" | "user"; content: string }> = [
       { role: "system", content: SYSTEM_PROMPT_VOICE_ASSESSMENT },
       { role: "user", content: userPrompt },
@@ -86,10 +110,11 @@ Aşağıdaki JSON formatında yanıt ver:
     let lastError: string | null = null;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const response = await getOpenAI().chat.completions.create({
-          model: AI_MODEL,
+        const response = await getOpenAILong().chat.completions.create({
+          model: VOICE_MODEL,
           messages,
-          temperature: 1,
+          temperature: 0.7,
+          max_completion_tokens: 16384,
           response_format: { type: "json_object" },
         });
 
@@ -273,7 +298,7 @@ interface CurriculumSubject {
   topics: CurriculumTopic[];
 }
 
-function buildCurriculumContext(curriculum: CurriculumSubject[]): string {
+function buildCurriculumContext(curriculum: CurriculumSubject[], compact = false): string {
   const lines: string[] = [];
 
   for (const subject of curriculum) {
@@ -283,7 +308,8 @@ function buildCurriculumContext(curriculum: CurriculumSubject[]): string {
       const topic = subject.topics[i];
       lines.push(`  ${i + 1}. [ID:${topic.id}] ${topic.name}`);
 
-      if (topic.kazanimlar && topic.kazanimlar.length > 0) {
+      // In compact mode (large curricula), skip kazanım details to save tokens
+      if (!compact && topic.kazanimlar && topic.kazanimlar.length > 0) {
         for (const k of topic.kazanimlar) {
           const keyMarker = k.isKeyKazanim ? " ⭐" : "";
           lines.push(`     - [KID:${k.id}] ${k.code}: ${k.description}${keyMarker}`);

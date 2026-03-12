@@ -4,11 +4,11 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import {
-  ArrowLeft,
   Mic,
   Loader2,
   CheckCircle,
   ChevronLeft,
+  FileAudio,
 } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -21,7 +21,6 @@ import {
 import {
   CurriculumDisplay,
   type CurriculumSubjectData,
-  type CurriculumTopic,
 } from "@/components/voice-assessment/curriculum-display";
 import { VoiceRecorder } from "@/components/voice-assessment/voice-recorder";
 import {
@@ -33,9 +32,9 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-type Step = "select" | "record" | "processing" | "review" | "done";
+type Step = "select" | "record" | "transcribing" | "processing" | "review" | "done";
 
-const AI_FETCH_TIMEOUT = 90_000; // 90 seconds
+const AI_FETCH_TIMEOUT = 120_000; // 120 seconds
 
 interface TopicWithKazanim {
   id: string;
@@ -65,22 +64,23 @@ export default function VoiceAssessmentPage() {
   const [step, setStep] = useState<Step>("select");
   const [subjects, setSubjects] = useState<SubjectFull[]>([]);
   const [subjectOptions, setSubjectOptions] = useState<SubjectOption[]>([]);
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string | "all" | null>(null);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
   const [knowledgeMap, setKnowledgeMap] = useState<Map<string, number>>(new Map());
   const [loadingSubjects, setLoadingSubjects] = useState(true);
   const [assessmentData, setAssessmentData] = useState<AssessmentData | null>(null);
   const [saving, setSaving] = useState(false);
   const [correctionMode, setCorrectionMode] = useState(false);
   const [processingElapsed, setProcessingElapsed] = useState(0);
+  const [processingMessage, setProcessingMessage] = useState("");
   const abortRef = React.useRef<AbortController | null>(null);
 
   // Voice hook
   const voice = useContinuousVoiceInput();
 
-  // ------ Elapsed timer for processing ------
+  // ------ Elapsed timer for processing / transcribing ------
 
   useEffect(() => {
-    if (step !== "processing") {
+    if (step !== "processing" && step !== "transcribing") {
       setProcessingElapsed(0);
       return;
     }
@@ -144,10 +144,7 @@ export default function VoiceAssessmentPage() {
   // ------ Computed data ------
 
   const selectedCurriculum: CurriculumSubjectData[] = useMemo(() => {
-    const filtered =
-      selectedSubjectId === "all"
-        ? subjects
-        : subjects.filter((s) => s.id === selectedSubjectId);
+    const filtered = subjects.filter((s) => s.id === selectedSubjectId);
 
     return filtered.map((s) => ({
       id: s.id,
@@ -173,22 +170,77 @@ export default function VoiceAssessmentPage() {
     return map;
   }, [subjects]);
 
+  // ------ Whisper transcription ------
+
+  const transcribeWithWhisper = async (audioBlob: Blob): Promise<string | null> => {
+    try {
+      const formData = new FormData();
+      formData.append("audio", audioBlob, "recording.webm");
+
+      const res = await fetch("/api/ai/voice-transcribe", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) return null;
+
+      const data = await res.json();
+      return data.transcript || null;
+    } catch {
+      return null;
+    }
+  };
+
   // ------ Handlers ------
 
-  const handleSubjectSelect = (subjectId: string | "all") => {
+  const handleSubjectSelect = (subjectId: string) => {
     setSelectedSubjectId(subjectId);
     setStep("record");
   };
 
   const handleRecordingComplete = async () => {
-    const transcript = voice.fullTranscript.trim();
-    if (!transcript) {
+    const browserTranscript = voice.fullTranscript.trim();
+    const audioBlob = voice.getAudioBlob();
+
+    voice.stopListening();
+
+    // Need at least one source of transcript
+    if (!browserTranscript && !audioBlob) {
       toast.error("Ses kaydı boş. Lütfen konuşarak bilgi verin.");
       return;
     }
 
-    voice.stopListening();
+    // Step: Transcribing — show "please wait" while Whisper processes
+    setStep("transcribing");
+    setProcessingMessage("Ses kaydı işleniyor, lütfen bekleyin...");
+
+    let finalTranscript = browserTranscript;
+
+    // Try Whisper transcription if we have audio
+    if (audioBlob && audioBlob.size > 1000) {
+      setProcessingMessage("Ses kaydı yüksek doğrulukla analiz ediliyor...");
+      const whisperTranscript = await transcribeWithWhisper(audioBlob);
+
+      if (whisperTranscript) {
+        // Combine both transcripts: Whisper is primary, browser is fallback context
+        if (browserTranscript) {
+          finalTranscript = `[Yüksek doğruluklu transkript]: ${whisperTranscript}\n\n[Anlık transkript (referans)]: ${browserTranscript}`;
+        } else {
+          finalTranscript = whisperTranscript;
+        }
+      }
+      // If Whisper failed, fall back to browser transcript
+    }
+
+    if (!finalTranscript) {
+      toast.error("Ses kaydı boş veya tanınamadı. Lütfen tekrar deneyin.");
+      setStep("record");
+      return;
+    }
+
+    // Step: AI Processing
     setStep("processing");
+    setProcessingMessage("AI değerlendirme hazırlıyor...");
 
     try {
       // Build curriculum payload for AI
@@ -216,7 +268,7 @@ export default function VoiceAssessmentPage() {
       const res = await fetch("/api/ai/voice-assessment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript, curriculum }),
+        body: JSON.stringify({ transcript: finalTranscript, curriculum }),
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
@@ -247,16 +299,40 @@ export default function VoiceAssessmentPage() {
   };
 
   const handleCorrectionComplete = async () => {
-    const transcript = voice.fullTranscript.trim();
-    if (!transcript) {
+    const browserTranscript = voice.fullTranscript.trim();
+    const audioBlob = voice.getAudioBlob();
+
+    voice.stopListening();
+
+    if (!browserTranscript && !audioBlob) {
       toast.error("Düzeltme kaydı boş");
       setCorrectionMode(false);
       return;
     }
 
-    voice.stopListening();
     setCorrectionMode(false);
+    setStep("transcribing");
+    setProcessingMessage("Düzeltme kaydı işleniyor, lütfen bekleyin...");
+
+    let finalTranscript = browserTranscript;
+
+    if (audioBlob && audioBlob.size > 1000) {
+      const whisperTranscript = await transcribeWithWhisper(audioBlob);
+      if (whisperTranscript) {
+        finalTranscript = browserTranscript
+          ? `[Yüksek doğruluklu transkript]: ${whisperTranscript}\n\n[Anlık transkript (referans)]: ${browserTranscript}`
+          : whisperTranscript;
+      }
+    }
+
+    if (!finalTranscript) {
+      toast.error("Düzeltme kaydı tanınamadı. Lütfen tekrar deneyin.");
+      setStep("review");
+      return;
+    }
+
     setStep("processing");
+    setProcessingMessage("Düzeltmeler uygulanıyor...");
 
     try {
       const controller = new AbortController();
@@ -267,7 +343,7 @@ export default function VoiceAssessmentPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          transcript,
+          transcript: finalTranscript,
           currentAssessment: assessmentData,
         }),
         signal: controller.signal,
@@ -331,13 +407,17 @@ export default function VoiceAssessmentPage() {
     fetchKnowledge();
   };
 
+  // ------ Step order helper ------
+  const stepOrder: Step[] = ["select", "record", "transcribing", "processing", "review", "done"];
+  const stepIndex = (s: Step) => stepOrder.indexOf(s);
+
   // ------ Render ------
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        {step !== "select" && step !== "done" && (
+        {step !== "select" && step !== "done" && step !== "transcribing" && step !== "processing" && (
           <button
             onClick={() => {
               if (step === "record") {
@@ -360,6 +440,7 @@ export default function VoiceAssessmentPage() {
           <p className="text-white/50 text-sm mt-0.5">
             {step === "select" && "Müfredat hakimiyetini sesli olarak değerlendir"}
             {step === "record" && "Konuları görüntülerken durumunu anlat"}
+            {step === "transcribing" && "Ses kaydı işleniyor..."}
             {step === "processing" && "Değerlendirme işleniyor..."}
             {step === "review" && "Sonuçları kontrol et ve onayla"}
             {step === "done" && "Değerlendirme tamamlandı!"}
@@ -373,23 +454,23 @@ export default function VoiceAssessmentPage() {
           <React.Fragment key={s}>
             <div
               className={`flex items-center gap-1.5 text-xs ${
-                step === s
+                step === s || (s === "record" && (step === "transcribing" || step === "processing"))
                   ? "text-cyan-400"
-                  : step === "done" || (["select", "record", "processing", "review", "done"].indexOf(step) > ["select", "record", "processing", "review", "done"].indexOf(s))
+                  : step === "done" || stepIndex(step) > stepIndex(s)
                   ? "text-zinc-500"
                   : "text-zinc-600"
               }`}
             >
               <div
                 className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium border ${
-                  step === s
+                  step === s || (s === "record" && (step === "transcribing" || step === "processing"))
                     ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-400"
-                    : step === "done" || (["select", "record", "processing", "review", "done"].indexOf(step) > ["select", "record", "processing", "review", "done"].indexOf(s))
+                    : step === "done" || stepIndex(step) > stepIndex(s)
                     ? "border-zinc-600 bg-zinc-800 text-zinc-500"
                     : "border-zinc-700 text-zinc-600"
                 }`}
               >
-                {step === "done" || (["select", "record", "processing", "review", "done"].indexOf(step) > ["select", "record", "processing", "review", "done"].indexOf(s)) ? (
+                {step === "done" || stepIndex(step) > stepIndex(s) ? (
                   <CheckCircle className="w-3 h-3" />
                 ) : (
                   i + 1
@@ -529,12 +610,37 @@ export default function VoiceAssessmentPage() {
             </div>
           )}
 
-          {/* Step 3: Processing */}
+          {/* Transcribing step — "Please wait" */}
+          {step === "transcribing" && (
+            <div className="flex flex-col items-center justify-center py-20 gap-5">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full bg-cyan-500/10 flex items-center justify-center">
+                  <FileAudio className="w-8 h-8 text-cyan-400" />
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-zinc-900 flex items-center justify-center">
+                  <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
+                </div>
+              </div>
+              <div className="text-center space-y-2">
+                <p className="text-base font-medium text-white">
+                  Lütfen Bekleyin
+                </p>
+                <p className="text-sm text-zinc-400">
+                  {processingMessage || "Ses kaydı işleniyor..."}
+                </p>
+                <p className="text-xs text-zinc-600 tabular-nums">
+                  {processingElapsed > 0 && `${processingElapsed}s`}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Processing step — AI analysis */}
           {step === "processing" && (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <Loader2 className="w-10 h-10 text-cyan-400 animate-spin" />
               <p className="text-sm text-zinc-400">
-                Değerlendirme AI tarafından işleniyor...
+                {processingMessage || "Değerlendirme AI tarafından işleniyor..."}
               </p>
               <p className="text-xs text-zinc-600 tabular-nums">
                 {processingElapsed < 10
