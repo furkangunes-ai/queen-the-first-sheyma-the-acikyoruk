@@ -107,6 +107,41 @@ async function main() {
   }
 
   console.log(`✅ ${created} konu eklendi (${topics.length - created} zaten mevcuttu)`);
+
+  // Geometri'yi Matematik'in hemen arkasına taşı (sortOrder = 1)
+  // Matematik sortOrder=0, Geometri sortOrder=1, diğerleri 2'den başlasın
+  if (aytMatematik) {
+    // Matematik'i 0 yap
+    await prisma.subject.update({
+      where: { id: aytMatematik.id },
+      data: { sortOrder: 0 },
+    });
+
+    // Geometri'yi 1 yap
+    await prisma.subject.update({
+      where: { id: geometri.id },
+      data: { sortOrder: 1 },
+    });
+
+    // Diğer AYT derslerini 2'den başlat
+    const otherSubjects = await prisma.subject.findMany({
+      where: {
+        examTypeId: ayt.id,
+        id: { notIn: [aytMatematik.id, geometri.id] },
+      },
+      orderBy: { sortOrder: "asc" },
+    });
+
+    for (let i = 0; i < otherSubjects.length; i++) {
+      await prisma.subject.update({
+        where: { id: otherSubjects[i].id },
+        data: { sortOrder: i + 2 },
+      });
+    }
+
+    console.log("✅ Geometri, Matematik'in hemen altına taşındı (sortOrder=1)");
+  }
+
   console.log("\n🎉 AYT Geometri müfredatı başarıyla eklendi!");
 }
 
