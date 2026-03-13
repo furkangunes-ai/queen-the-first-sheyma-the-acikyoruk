@@ -17,11 +17,13 @@ import {
   Hash,
   Sparkles,
   GraduationCap,
-  Brain,
+  ChevronDown,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getBranchGroupLabel } from '@/lib/constants';
 import { calculateClarityScore } from '@/lib/exam-metrics';
+import NextTaskWidget from '@/components/exams/next-task-widget';
+import ClarityRing from '@/components/exams/clarity-ring';
 import AnalyticsView from '@/components/analytics/analytics-view';
 import {
   AreaChart,
@@ -125,7 +127,12 @@ export default function ExamsPage() {
   const [filterType, setFilterType] = useState<string>('all');
   const [examMode, setExamMode] = useState<ExamModeFilter>('all');
   const [examTypes, setExamTypes] = useState<Array<{ id: string; name: string }>>([]);
-  const [showCharts, setShowCharts] = useState(true);
+  const [showCharts, setShowCharts] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const visits = parseInt(localStorage.getItem('exams-chart-visits') || '0', 10);
+    localStorage.setItem('exams-chart-visits', String(visits + 1));
+    return visits < 3; // İlk 3 ziyarette açık, sonra kapalı
+  });
 
   // For wrong question entry after exam creation
   const [newExamId, setNewExamId] = useState<string>('');
@@ -237,6 +244,18 @@ export default function ExamsPage() {
         net: parseFloat(getTotalNet(e).toFixed(1)),
         title: e.title,
       }));
+  }, [filteredExams]);
+
+  const trendTeaser = useMemo(() => {
+    if (filteredExams.length < 3) return null;
+    const nets = filteredExams.slice(0, 3).map(e => getTotalNet(e)); // son 3 (desc)
+    const allUp = nets[0] > nets[1] && nets[1] > nets[2];
+    const allDown = nets[0] < nets[1] && nets[1] < nets[2];
+    const plateau = Math.abs(nets[0] - nets[1]) <= 2 && Math.abs(nets[1] - nets[2]) <= 2;
+    if (allUp) return '📈 Yükseliş trendindesin';
+    if (allDown) return '📉 Düşüş trendi var';
+    if (plateau) return '📊 Platoya girdin';
+    return null;
   }, [filteredExams]);
 
   const subjectAvgData = useMemo(() => {
@@ -358,13 +377,16 @@ export default function ExamsPage() {
             {/* Charts Section */}
             {!loading && filteredExams.length > 0 && stats && (
               <div className="space-y-4">
-                {/* Toggle */}
+                {/* Accordion Toggle */}
                 <button
                   onClick={() => setShowCharts((p) => !p)}
-                  className="flex items-center gap-2 text-xs font-bold text-white/40 hover:text-white/60 transition-colors uppercase tracking-widest"
+                  className="w-full flex items-center justify-between gap-2 text-xs font-bold text-white/40 hover:text-white/60 transition-colors uppercase tracking-widest"
                 >
-                  <BarChart3 size={14} />
-                  {showCharts ? 'Grafikleri Gizle' : 'Grafikleri Göster'}
+                  <span className="flex items-center gap-2">
+                    <BarChart3 size={14} />
+                    {trendTeaser || (showCharts ? 'Grafikleri Gizle' : 'Grafikleri Göster')}
+                  </span>
+                  <ChevronDown size={14} className={`transition-transform ${showCharts ? 'rotate-180' : ''}`} />
                 </button>
 
                 <AnimatePresence>
@@ -448,49 +470,8 @@ export default function ExamsPage() {
               </div>
             )}
 
-            {/* Analiz Bekliyor Banner - Global Veri Bütünlüğü Uyarısı */}
-            {/* Clarity Score bazlı uyarı — RAW void'ları olan denemeleri göster */}
-            {!loading && (() => {
-              const pendingExam = filteredExams.find(e => {
-                const voids = e.cognitiveVoids || [];
-                const hasErrors = e.subjectResults.some(sr => sr.wrongCount > 0 || sr.emptyCount > 0);
-                if (!hasErrors) return false;
-                if (voids.length === 0) return true; // void hiç oluşturulmamış
-                return calculateClarityScore(voids) < 1; // RAW void'lar var
-              });
-              if (!pendingExam) return null;
-              const voids = pendingExam.cognitiveVoids || [];
-              const rawCount = voids.filter(v => v.status === 'RAW').length;
-              return (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent p-5"
-                >
-                  <div className="absolute inset-0 bg-amber-500/5 backdrop-blur-sm pointer-events-none" />
-                  <div className="relative z-10 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
-                      <Brain size={24} className="text-amber-400" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-bold text-amber-400 mb-1">Kognitif Zafiyetler Bekliyor</h4>
-                      <p className="text-xs text-white/50">
-                        {rawCount > 0
-                          ? `${rawCount} ham zafiyet sınıflandırma bekliyor. Sisi kaldır, analitiklerin netleşsin.`
-                          : `İşlenmemiş denemelerin var. Zafiyet haritasını tamamlamadan analitik veriler eksik kalacak.`
-                        }
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => router.push(`/exams/${pendingExam.id}`)}
-                      className="shrink-0 px-4 py-2 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-bold hover:bg-amber-500/30 transition-all"
-                    >
-                      Haritalandır
-                    </button>
-                  </div>
-                </motion.div>
-              );
-            })()}
+            {/* Next Task Widget */}
+            {!loading && <NextTaskWidget exams={filteredExams} />}
 
             {/* Exam Grid */}
             {loading ? (
@@ -529,6 +510,14 @@ export default function ExamsPage() {
                             <span className="text-[11px] font-semibold text-white/40 tracking-wider uppercase">{formatDate(exam.date)}</span>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                            {(() => {
+                              const voids = exam.cognitiveVoids || [];
+                              const hasErrors = exam.subjectResults.some(sr => sr.wrongCount > 0 || sr.emptyCount > 0);
+                              if (hasErrors && (voids.length === 0 || calculateClarityScore(voids) < 1)) {
+                                return <ClarityRing score={voids.length > 0 ? calculateClarityScore(voids) : 0} />;
+                              }
+                              return null;
+                            })()}
                             {categoryBadge && (
                               <span className={`text-[9px] font-black px-2 py-0.5 rounded-md tracking-wider ${categoryBadge.className}`}>
                                 {categoryBadge.label}
