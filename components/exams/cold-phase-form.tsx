@@ -189,13 +189,7 @@ export default function ColdPhaseForm({ examId, examDate, subjectResults, onComp
         });
       }
 
-      // Mark cold phase as completed
-      await fetch(`/api/exams/${examId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ coldPhaseCompleted: true }),
-      });
-
+      // coldPhaseCompleted kaldırıldı — ClarityScore artık void status'larından otomatik hesaplanır
       toast.success('Zafiyet haritası tamamlandı! Ebbinghaus motoru aktif.');
       onComplete();
     } catch {

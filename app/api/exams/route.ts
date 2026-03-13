@@ -27,6 +27,9 @@ export async function GET(request: NextRequest) {
             subject: true,
           },
         },
+        cognitiveVoids: {
+          select: { status: true },
+        },
       },
       orderBy: { date: "desc" },
       take: limit ? Math.min(Math.max(1, parseInt(limit, 10) || 50), 100) : 50,
@@ -51,7 +54,8 @@ export async function POST(request: NextRequest) {
     const userId = (session.user as any).id;
 
     const body = await request.json();
-    const { title, examTypeId, date, notes, examCategory } = body;
+    const { title, examTypeId, date, notes, examCategory,
+            timeOfDay, environment, perceivedDifficulty, biologicalState } = body;
 
     if (!title || !examTypeId) {
       return NextResponse.json(
@@ -68,6 +72,10 @@ export async function POST(request: NextRequest) {
         notes,
         userId,
         ...(examCategory && { examCategory }),
+        ...(timeOfDay && { timeOfDay }),
+        ...(environment && { environment }),
+        ...(perceivedDifficulty && { perceivedDifficulty }),
+        ...(biologicalState && { biologicalState }),
       },
       include: {
         examType: true,
