@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { logApiError } from "@/lib/logger";
+import { buildExamCategoryWhere } from "@/lib/exam-metrics";
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,6 +15,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const examTypeId = searchParams.get("examTypeId");
     const subjectId = searchParams.get("subjectId");
+    const examCategory = searchParams.get("examCategory");
 
     // CognitiveVoid'lerden konu bazlı zafiyet analizi
     const voids = await prisma.cognitiveVoid.findMany({
@@ -21,6 +23,7 @@ export async function GET(request: NextRequest) {
         exam: {
           userId,
           ...(examTypeId && { examTypeId }),
+          ...buildExamCategoryWhere(examCategory),
         },
         ...(subjectId && { subjectId }),
       },

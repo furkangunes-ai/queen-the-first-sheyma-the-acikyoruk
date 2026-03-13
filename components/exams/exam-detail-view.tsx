@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Paper, Handwriting, Tape } from '@/components/skeuomorphic';
+import { Paper, Handwriting } from '@/components/skeuomorphic';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Camera, BookOpen, PieChart as PieChartIcon, BarChart3, Image, Trash2, Pencil, Check, X, Loader2, ListOrdered, Target, CheckCircle, AlertTriangle, RefreshCw, Filter, Sparkles, Bot, ChevronDown } from 'lucide-react';
+import { ArrowLeft, BookOpen, BarChart3, Trash2, Pencil, Check, X, Loader2, Target, Brain, ChevronDown, Sparkles, Bot, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 import {
@@ -12,7 +12,12 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend
 } from 'recharts';
-import QuestionDetailModal, { type WrongQuestionDetail } from './question-detail-modal';
+import {
+  ERROR_REASON_LABELS,
+  VOID_STATUS_LABELS,
+  VOID_STATUS_COLORS,
+  type ErrorReasonType,
+} from '@/lib/severity';
 
 // ---------- Types ----------
 
@@ -25,24 +30,20 @@ interface SubjectResult {
   netScore: number;
 }
 
-interface WrongQuestion {
+interface CognitiveVoid {
   id: string;
-  questionNumber: number;
+  subjectId: string;
   subject: { name: string };
+  topicId: string | null;
   topic: { name: string } | null;
-  errorReason: { label: string } | null;
+  source: 'WRONG' | 'EMPTY';
+  errorReason: ErrorReasonType | null;
+  magnitude: number;
+  status: 'RAW' | 'UNRESOLVED' | 'REVIEW' | 'RESOLVED';
+  severity: number;
   notes: string | null;
-  photoUrl: string | null;
-  difficulty: string | null;
-  understandingStatus: string | null;
-}
-
-interface EmptyQuestion {
-  id: string;
-  questionNumber: number;
-  subject: { name: string };
-  topic: { name: string } | null;
-  notes: string | null;
+  questionNumber?: number | null;
+  relapseCount?: number;
 }
 
 interface ExamType {
@@ -58,8 +59,12 @@ interface ExamDetail {
   examType: { id: string; name: string };
   examCategory?: string | null;
   subjectResults: SubjectResult[];
-  wrongQuestions: WrongQuestion[];
-  emptyQuestions: EmptyQuestion[];
+  cognitiveVoids: CognitiveVoid[];
+  coldPhaseCompleted?: boolean;
+  timeOfDay?: string | null;
+  environment?: string | null;
+  perceivedDifficulty?: number | null;
+  biologicalState?: string | null;
 }
 
 interface ExamDetailViewProps {
@@ -73,25 +78,23 @@ interface ExamDetailViewProps {
 const CHART_COLORS = ['#f472b6', '#fbbf24', '#34d399', '#fb7185', '#a78bfa', '#ec4899', '#2dd4bf', '#f97316'];
 
 const TABS = [
-  { key: 'summary', label: 'Ozet', icon: BookOpen },
-  { key: 'questions', label: 'Sorular', icon: ListOrdered },
-  { key: 'wrong', label: 'Yanlis Analizi', icon: PieChartIcon },
-  { key: 'topics', label: 'Konu Dagilimi', icon: BarChart3 },
-  { key: 'photos', label: 'Fotograflar', icon: Image },
+  { key: 'summary', label: 'Özet', icon: BookOpen },
+  { key: 'voids', label: 'Zafiyetler', icon: Brain },
+  { key: 'analysis', label: 'Analiz', icon: BarChart3 },
 ] as const;
 
 type TabKey = (typeof TABS)[number]['key'];
 
-const DIFFICULTY_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  kolay: { label: 'Kolay', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
-  orta: { label: 'Orta', color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
-  zor: { label: 'Zor', color: 'text-rose-400', bg: 'bg-rose-500/10 border-rose-500/20' },
+const STATUS_CYCLE: Record<string, 'UNRESOLVED' | 'REVIEW' | 'RESOLVED'> = {
+  UNRESOLVED: 'REVIEW',
+  REVIEW: 'RESOLVED',
+  RESOLVED: 'UNRESOLVED',
 };
 
-const STATUS_MAP: Record<string, { label: string; icon: React.ElementType; color: string; bg: string }> = {
-  anladim: { label: 'Anladım', icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
-  tekrar: { label: 'Tekrar Lazim', icon: RefreshCw, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
-  anlamadim: { label: 'Anlamadım', icon: AlertTriangle, color: 'text-rose-400', bg: 'bg-rose-500/10 border-rose-500/20' },
+const STATUS_ICONS = {
+  UNRESOLVED: AlertTriangle,
+  REVIEW: RefreshCw,
+  RESOLVED: CheckCircle,
 };
 
 // ---------- Helpers ----------
@@ -123,7 +126,6 @@ function DetailSkeleton() {
         ))}
       </div>
       <div className="h-64 bg-white/10 rounded-lg" />
-      <div className="h-48 bg-white/10 rounded-lg" />
     </div>
   );
 }
@@ -150,6 +152,23 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
     }));
   }, [exam.subjectResults]);
 
+  const voidStats = useMemo(() => {
+    const raw = exam.cognitiveVoids.filter(v => v.status === 'RAW').length;
+    const unresolved = exam.cognitiveVoids.filter(v => v.status === 'UNRESOLVED').length;
+    const review = exam.cognitiveVoids.filter(v => v.status === 'REVIEW').length;
+    const resolved = exam.cognitiveVoids.filter(v => v.status === 'RESOLVED').length;
+    const pending = raw + unresolved + review;
+    return { raw, unresolved, review, resolved, pending, total: exam.cognitiveVoids.length };
+  }, [exam.cognitiveVoids]);
+
+  // Context tags
+  const contextTags = [
+    exam.timeOfDay && `🕐 ${exam.timeOfDay === 'sabah' ? 'Sabah' : exam.timeOfDay === 'ogle' ? 'Öğle' : 'Akşam'}`,
+    exam.environment && `🏠 ${exam.environment === 'sessiz' ? 'Sessiz' : 'Gürültülü'}`,
+    exam.perceivedDifficulty && `⭐ Zorluk: ${exam.perceivedDifficulty}/5`,
+    exam.biologicalState && `💪 ${exam.biologicalState === 'dinc' ? 'Dinç' : exam.biologicalState === 'normal' ? 'Normal' : 'Yorgun'}`,
+  ].filter(Boolean);
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -157,31 +176,49 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
         <Handwriting as="h2" className="text-2xl sm:text-3xl flex-1">
           {exam.title}
         </Handwriting>
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-sm text-white/50">{formatDateTR(exam.date)}</span>
-          <span className="inline-flex items-center rounded-full bg-pink-500/10 text-pink-400 px-3 py-0.5 text-xs font-medium border border-pink-500/20">
-            {exam.examType.name}
-          </span>
-        </div>
+        <span className="text-sm text-white/50">{formatDateTR(exam.date)}</span>
       </div>
 
-      {/* Total Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {[
-          { label: 'Dogru', value: totals.correct, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
-          { label: 'Yanlis', value: totals.wrong, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
-          { label: 'Bos', value: totals.empty, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
-          { label: 'Net', value: totals.net.toFixed(2), color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/20' },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className={`${stat.bg} ${stat.border} border rounded-xl p-4 text-center`}
-          >
-            <p className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1">{stat.label}</p>
-            <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
-          </div>
-        ))}
+      {/* Badge Line */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400 font-mono">
+          {totals.net.toFixed(2)} Net
+        </span>
+        <span className="text-white/30">•</span>
+        <span className="text-sm text-white/60">
+          <span className="text-emerald-400 font-bold">{totals.correct}</span>D,{' '}
+          <span className="text-rose-400 font-bold">{totals.wrong}</span>Y,{' '}
+          <span className="text-amber-400 font-bold">{totals.empty}</span>B
+        </span>
+        {voidStats.total > 0 && (
+          <>
+            <span className="text-white/30">•</span>
+            <span className="text-sm">
+              {voidStats.pending > 0 && (
+                <span className="text-rose-400 font-bold">{voidStats.pending} Bekleyen</span>
+              )}
+              {voidStats.pending > 0 && voidStats.resolved > 0 && ', '}
+              {voidStats.resolved > 0 && (
+                <span className="text-emerald-400 font-bold">{voidStats.resolved} Çözülen</span>
+              )}
+            </span>
+          </>
+        )}
+        <span className="inline-flex items-center rounded-full bg-pink-500/10 text-pink-400 px-3 py-0.5 text-xs font-medium border border-pink-500/20">
+          {exam.examType.name}
+        </span>
       </div>
+
+      {/* Context Tags */}
+      {contextTags.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {contextTags.map((tag, i) => (
+            <span key={i} className="text-[12px] bg-white/[0.04] border border-white/10 px-3 py-1.5 rounded-lg text-white/60">
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Subject Results Table */}
       {exam.subjectResults.length > 0 && (
@@ -190,9 +227,9 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
             <thead>
               <tr className="border-b-2 border-pink-500/15">
                 <th className="text-left py-3 px-4 font-semibold text-white/70">Ders</th>
-                <th className="text-center py-3 px-4 font-semibold text-emerald-400">Dogru</th>
-                <th className="text-center py-3 px-4 font-semibold text-rose-400">Yanlis</th>
-                <th className="text-center py-3 px-4 font-semibold text-amber-400">Bos</th>
+                <th className="text-center py-3 px-4 font-semibold text-emerald-400">Doğru</th>
+                <th className="text-center py-3 px-4 font-semibold text-rose-400">Yanlış</th>
+                <th className="text-center py-3 px-4 font-semibold text-amber-400">Boş</th>
                 <th className="text-center py-3 px-4 font-semibold text-pink-400">Net</th>
               </tr>
             </thead>
@@ -217,31 +254,16 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
       {/* Radar Chart */}
       {radarData.length >= 3 && (
         <div className="bg-white/[0.04] border border-pink-500/[0.12] rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-white/60 mb-4 text-center">Ders Bazinda Net Dagilimi</h3>
+          <h3 className="text-sm font-semibold text-white/60 mb-4 text-center">Ders Bazında Net Dağılımı</h3>
           <ResponsiveContainer width="100%" height={320}>
             <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
               <PolarGrid stroke="rgba(244,114,182,0.15)" />
-              <PolarAngleAxis
-                dataKey="subject"
-                tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.7)' }}
-              />
-              <PolarRadiusAxis
-                angle={30}
-                tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }}
-              />
-              <Radar
-                name="Net"
-                dataKey="net"
-                stroke="#f472b6"
-                fill="#f472b6"
-                fillOpacity={0.25}
-                strokeWidth={2}
-              />
+              <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.7)' }} />
+              <PolarRadiusAxis angle={30} tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }} />
+              <Radar name="Net" dataKey="net" stroke="#f472b6" fill="#f472b6" fillOpacity={0.25} strokeWidth={2} />
               <Tooltip
                 formatter={(value: number) => [value.toFixed(2), 'Net']}
                 contentStyle={{ borderRadius: '8px', fontSize: '12px', background: '#151528', border: '1px solid rgba(244,114,182,0.2)', color: '#fff' }}
-                itemStyle={{ color: '#f472b6' }}
-                labelStyle={{ color: 'rgba(255,255,255,0.7)' }}
               />
             </RadarChart>
           </ResponsiveContainer>
@@ -251,237 +273,318 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
   );
 }
 
-// ---------- Tab: Questions (Tum Sorular) ----------
+// ---------- Tab: Cognitive Voids (Operations Desk) ----------
 
-function QuestionsTab({
+function VoidsTab({
   exam,
-  onQuestionClick,
+  onStatusChange,
 }: {
   exam: ExamDetail;
-  onQuestionClick: (questionIndex: number) => void;
+  onStatusChange: (voidId: string, newStatus: 'RAW' | 'UNRESOLVED' | 'REVIEW' | 'RESOLVED') => void;
 }) {
+  const [triageMode, setTriageMode] = useState(false);
+  const [triageIndex, setTriageIndex] = useState(0);
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const allSubjects = useMemo(() => {
     const names = new Set<string>();
-    exam.wrongQuestions.forEach(q => names.add(q.subject.name));
-    exam.emptyQuestions.forEach(q => names.add(q.subject.name));
+    exam.cognitiveVoids.forEach(v => names.add(v.subject.name));
     return Array.from(names).sort();
-  }, [exam.wrongQuestions, exam.emptyQuestions]);
+  }, [exam.cognitiveVoids]);
 
-  const filteredWrong = useMemo(() => {
-    return exam.wrongQuestions.filter(q => {
-      if (subjectFilter !== 'all' && q.subject.name !== subjectFilter) return false;
-      if (statusFilter !== 'all' && (q.understandingStatus ?? 'none') !== statusFilter) return false;
+  const filteredVoids = useMemo(() => {
+    return exam.cognitiveVoids.filter(v => {
+      if (subjectFilter !== 'all' && v.subject.name !== subjectFilter) return false;
+      if (statusFilter !== 'all' && v.status !== statusFilter) return false;
       return true;
     });
-  }, [exam.wrongQuestions, subjectFilter, statusFilter]);
+  }, [exam.cognitiveVoids, subjectFilter, statusFilter]);
 
-  const filteredEmpty = useMemo(() => {
-    return exam.emptyQuestions.filter(q => {
-      if (subjectFilter !== 'all' && q.subject.name !== subjectFilter) return false;
-      return true;
+  // Group by subject
+  const groupedVoids = useMemo(() => {
+    const groups = new Map<string, CognitiveVoid[]>();
+    filteredVoids.forEach(v => {
+      const key = v.subject.name;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(v);
     });
-  }, [exam.emptyQuestions, subjectFilter]);
+    return Array.from(groups.entries());
+  }, [filteredVoids]);
 
-  // Stats summary
-  const statusCounts = useMemo(() => {
-    const counts = { anladim: 0, tekrar: 0, anlamadim: 0, none: 0 };
-    exam.wrongQuestions.forEach(q => {
-      const s = q.understandingStatus ?? 'none';
-      if (s in counts) counts[s as keyof typeof counts]++;
-      else counts.none++;
-    });
-    return counts;
-  }, [exam.wrongQuestions]);
-
-  if (exam.wrongQuestions.length === 0 && exam.emptyQuestions.length === 0) {
+  if (exam.cognitiveVoids.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-white/40">
-        <ListOrdered className="w-12 h-12 mb-4 opacity-50" />
-        <p className="text-lg font-medium">Soru bulunamadi</p>
-        <p className="text-sm mt-1">Bu denemede kayitli soru yok.</p>
+        <Brain className="w-12 h-12 mb-4 opacity-50" />
+        <p className="text-lg font-medium">Zafiyet analizi yapılmamış</p>
+        <p className="text-sm mt-1">Soğuk faz analizini tamamlayarak zafiyetleri işaretleyebilirsin.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Status Summary Bar */}
-      {exam.wrongQuestions.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-center">
-            <CheckCircle className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
-            <p className="text-lg font-bold text-emerald-400">{statusCounts.anladim}</p>
-            <p className="text-[10px] text-emerald-400/70 uppercase font-medium">Anladım</p>
-          </div>
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-center">
-            <RefreshCw className="w-5 h-5 text-amber-400 mx-auto mb-1" />
-            <p className="text-lg font-bold text-amber-400">{statusCounts.tekrar}</p>
-            <p className="text-[10px] text-amber-400/70 uppercase font-medium">Tekrar Lazim</p>
-          </div>
-          <div className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-3 text-center">
-            <AlertTriangle className="w-5 h-5 text-rose-400 mx-auto mb-1" />
-            <p className="text-lg font-bold text-rose-400">{statusCounts.anlamadim}</p>
-            <p className="text-[10px] text-rose-400/70 uppercase font-medium">Anlamadım</p>
-          </div>
-          <div className="bg-white/[0.04] border border-white/10 rounded-lg p-3 text-center">
-            <Target className="w-5 h-5 text-white/40 mx-auto mb-1" />
-            <p className="text-lg font-bold text-white/60">{statusCounts.none}</p>
-            <p className="text-[10px] text-white/40 uppercase font-medium">Belirtilmemiş</p>
-          </div>
-        </div>
-      )}
-
       {/* Filters */}
       <div className="flex gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <Filter size={14} className="text-white/40" />
-          <select
-            value={subjectFilter}
-            onChange={(e) => setSubjectFilter(e.target.value)}
-            className="text-sm p-1.5 rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
-          >
-            <option value="all">Tum Dersler</option>
-            {allSubjects.map(s => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </div>
+        <select
+          value={subjectFilter}
+          onChange={(e) => setSubjectFilter(e.target.value)}
+          className="text-sm p-1.5 rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
+        >
+          <option value="all">Tüm Dersler</option>
+          {allSubjects.map(s => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           className="text-sm p-1.5 rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
         >
-          <option value="all">Tum Durumlar</option>
-          <option value="anladim">Anladım</option>
-          <option value="tekrar">Tekrar Lazim</option>
-          <option value="anlamadim">Anlamadım</option>
-          <option value="none">Belirtilmemiş</option>
+          <option value="all">Tüm Durumlar</option>
+          <option value="RAW">Ham Veri</option>
+          <option value="UNRESOLVED">Çözülmemiş</option>
+          <option value="REVIEW">İncelemede</option>
+          <option value="RESOLVED">Çözüldü</option>
         </select>
+        <span className="text-[12px] text-white/30 self-center ml-auto">
+          {filteredVoids.length} zafiyet
+        </span>
+        {/* Triage Mode Button */}
+        {filteredVoids.filter(v => v.status !== 'RESOLVED').length > 0 && (
+          <button
+            onClick={() => { setTriageIndex(0); setTriageMode(true); }}
+            className="px-3 py-1.5 rounded-lg bg-pink-500/20 border border-pink-500/30 text-pink-400 text-xs font-bold hover:bg-pink-500/30 transition-all"
+          >
+            <Target size={12} className="inline mr-1" />
+            Odak Modu
+          </button>
+        )}
       </div>
 
-      {/* Wrong Questions */}
-      {filteredWrong.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold text-rose-400 mb-3 flex items-center gap-2">
-            <span className="w-2 h-2 bg-rose-400 rounded-full" />
-            Yanlis Sorular ({filteredWrong.length})
+      {/* Triage Flashcard Mode */}
+      <AnimatePresence>
+        {triageMode && (() => {
+          const triageVoids = filteredVoids
+            .filter(v => v.status !== 'RESOLVED')
+            .sort((a, b) => b.severity - a.severity);
+          const current = triageVoids[triageIndex];
+          if (!current) {
+            return (
+              <motion.div
+                key="triage-done"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+              >
+                <div className="bg-[#1a1a2e] border border-emerald-500/30 rounded-2xl p-8 text-center max-w-md">
+                  <CheckCircle size={48} className="text-emerald-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-white mb-2">Tamamlandı!</h3>
+                  <p className="text-white/50 text-sm mb-4">Tüm zafiyetler işlendi.</p>
+                  <button onClick={() => setTriageMode(false)} className="px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg text-sm font-bold">
+                    Kapat
+                  </button>
+                </div>
+              </motion.div>
+            );
+          }
+          const errorLabel = current.errorReason ? (ERROR_REASON_LABELS[current.errorReason] || current.errorReason) : 'Sınıflandırılmamış';
+          return (
+            <motion.div
+              key="triage-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            >
+              <motion.div
+                key={current.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-[#1a1a2e] border border-white/10 rounded-2xl p-6 max-w-lg w-full space-y-4"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-white/30 font-bold uppercase tracking-wider">
+                    {triageIndex + 1} / {triageVoids.length}
+                  </span>
+                  <button onClick={() => setTriageMode(false)} className="text-white/30 hover:text-white/60">
+                    <X size={18} />
+                  </button>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">{current.topic?.name || 'Konu Belirtilmemiş'}</h3>
+                  <p className="text-sm text-white/50">{current.subject.name} • {errorLabel}</p>
+                  <p className="text-xs text-white/30 mt-1">Severity: {current.severity.toFixed(1)}</p>
+                </div>
+                {current.notes && <p className="text-sm text-white/50 italic">{current.notes}</p>}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => {
+                      onStatusChange(current.id, 'RESOLVED');
+                      if (triageIndex < triageVoids.length - 1) setTriageIndex(i => i + 1);
+                      else setTriageMode(false);
+                    }}
+                    className="flex-1 px-4 py-3 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl text-sm font-bold hover:bg-emerald-500/30 transition-all flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle size={16} />
+                    Çözüldü
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (triageIndex < triageVoids.length - 1) setTriageIndex(i => i + 1);
+                      else setTriageMode(false);
+                    }}
+                    className="flex-1 px-4 py-3 bg-white/[0.06] border border-white/10 text-white/50 rounded-xl text-sm font-bold hover:bg-white/10 transition-all"
+                  >
+                    Atla
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+
+      {/* Void Cards grouped by subject */}
+      {groupedVoids.map(([subjectName, voids]) => (
+        <div key={subjectName}>
+          <h3 className="text-sm font-bold text-white/70 mb-3 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-pink-500" />
+            {subjectName}
+            <span className="text-white/30 text-[11px] font-normal">({voids.length})</span>
           </h3>
           <div className="space-y-2">
-            {filteredWrong.map((wq) => {
-              const globalIdx = exam.wrongQuestions.findIndex(q => q.id === wq.id);
-              const statusInfo = wq.understandingStatus ? STATUS_MAP[wq.understandingStatus] : null;
-              const StatusIcon = statusInfo?.icon;
-              const difficultyInfo = wq.difficulty ? DIFFICULTY_MAP[wq.difficulty] : null;
+            {voids.map((v) => {
+              const severityColor = v.severity >= 2 ? 'border-l-rose-500' : v.severity >= 1 ? 'border-l-amber-500' : 'border-l-white/20';
+              const errorLabel = v.errorReason ? (ERROR_REASON_LABELS[v.errorReason] || v.errorReason) : null;
+              const statusLabel = VOID_STATUS_LABELS[v.status] || v.status;
+              const statusColors = VOID_STATUS_COLORS[v.status] || VOID_STATUS_COLORS.UNRESOLVED;
 
               return (
-                <motion.button
-                  key={wq.id}
-                  onClick={() => onQuestionClick(globalIdx)}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  className="w-full text-left bg-white/[0.04] border border-pink-500/[0.12] rounded-lg p-4 hover:bg-white/[0.08] hover:border-pink-500/25 transition-all"
+                <motion.div
+                  key={v.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`bg-white/[0.03] border border-white/[0.08] border-l-[3px] ${severityColor} rounded-xl p-4 transition-all hover:bg-white/[0.05]`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-white/90 text-sm">
-                          S.{wq.questionNumber}
-                        </span>
-                        <span className="text-xs text-white/40">{wq.subject.name}</span>
-                        {wq.topic && (
-                          <span className="text-xs text-white/50 bg-white/[0.06] px-2 py-0.5 rounded-full">
-                            {wq.topic.name}
+                        {v.topic ? (
+                          <span className="text-sm font-bold text-white/90">{v.topic.name}</span>
+                        ) : (
+                          <span className="text-sm font-medium text-white/40 italic">Konu belirtilmemiş</span>
+                        )}
+                        {v.questionNumber && (
+                          <span className="text-[10px] text-white/40 font-mono bg-white/[0.06] px-1.5 py-0.5 rounded">
+                            S.{v.questionNumber}
                           </span>
                         )}
-                        {wq.errorReason && (
-                          <span className="inline-flex items-center rounded-full bg-rose-500/10 text-rose-400 px-2 py-0.5 text-[11px] font-medium border border-rose-500/20">
-                            {wq.errorReason.label}
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium border ${
+                          v.source === 'WRONG'
+                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                            : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                        }`}>
+                          {v.source === 'WRONG' ? 'Yanlış' : 'Boş'}
+                        </span>
+                        {(v.relapseCount ?? 0) > 0 && (
+                          <span className="text-[10px] text-orange-400 font-bold bg-orange-500/10 px-1.5 py-0.5 rounded border border-orange-500/20">
+                            Nüksetme x{v.relapseCount}
                           </span>
                         )}
                       </div>
-                      {wq.notes && (
-                        <p className="text-xs text-white/50 mt-1 italic truncate">{wq.notes}</p>
+                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                        {errorLabel && (
+                          <span className="inline-flex items-center rounded-full bg-white/[0.06] text-white/60 px-2 py-0.5 text-[11px] font-medium border border-white/10">
+                            {errorLabel}
+                          </span>
+                        )}
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${statusColors.bg} ${statusColors.text} ${statusColors.border} border`}>
+                          {statusLabel}
+                        </span>
+                        <span className="text-[10px] text-white/20">
+                          {v.severity.toFixed(1)}
+                        </span>
+                      </div>
+                      {v.notes && (
+                        <p className="text-xs text-white/50 mt-2 italic">{v.notes}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {difficultyInfo && (
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${difficultyInfo.bg} ${difficultyInfo.color}`}>
-                          {difficultyInfo.label}
-                        </span>
+
+                    {/* Action buttons */}
+                    <div className="flex flex-col gap-1.5 shrink-0">
+                      {v.status !== 'RESOLVED' && (
+                        <button
+                          onClick={() => onStatusChange(v.id, 'RESOLVED')}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500/25"
+                        >
+                          <CheckCircle size={13} />
+                          Çözüldü
+                        </button>
                       )}
-                      {StatusIcon && statusInfo && (
-                        <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusInfo.bg} ${statusInfo.color}`}>
-                          <StatusIcon size={10} />
-                          {statusInfo.label}
-                        </span>
-                      )}
-                      {wq.photoUrl && (
-                        <Camera className="w-4 h-4 text-pink-400" />
+                      {v.status === 'RESOLVED' && (
+                        <button
+                          onClick={() => onStatusChange(v.id, 'UNRESOLVED')}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 bg-white/[0.06] text-white/40 border border-white/10 hover:bg-white/10"
+                        >
+                          <RefreshCw size={13} />
+                          Geri Al
+                        </button>
                       )}
                     </div>
                   </div>
-                </motion.button>
+                </motion.div>
               );
             })}
           </div>
         </div>
-      )}
-
-      {/* Empty Questions */}
-      {filteredEmpty.length > 0 && statusFilter === 'all' && (
-        <div>
-          <h3 className="text-sm font-semibold text-amber-400 mb-3 flex items-center gap-2">
-            <span className="w-2 h-2 bg-amber-400 rounded-full" />
-            Bos Sorular ({filteredEmpty.length})
-          </h3>
-          <div className="space-y-2">
-            {filteredEmpty.map((eq) => (
-              <div
-                key={eq.id}
-                className="bg-white/[0.04] border border-pink-500/[0.12] rounded-lg p-3"
-              >
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-white/90 text-sm">S.{eq.questionNumber}</span>
-                  <span className="text-xs text-white/40">{eq.subject.name}</span>
-                  {eq.topic && (
-                    <span className="text-xs text-white/50 bg-white/[0.06] px-2 py-0.5 rounded-full">
-                      {eq.topic.name}
-                    </span>
-                  )}
-                </div>
-                {eq.notes && (
-                  <p className="text-xs text-white/50 mt-1 italic">{eq.notes}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      ))}
     </div>
   );
 }
 
-// ---------- Tab: Wrong Analysis ----------
+// ---------- Tab: Analysis (Charts) ----------
 
-function WrongAnalysisTab({ exam }: { exam: ExamDetail }) {
+function AnalysisTab({ exam }: { exam: ExamDetail }) {
   const errorReasonData = useMemo(() => {
     const counts: Record<string, number> = {};
-    exam.wrongQuestions.forEach((wq) => {
-      const label = wq.errorReason?.label ?? 'Belirtilmemiş';
-      counts[label] = (counts[label] || 0) + 1;
+    exam.cognitiveVoids.forEach((v) => {
+      if (!v.errorReason) return;
+      const label = ERROR_REASON_LABELS[v.errorReason] || v.errorReason;
+      counts[label] = (counts[label] || 0) + v.magnitude;
     });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [exam.wrongQuestions]);
+  }, [exam.cognitiveVoids]);
 
-  if (exam.wrongQuestions.length === 0) {
+  const topicData = useMemo(() => {
+    const topicMap: Record<string, { topic: string; subject: string; severity: number }> = {};
+    exam.cognitiveVoids.forEach((v) => {
+      const topicName = v.topic?.name ?? 'Belirtilmemiş';
+      const key = `${v.subject.name}::${topicName}`;
+      if (!topicMap[key]) {
+        topicMap[key] = { topic: topicName, subject: v.subject.name, severity: 0 };
+      }
+      topicMap[key].severity += v.severity;
+    });
+    return Object.values(topicMap).sort((a, b) => b.severity - a.severity);
+  }, [exam.cognitiveVoids]);
+
+  const subjectColorMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    const subjects = [...new Set(topicData.map(d => d.subject))];
+    subjects.forEach((name, idx) => {
+      map[name] = CHART_COLORS[idx % CHART_COLORS.length];
+    });
+    return map;
+  }, [topicData]);
+
+  if (exam.cognitiveVoids.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-white/40">
-        <BookOpen className="w-12 h-12 mb-4 opacity-50" />
-        <p className="text-lg font-medium">Yanlis soru bulunamadi</p>
-        <p className="text-sm mt-1">Bu denemede yanlis yapilan soru yok.</p>
+        <BarChart3 className="w-12 h-12 mb-4 opacity-50" />
+        <p className="text-lg font-medium">Analiz verisi yok</p>
+        <p className="text-sm mt-1">Zafiyet analizi tamamlandıktan sonra grafikler burada görünecek.</p>
       </div>
     );
   }
@@ -491,7 +594,7 @@ function WrongAnalysisTab({ exam }: { exam: ExamDetail }) {
       {/* Error Reason Pie Chart */}
       {errorReasonData.length > 0 && (
         <div className="bg-white/[0.04] border border-pink-500/[0.12] rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-white/60 mb-4 text-center">Hata Nedeni Dagilimi</h3>
+          <h3 className="text-sm font-semibold text-white/60 mb-4 text-center">Hata Kök Neden Dağılımı</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -512,248 +615,49 @@ function WrongAnalysisTab({ exam }: { exam: ExamDetail }) {
               </Pie>
               <Tooltip
                 contentStyle={{ borderRadius: '8px', fontSize: '12px', background: '#151528', border: '1px solid rgba(244,114,182,0.2)', color: '#fff' }}
-                itemStyle={{ color: '#f472b6' }}
               />
-              <Legend
-                wrapperStyle={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}
-              />
+              <Legend wrapperStyle={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)' }} />
             </PieChart>
           </ResponsiveContainer>
         </div>
       )}
 
-      {/* Wrong Questions List */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-white/60">
-          Yanlis Sorular ({exam.wrongQuestions.length})
-        </h3>
-        {exam.wrongQuestions.map((wq) => (
-          <motion.div
-            key={wq.id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white/[0.04] border border-pink-500/[0.12] rounded-lg p-4 hover:bg-white/[0.08] transition-colors"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-white/90 text-sm">
-                    S.{wq.questionNumber}
-                  </span>
-                  {wq.topic && (
-                    <>
-                      <span className="text-white/20">&mdash;</span>
-                      <span className="text-sm text-white/60">{wq.topic.name}</span>
-                    </>
-                  )}
-                  {wq.errorReason && (
-                    <>
-                      <span className="text-white/20">&mdash;</span>
-                      <span className="inline-flex items-center rounded-full bg-rose-500/10 text-rose-400 px-2 py-0.5 text-xs font-medium border border-rose-500/20">
-                        {wq.errorReason.label}
-                      </span>
-                    </>
-                  )}
-                </div>
-                <p className="text-xs text-white/40 mt-0.5">{wq.subject.name}</p>
-                {wq.notes && (
-                  <p className="text-xs text-white/50 mt-2 italic leading-relaxed">{wq.notes}</p>
-                )}
-              </div>
-              {wq.photoUrl && (
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-pink-500/10 border border-pink-500/20 flex items-center justify-center">
-                  <Camera className="w-4 h-4 text-pink-400" />
-                </div>
-              )}
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ---------- Tab: Topic Distribution ----------
-
-function TopicDistributionTab({ exam }: { exam: ExamDetail }) {
-  const topicData = useMemo(() => {
-    const topicMap: Record<string, { topic: string; subject: string; count: number }> = {};
-    exam.wrongQuestions.forEach((wq) => {
-      const topicName = wq.topic?.name ?? 'Belirtilmemiş';
-      const key = `${wq.subject.name}::${topicName}`;
-      if (!topicMap[key]) {
-        topicMap[key] = { topic: topicName, subject: wq.subject.name, count: 0 };
-      }
-      topicMap[key].count += 1;
-    });
-    return Object.values(topicMap).sort((a, b) => b.count - a.count);
-  }, [exam.wrongQuestions]);
-
-  const subjectNames = useMemo(() => {
-    return [...new Set(topicData.map((d) => d.subject))];
-  }, [topicData]);
-
-  const subjectColorMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    subjectNames.forEach((name, idx) => {
-      map[name] = CHART_COLORS[idx % CHART_COLORS.length];
-    });
-    return map;
-  }, [subjectNames]);
-
-  if (topicData.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-white/40">
-        <BarChart3 className="w-12 h-12 mb-4 opacity-50" />
-        <p className="text-lg font-medium">Konu verisi bulunamadi</p>
-        <p className="text-sm mt-1">Bu denemede konu bazli analiz icin yeterli veri yok.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8">
-      <div className="bg-white/[0.04] border border-pink-500/[0.12] rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-white/60 mb-4 text-center">Konulara Gore Yanlis Sayisi</h3>
-        <ResponsiveContainer width="100%" height={Math.max(300, topicData.length * 40)}>
-          <BarChart
-            data={topicData}
-            layout="vertical"
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(244,114,182,0.1)" />
-            <XAxis type="number" tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.5)' }} allowDecimals={false} />
-            <YAxis
-              type="category"
-              dataKey="topic"
-              tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.7)' }}
-              width={140}
-            />
-            <Tooltip
-              contentStyle={{ borderRadius: '8px', fontSize: '12px', background: '#151528', border: '1px solid rgba(244,114,182,0.2)', color: '#fff' }}
-              formatter={(value: any, _name: any, props: any) => [
-                value,
-                props?.payload?.subject ?? '',
-              ]}
-            />
-            <Bar dataKey="count" name="Yanlis" radius={[0, 6, 6, 0]}>
-              {topicData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={subjectColorMap[entry.subject] ?? CHART_COLORS[0]} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-
-        {/* Legend */}
-        <div className="flex flex-wrap gap-4 justify-center mt-4 pt-3 border-t border-white/10">
-          {subjectNames.map((name) => (
-            <div key={name} className="flex items-center gap-1.5">
-              <div
-                className="w-3 h-3 rounded-sm"
-                style={{ backgroundColor: subjectColorMap[name] }}
+      {/* Topic Severity Bar Chart */}
+      {topicData.length > 0 && (
+        <div className="bg-white/[0.04] border border-pink-500/[0.12] rounded-xl p-4">
+          <h3 className="text-sm font-semibold text-white/60 mb-4 text-center">Konu Bazında Zafiyet Derinliği</h3>
+          <ResponsiveContainer width="100%" height={Math.max(300, topicData.length * 40)}>
+            <BarChart data={topicData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(244,114,182,0.1)" />
+              <XAxis type="number" tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.5)' }} />
+              <YAxis type="category" dataKey="topic" tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.7)' }} width={140} />
+              <Tooltip
+                contentStyle={{ borderRadius: '8px', fontSize: '12px', background: '#151528', border: '1px solid rgba(244,114,182,0.2)', color: '#fff' }}
+                formatter={(value: any, _name: any, props: any) => [
+                  Number(value).toFixed(1),
+                  props?.payload?.subject ?? '',
+                ]}
               />
-              <span className="text-xs text-white/60">{name}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
+              <Bar dataKey="severity" name="Severity" radius={[0, 6, 6, 0]}>
+                {topicData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={subjectColorMap[entry.subject] ?? CHART_COLORS[0]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
 
-// ---------- Tab: Photos ----------
-
-function PhotosTab({ exam }: { exam: ExamDetail }) {
-  const photosQuestions = useMemo(() => {
-    return exam.wrongQuestions.filter((wq) => wq.photoUrl);
-  }, [exam.wrongQuestions]);
-
-  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
-
-  if (photosQuestions.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-white/40">
-        <Image className="w-12 h-12 mb-4 opacity-50" />
-        <p className="text-lg font-medium">Fotograf bulunamadi</p>
-        <p className="text-sm mt-1">Bu denemede fotografa sahip soru yok.</p>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {photosQuestions.map((wq) => (
-          <motion.div
-            key={wq.id}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white/[0.04] border border-pink-500/[0.12] rounded-lg overflow-hidden hover:bg-white/[0.08] transition-colors cursor-pointer"
-            onClick={() => setSelectedPhoto(wq.photoUrl)}
-          >
-            {/* Photo area */}
-            <div className="relative bg-white/[0.03] aspect-[4/3] flex items-center justify-center overflow-hidden">
-              {wq.photoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={wq.photoUrl}
-                  alt={`Soru ${wq.questionNumber}`}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <Image className="w-10 h-10 text-white/20" />
-              )}
-              <Tape className="top-[-4px] left-1/2 -translate-x-1/2" />
-            </div>
-
-            {/* Info */}
-            <div className="p-3 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-white/90 text-sm">
-                  Soru {wq.questionNumber}
-                </span>
-                <span className="text-xs text-white/40">{wq.subject.name}</span>
+          {/* Legend */}
+          <div className="flex flex-wrap gap-4 justify-center mt-4 pt-3 border-t border-white/10">
+            {Object.entries(subjectColorMap).map(([name, color]) => (
+              <div key={name} className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: color }} />
+                <span className="text-xs text-white/60">{name}</span>
               </div>
-              {wq.topic && (
-                <p className="text-xs text-white/50">{wq.topic.name}</p>
-              )}
-              {wq.errorReason && (
-                <span className="inline-flex items-center rounded-full bg-rose-500/10 text-rose-400 px-2 py-0.5 text-xs font-medium border border-rose-500/20">
-                  {wq.errorReason.label}
-                </span>
-              )}
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Full Photo Overlay */}
-      <AnimatePresence>
-        {selectedPhoto && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
-            onClick={() => setSelectedPhoto(null)}
-          >
-            <button
-              onClick={() => setSelectedPhoto(null)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-            >
-              <X size={24} />
-            </button>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={selectedPhoto}
-              alt="Buyuk fotograf"
-              className="max-w-full max-h-full object-contain rounded-lg"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -773,11 +677,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDate, setEditDate] = useState('');
-  const [editNotes, setEditNotes] = useState('');
   const [saving, setSaving] = useState(false);
-
-  // Question detail modal
-  const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null);
 
   // AI Analysis state
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
@@ -801,6 +701,42 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showExamTypeDropdown]);
+
+  // Fetch exam types for dropdown
+  useEffect(() => {
+    async function fetchExamTypes() {
+      try {
+        const res = await fetch('/api/exam-types');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (Array.isArray(data)) setExamTypes(data);
+      } catch {
+        // silently fail
+      }
+    }
+    fetchExamTypes();
+  }, []);
+
+  // Fetch exam data
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchExam() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`/api/exams/${examId}`);
+        if (!res.ok) throw new Error(`Sınav yüklenemedi (${res.status})`);
+        const data: ExamDetail = await res.json();
+        if (!cancelled) setExam(data);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Bilinmeyen bir hata oluştu');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetchExam();
+    return () => { cancelled = true; };
+  }, [examId]);
 
   const handleAIAnalysis = async () => {
     setAiAnalysisLoading(true);
@@ -826,21 +762,6 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
       setAiAnalysisLoading(false);
     }
   };
-
-  // Fetch exam types for dropdown
-  useEffect(() => {
-    async function fetchExamTypes() {
-      try {
-        const res = await fetch('/api/exam-types');
-        if (!res.ok) return;
-        const data = await res.json();
-        if (Array.isArray(data)) setExamTypes(data);
-      } catch {
-        // silently fail
-      }
-    }
-    fetchExamTypes();
-  }, []);
 
   const handleExamTypeChange = async (newExamTypeId: string) => {
     if (!exam || newExamTypeId === exam.examType.id) {
@@ -895,7 +816,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
       toast.success('Deneme silindi');
       onDeleted ? onDeleted() : onBack();
     } catch {
-      toast.error('Deneme silinirken hata olustu');
+      toast.error('Deneme silinirken hata oluştu');
     } finally {
       setDeleting(false);
       setShowDeleteConfirm(false);
@@ -906,7 +827,6 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
     if (!exam) return;
     setEditTitle(exam.title);
     setEditDate(new Date(exam.date).toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" }));
-    setEditNotes('');
     setEditing(true);
   };
 
@@ -916,393 +836,351 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
       const res = await fetch(`/api/exams/${examId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: editTitle,
-          date: editDate,
-          ...(editNotes && { notes: editNotes }),
-        }),
+        body: JSON.stringify({ title: editTitle, date: editDate }),
       });
       if (!res.ok) throw new Error('Güncelleme başarısız');
       const updated = await res.json();
       setExam(prev => prev ? { ...prev, title: updated.title, date: updated.date } : prev);
-      toast.success('Deneme guncellendi');
+      toast.success('Deneme güncellendi');
       setEditing(false);
     } catch {
-      toast.error('Deneme guncellenirken hata olustu');
+      toast.error('Deneme güncellenirken hata oluştu');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleQuestionUpdate = (questionId: string, updates: Partial<WrongQuestionDetail>) => {
+  // Single-tap void status change
+  const handleVoidStatusChange = async (voidId: string, newStatus: 'RAW' | 'UNRESOLVED' | 'REVIEW' | 'RESOLVED') => {
+    // Optimistic update
     setExam(prev => {
       if (!prev) return prev;
       return {
         ...prev,
-        wrongQuestions: prev.wrongQuestions.map(q =>
-          q.id === questionId ? { ...q, ...updates } : q
+        cognitiveVoids: prev.cognitiveVoids.map(v =>
+          v.id === voidId ? { ...v, status: newStatus } : v
         ),
       };
     });
-  };
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function fetchExam() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const res = await fetch(`/api/exams/${examId}`);
-        if (!res.ok) {
-          throw new Error(`Sinav yuklenemedi (${res.status})`);
-        }
-        const data: ExamDetail = await res.json();
-        if (!cancelled) {
-          setExam(data);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Bilinmeyen bir hata olustu');
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+    try {
+      const res = await fetch(`/api/exams/${examId}/cognitive-voids/${voidId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      // Revert on error
+      setExam(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          cognitiveVoids: prev.cognitiveVoids.map(v =>
+            v.id === voidId ? { ...v, status: STATUS_CYCLE[newStatus] as any } : v
+          ),
+        };
+      });
+      toast.error('Durum güncellenemedi');
     }
-
-    fetchExam();
-    return () => {
-      cancelled = true;
-    };
-  }, [examId]);
+  };
 
   // ---------- Render ----------
 
   return (
-    <>
-      <Paper className="rounded-2xl min-h-[60vh]">
-        {/* Top Bar */}
-        <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-sm text-white/50 hover:text-white/90 transition-colors group"
-          >
-            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-            <span>Geri Don</span>
-          </button>
+    <Paper className="rounded-2xl min-h-[60vh]">
+      {/* Top Bar */}
+      <div className="flex items-center justify-between mb-6">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-sm text-white/50 hover:text-white/90 transition-colors group"
+        >
+          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+          <span>Geri Dön</span>
+        </button>
 
-          {exam && !loading && (
-            <div className="flex items-center gap-2">
-              {/* Exam Type Badge with Dropdown */}
-              <div className="relative" ref={examTypeDropdownRef}>
-                <button
-                  onClick={() => setShowExamTypeDropdown(!showExamTypeDropdown)}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-pink-500/10 text-pink-400 px-3 py-1 text-xs font-medium border border-pink-500/20 hover:bg-pink-500/20 transition-colors"
-                  title="Sınav türünü değiştir"
-                >
-                  {changingExamType ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <>
-                      {exam.examType.name}
-                      {exam.examCategory === 'brans' && exam.subjectResults.length === 1 && (
-                        <span className="text-amber-400 ml-0.5">
-                          {exam.subjectResults[0].subject.name}
-                        </span>
-                      )}
-                      <ChevronDown className="w-3 h-3" />
-                    </>
-                  )}
-                </button>
-                <AnimatePresence>
-                  {showExamTypeDropdown && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -4, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -4, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-1 z-50 bg-[#1a1a2e] border border-white/10 rounded-lg shadow-xl overflow-hidden min-w-[120px]"
+        {exam && !loading && (
+          <div className="flex items-center gap-2">
+            {/* Exam Type Badge with Dropdown */}
+            <div className="relative" ref={examTypeDropdownRef}>
+              <button
+                onClick={() => setShowExamTypeDropdown(!showExamTypeDropdown)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-pink-500/10 text-pink-400 px-3 py-1 text-xs font-medium border border-pink-500/20 hover:bg-pink-500/20 transition-colors"
+                title="Sınav türünü değiştir"
+              >
+                {changingExamType ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <>
+                    {exam.examType.name}
+                    {exam.examCategory === 'brans' && exam.subjectResults.length === 1 && (
+                      <span className="text-amber-400 ml-0.5">
+                        {exam.subjectResults[0].subject.name}
+                      </span>
+                    )}
+                    <ChevronDown className="w-3 h-3" />
+                  </>
+                )}
+              </button>
+              <AnimatePresence>
+                {showExamTypeDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-1 z-50 bg-[#1a1a2e] border border-white/10 rounded-lg shadow-xl overflow-hidden min-w-[120px]"
+                  >
+                    <button
+                      onClick={handleCategoryToggle}
+                      className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors border-b border-white/5 ${
+                        exam.examCategory === 'brans'
+                          ? 'text-amber-400 bg-amber-500/10'
+                          : 'text-white/50 hover:text-white hover:bg-white/[0.06]'
+                      }`}
                     >
-                      {/* Branş / Genel Toggle */}
+                      {exam.examCategory === 'brans' ? '✓ Branş Denemesi' : 'Branş Denemesi Yap'}
+                    </button>
+                    {examTypes.map((et) => (
                       <button
-                        onClick={handleCategoryToggle}
-                        className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors border-b border-white/5 ${
-                          exam.examCategory === 'brans'
-                            ? 'text-amber-400 bg-amber-500/10'
-                            : 'text-white/50 hover:text-white hover:bg-white/[0.06]'
+                        key={et.id}
+                        onClick={() => handleExamTypeChange(et.id)}
+                        className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
+                          exam.examType.id === et.id
+                            ? 'text-pink-400 bg-pink-500/10'
+                            : 'text-white/70 hover:text-white hover:bg-white/[0.06]'
                         }`}
                       >
-                        {exam.examCategory === 'brans' ? '✓ Branş Denemesi' : 'Branş Denemesi Yap'}
+                        {et.name}
+                        {exam.examType.id === et.id && (
+                          <Check className="w-3.5 h-3.5 inline ml-2" />
+                        )}
                       </button>
-
-                      {/* Exam Type Options */}
-                      {examTypes.map((et) => (
-                        <button
-                          key={et.id}
-                          onClick={() => handleExamTypeChange(et.id)}
-                          className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                            exam.examType.id === et.id
-                              ? 'text-pink-400 bg-pink-500/10'
-                              : 'text-white/70 hover:text-white hover:bg-white/[0.06]'
-                          }`}
-                        >
-                          {et.name}
-                          {exam.examType.id === et.id && (
-                            <Check className="w-3.5 h-3.5 inline ml-2" />
-                          )}
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-              <button
-                onClick={startEditing}
-                className="p-2 text-white/40 hover:text-pink-400 hover:bg-pink-500/10 rounded-lg transition-colors"
-                title="Duzenle"
-              >
-                <Pencil className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="p-2 text-white/40 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-                title="Sil"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          )}
-        </div>
-
-        {/* Delete Confirmation */}
-        <AnimatePresence>
-          {showDeleteConfirm && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden mb-6"
-            >
-              <div className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-4">
-                <p className="text-sm text-rose-400 font-medium mb-3">
-                  Bu denemeyi silmek istedigine emin misin? Bu islem geri alinamaz.
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className="px-4 py-2 bg-rose-500 text-white rounded-lg text-sm font-medium hover:bg-rose-400 disabled:opacity-50 flex items-center gap-2"
-                  >
-                    {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                    Evet, Sil
-                  </button>
-                  <button
-                    onClick={() => setShowDeleteConfirm(false)}
-                    disabled={deleting}
-                    className="px-4 py-2 bg-white/[0.06] text-white/70 border border-white/10 rounded-lg text-sm font-medium hover:bg-white/10"
-                  >
-                    İptal
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Edit Form */}
-        <AnimatePresence>
-          {editing && exam && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden mb-6"
-            >
-              <div className="bg-pink-500/10 border border-pink-500/20 rounded-lg p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-pink-400">Denemeyi Duzenle</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-white/60 block mb-1">Baslik</label>
-                    <input
-                      type="text"
-                      value={editTitle}
-                      onChange={e => setEditTitle(e.target.value)}
-                      className="w-full px-3 py-2 border border-pink-500/[0.12] bg-white/[0.06] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-white/60 block mb-1">Tarih</label>
-                    <input
-                      type="date"
-                      value={editDate}
-                      onChange={e => setEditDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-pink-500/[0.12] bg-white/[0.06] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2 pt-1">
-                  <button
-                    onClick={handleSaveEdit}
-                    disabled={saving || !editTitle.trim()}
-                    className="px-4 py-2 bg-pink-500 text-white rounded-lg text-sm font-medium hover:bg-pink-400 disabled:opacity-50 flex items-center gap-2"
-                  >
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                    Kaydet
-                  </button>
-                  <button
-                    onClick={() => setEditing(false)}
-                    disabled={saving}
-                    className="px-4 py-2 bg-white/[0.06] text-white/70 border border-white/10 rounded-lg text-sm font-medium hover:bg-white/10 flex items-center gap-2"
-                  >
-                    <X className="w-4 h-4" />
-                    İptal
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Loading */}
-        {loading && <DetailSkeleton />}
-
-        {/* Error */}
-        {error && !loading && (
-          <div className="flex flex-col items-center justify-center py-20 text-rose-400">
-            <p className="text-lg font-medium">Hata</p>
-            <p className="text-sm mt-1">{error}</p>
             <button
-              onClick={onBack}
-              className="mt-4 text-sm text-pink-400 hover:text-pink-300 underline"
+              onClick={startEditing}
+              className="p-2 text-white/40 hover:text-pink-400 hover:bg-pink-500/10 rounded-lg transition-colors"
+              title="Düzenle"
             >
-              Geri don
+              <Pencil className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-2 text-white/40 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+              title="Sil"
+            >
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
         )}
+      </div>
 
-        {/* Content */}
-        {exam && !loading && (
-          <>
-            {/* Tab Navigation */}
-            <div className="border-b border-pink-500/15 mb-6">
-              <nav className="flex gap-1 -mb-px overflow-x-auto" aria-label="Sekmeler">
-                {TABS.map((tab) => {
-                  const isActive = activeTab === tab.key;
-                  const Icon = tab.icon;
-                  return (
-                    <button
-                      key={tab.key}
-                      onClick={() => setActiveTab(tab.key)}
-                      className={`
-                        relative flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors
-                        ${isActive
-                          ? 'text-pink-400'
-                          : 'text-white/50 hover:text-white/70'
-                        }
-                      `}
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span className="hidden sm:inline">{tab.label}</span>
-                      {isActive && (
-                        <motion.div
-                          layoutId="exam-detail-tab-indicator"
-                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-pink-400 rounded-full"
-                          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                        />
-                      )}
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
-
-            {/* Tab Content */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
-              >
-                {activeTab === 'summary' && (
-                  <>
-                    <SummaryTab exam={exam} />
-                    {/* AI Analysis Section */}
-                    <div className="mt-8">
-                      {aiAnalysis ? (
-                        <div className="bg-white/5 backdrop-blur-md border border-pink-500/15 rounded-2xl p-5 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Bot size={18} className="text-pink-400" />
-                              <h3 className="text-sm font-bold text-white/60 uppercase tracking-wider">
-                                AI Analizi
-                              </h3>
-                              {aiAnalysisCached && (
-                                <span className="text-[10px] text-white/30 bg-white/5 px-2 py-0.5 rounded-lg">
-                                  Kayıtlı
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="prose prose-invert prose-sm max-w-none prose-headings:text-white/90 prose-p:text-white/70 prose-strong:text-white/90 prose-ul:text-white/70 prose-li:text-white/70 prose-a:text-pink-400">
-                            <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={handleAIAnalysis}
-                          disabled={aiAnalysisLoading}
-                          className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-pink-500/20 hover:from-amber-500/30 hover:to-pink-500/30 border border-pink-500/20 text-white/70 hover:text-white font-medium text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                          {aiAnalysisLoading ? (
-                            <>
-                              <Loader2 size={16} className="animate-spin" />
-                              AI Analiz Oluşturuluyor...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles size={16} className="text-amber-400" />
-                              AI ile Analiz Et
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  </>
-                )}
-                {activeTab === 'questions' && (
-                  <QuestionsTab
-                    exam={exam}
-                    onQuestionClick={(idx) => setSelectedQuestionIndex(idx)}
-                  />
-                )}
-                {activeTab === 'wrong' && <WrongAnalysisTab exam={exam} />}
-                {activeTab === 'topics' && <TopicDistributionTab exam={exam} />}
-                {activeTab === 'photos' && <PhotosTab exam={exam} />}
-              </motion.div>
-            </AnimatePresence>
-          </>
-        )}
-      </Paper>
-
-      {/* Question Detail Modal */}
+      {/* Delete Confirmation */}
       <AnimatePresence>
-        {selectedQuestionIndex !== null && exam && exam.wrongQuestions[selectedQuestionIndex] && (
-          <QuestionDetailModal
-            examId={examId}
-            question={exam.wrongQuestions[selectedQuestionIndex]}
-            questions={exam.wrongQuestions}
-            currentIndex={selectedQuestionIndex}
-            onClose={() => setSelectedQuestionIndex(null)}
-            onNavigate={(idx) => setSelectedQuestionIndex(idx)}
-            onUpdate={handleQuestionUpdate}
-          />
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden mb-6"
+          >
+            <div className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-4">
+              <p className="text-sm text-rose-400 font-medium mb-3">
+                Bu denemeyi silmek istediğine emin misin? Bu işlem geri alınamaz.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-rose-500 text-white rounded-lg text-sm font-medium hover:bg-rose-400 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  Evet, Sil
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-white/[0.06] text-white/70 border border-white/10 rounded-lg text-sm font-medium hover:bg-white/10"
+                >
+                  İptal
+                </button>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
-    </>
+
+      {/* Edit Form */}
+      <AnimatePresence>
+        {editing && exam && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden mb-6"
+          >
+            <div className="bg-pink-500/10 border border-pink-500/20 rounded-lg p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-pink-400">Denemeyi Düzenle</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-white/60 block mb-1">Başlık</label>
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={e => setEditTitle(e.target.value)}
+                    className="w-full px-3 py-2 border border-pink-500/[0.12] bg-white/[0.06] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-white/60 block mb-1">Tarih</label>
+                  <input
+                    type="date"
+                    value={editDate}
+                    onChange={e => setEditDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-pink-500/[0.12] bg-white/[0.06] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={saving || !editTitle.trim()}
+                  className="px-4 py-2 bg-pink-500 text-white rounded-lg text-sm font-medium hover:bg-pink-400 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  Kaydet
+                </button>
+                <button
+                  onClick={() => setEditing(false)}
+                  disabled={saving}
+                  className="px-4 py-2 bg-white/[0.06] text-white/70 border border-white/10 rounded-lg text-sm font-medium hover:bg-white/10 flex items-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  İptal
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Loading */}
+      {loading && <DetailSkeleton />}
+
+      {/* Error */}
+      {error && !loading && (
+        <div className="flex flex-col items-center justify-center py-20 text-rose-400">
+          <p className="text-lg font-medium">Hata</p>
+          <p className="text-sm mt-1">{error}</p>
+          <button
+            onClick={onBack}
+            className="mt-4 text-sm text-pink-400 hover:text-pink-300 underline"
+          >
+            Geri dön
+          </button>
+        </div>
+      )}
+
+      {/* Content */}
+      {exam && !loading && (
+        <>
+          {/* Tab Navigation */}
+          <div className="border-b border-pink-500/15 mb-6">
+            <nav className="flex gap-1 -mb-px overflow-x-auto" aria-label="Sekmeler">
+              {TABS.map((tab) => {
+                const isActive = activeTab === tab.key;
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`
+                      relative flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors
+                      ${isActive ? 'text-pink-400' : 'text-white/50 hover:text-white/70'}
+                    `}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    {isActive && (
+                      <motion.div
+                        layoutId="exam-detail-tab-indicator"
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-pink-400 rounded-full"
+                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Tab Content */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              {activeTab === 'summary' && (
+                <>
+                  <SummaryTab exam={exam} />
+                  {/* AI Analysis Section */}
+                  <div className="mt-8">
+                    {aiAnalysis ? (
+                      <div className="bg-white/5 backdrop-blur-md border border-pink-500/15 rounded-2xl p-5 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Bot size={18} className="text-pink-400" />
+                            <h3 className="text-sm font-bold text-white/60 uppercase tracking-wider">
+                              AI Analizi
+                            </h3>
+                            {aiAnalysisCached && (
+                              <span className="text-[10px] text-white/30 bg-white/5 px-2 py-0.5 rounded-lg">
+                                Kayıtlı
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="prose prose-invert prose-sm max-w-none prose-headings:text-white/90 prose-p:text-white/70 prose-strong:text-white/90 prose-ul:text-white/70 prose-li:text-white/70 prose-a:text-pink-400">
+                          <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleAIAnalysis}
+                        disabled={aiAnalysisLoading}
+                        className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-pink-500/20 hover:from-amber-500/30 hover:to-pink-500/30 border border-pink-500/20 text-white/70 hover:text-white font-medium text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {aiAnalysisLoading ? (
+                          <>
+                            <Loader2 size={16} className="animate-spin" />
+                            AI Analiz Oluşturuluyor...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={16} className="text-amber-400" />
+                            AI ile Analiz Et
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+              {activeTab === 'voids' && (
+                <VoidsTab exam={exam} onStatusChange={handleVoidStatusChange} />
+              )}
+              {activeTab === 'analysis' && <AnalysisTab exam={exam} />}
+            </motion.div>
+          </AnimatePresence>
+        </>
+      )}
+    </Paper>
   );
 }

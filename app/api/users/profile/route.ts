@@ -24,6 +24,7 @@ export async function GET() {
           role: true,
           createdAt: true,
           aiEnabled: true,
+          emailVerified: true,
         },
       }),
       prisma.userSubscription.findUnique({

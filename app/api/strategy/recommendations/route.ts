@@ -69,13 +69,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 4. Get wrong question counts per topic
-    const wrongCounts = await prisma.examWrongQuestion.groupBy({
+    // 4. Get cognitive void counts per topic (unresolved magnitude)
+    const voidCounts = await prisma.cognitiveVoid.groupBy({
       by: ["topicId"],
-      where: { topicId: { not: null }, exam: { userId } },
-      _count: true,
+      where: { topicId: { not: null }, exam: { userId }, status: { not: "RESOLVED" } },
+      _sum: { magnitude: true },
     });
-    const wrongMap = new Map(wrongCounts.map((w) => [w.topicId!, w._count]));
+    const wrongMap = new Map(voidCounts.map((v) => [v.topicId!, v._sum.magnitude || 0]));
 
     // 5. Calculate total questions across subjects for weight normalization
     const subjectWeights = new Map<string, number>();

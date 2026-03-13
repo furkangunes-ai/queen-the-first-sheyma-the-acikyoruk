@@ -1,7 +1,7 @@
 /**
  * Kognitif Zafiyet Derinliği (Severity) Hesaplama Motoru
  *
- * Severity = TopicWeight × ErrorReason Katsayısı
+ * Severity = TopicWeight × ErrorReason Katsayısı × Magnitude × Recidivism
  *
  * TopicWeight: Konunun DAG'daki önkoşul ağırlığı
  *   - Temel/Önkoşul (Fonksiyonlar, Dört İşlem vb.) = 3
@@ -15,6 +15,9 @@
  *   - ISLEM_HATASI: 0.3 (teknik hata → alıştırmayla düzelir)
  *   - SORU_KOKUNU_YANLIS_OKUMA: 0.3 (okuma/dikkat → farkındalıkla düzelir)
  *   - DIKKATSIZLIK: 0.2 (odak kaybı → en düşük maliyet)
+ *
+ * RAW void'lar (errorReason=null): severity = 0.1 × magnitude
+ * Recidivism (nüksetme): severity *= 1.5^relapseCount
  */
 
 // Prisma enum tipiyle birebir eşleşen string union
@@ -26,6 +29,9 @@ export type ErrorReasonType =
   | 'KAVRAM_YANILGISI'
   | 'SORU_KOKUNU_YANLIS_OKUMA';
 
+// VoidStatus tipi (Prisma enum ile eşleşir)
+export type VoidStatusType = 'RAW' | 'UNRESOLVED' | 'REVIEW' | 'RESOLVED';
+
 // ErrorReason katsayıları - kognitif onarım maliyeti
 export const ERROR_REASON_COEFFICIENTS: Record<ErrorReasonType, number> = {
   KAVRAM_YANILGISI: 1.0,
@@ -35,6 +41,9 @@ export const ERROR_REASON_COEFFICIENTS: Record<ErrorReasonType, number> = {
   SORU_KOKUNU_YANLIS_OKUMA: 0.3,
   DIKKATSIZLIK: 0.2,
 };
+
+// RAW void'lar için varsayılan severity katsayısı
+export const RAW_DEFAULT_SEVERITY = 0.1;
 
 // ErrorReason Türkçe etiketleri (UI'da kullanılacak)
 export const ERROR_REASON_LABELS: Record<ErrorReasonType, string> = {
@@ -57,18 +66,20 @@ export const ERROR_REASONS_ORDERED: ErrorReasonType[] = [
 ];
 
 // VoidStatus Türkçe etiketleri
-export const VOID_STATUS_LABELS = {
+export const VOID_STATUS_LABELS: Record<VoidStatusType, string> = {
+  RAW: 'Ham Veri',
   UNRESOLVED: 'Anlamadım',
   REVIEW: 'Tekrar Et',
   RESOLVED: 'Çözüldü',
-} as const;
+};
 
 // VoidStatus renkleri
-export const VOID_STATUS_COLORS = {
+export const VOID_STATUS_COLORS: Record<VoidStatusType, { bg: string; text: string; border: string }> = {
+  RAW: { bg: 'bg-slate-500/20', text: 'text-slate-400', border: 'border-slate-500/30' },
   UNRESOLVED: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' },
   REVIEW: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' },
   RESOLVED: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/30' },
-} as const;
+};
 
 /**
  * TopicWeight: Şu an heuristic map.
@@ -91,16 +102,34 @@ export function getTopicWeight(topicDifficulty: number, hasPrerequisites: boolea
 }
 
 /**
+ * Nüksetme (Recidivism) ceza çarpanı
+ * Öğrenci bir zafiyeti "Çözüldü" yapıp aynı hatayı tekrarlarsa
+ * severity acımasızca fırlar: 1.5^n
+ *
+ * @param relapseCount - Nüksetme sayısı (0 = ilk sefer)
+ * @returns Ceza çarpanı (1.0, 1.5, 2.25, 3.375, ...)
+ */
+export function getRecidivismMultiplier(relapseCount: number): number {
+  return Math.pow(1.5, relapseCount);
+}
+
+/**
  * Severity hesapla
- * Severity = TopicWeight × ErrorReason Katsayısı × magnitude
+ * RAW void'lar (errorReason=null): severity = RAW_DEFAULT_SEVERITY × magnitude
+ * Sınıflandırılmış void'lar: severity = topicWeight × errorReasonCoeff × magnitude × recidivism
  */
 export function calculateSeverity(
-  errorReason: ErrorReasonType,
+  errorReason: ErrorReasonType | null,
   topicWeight: number = 2, // varsayılan orta
-  magnitude: number = 1
+  magnitude: number = 1,
+  relapseCount: number = 0
 ): number {
+  if (!errorReason) {
+    return Math.round(RAW_DEFAULT_SEVERITY * magnitude * 100) / 100;
+  }
   const coefficient = ERROR_REASON_COEFFICIENTS[errorReason];
-  return Math.round(topicWeight * coefficient * magnitude * 100) / 100;
+  const recidivism = getRecidivismMultiplier(relapseCount);
+  return Math.round(topicWeight * coefficient * magnitude * recidivism * 100) / 100;
 }
 
 /**

@@ -16,9 +16,12 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const isValid =
     username.length >= 3 &&
     displayName.length >= 2 &&
+    email.trim().length > 0 &&
+    emailRegex.test(email.trim()) &&
     password.length >= 6 &&
     password === confirmPassword;
 
@@ -48,7 +51,7 @@ export default function SignupPage() {
         body: JSON.stringify({
           username: username.trim().toLowerCase(),
           displayName: displayName.trim(),
-          email: email.trim() || undefined,
+          email: email.trim(),
           password,
         }),
       });
@@ -60,8 +63,8 @@ export default function SignupPage() {
         return;
       }
 
-      toast.success("Hesap oluşturuldu! Giriş yapabilirsiniz.");
-      router.push("/login");
+      toast.success("Hesap oluşturuldu! E-postanızı kontrol edin.");
+      router.push("/signup-success?email=" + encodeURIComponent(email.trim()));
     } catch {
       toast.error("Kayıt sırasında bir hata oluştu");
     } finally {
@@ -145,7 +148,7 @@ export default function SignupPage() {
             {/* E-posta (opsiyonel) */}
             <div className="space-y-1.5">
               <label className="block text-[11px] font-bold text-white/50 uppercase tracking-widest px-1">
-                E-posta <span className="text-white/20 normal-case">(opsiyonel)</span>
+                E-posta *
               </label>
               <div className="relative group/input">
                 <Mail
@@ -161,7 +164,7 @@ export default function SignupPage() {
                   autoComplete="email"
                 />
               </div>
-              <p className="text-[10px] text-white/30 px-1">Şifre sıfırlama için gerekli olabilir</p>
+              <p className="text-[10px] text-white/30 px-1">Doğrulama bağlantısı gönderilecek</p>
             </div>
 
             {/* Şifre */}

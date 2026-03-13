@@ -68,9 +68,11 @@ const tooltipStyle = {
 
 export default function PlateauBreaker({
   examTypeFilter,
+  examCategoryFilter,
   subjectFilter,
 }: {
   examTypeFilter?: string;
+  examCategoryFilter?: string;
   subjectFilter?: string;
 }) {
   const [regression, setRegression] = useState<RegressionData | null>(null);
@@ -82,8 +84,9 @@ export default function PlateauBreaker({
       setLoading(true);
       try {
         const typeParam = examTypeFilter && examTypeFilter !== "all" ? `examTypeId=${examTypeFilter}` : "";
+        const categoryParam = examCategoryFilter && examCategoryFilter !== "all" ? `&examCategory=${examCategoryFilter}` : "";
         const subjectParam = subjectFilter && subjectFilter !== "all" ? `&subjectId=${subjectFilter}` : "";
-        const params = `${typeParam}${subjectParam}`;
+        const params = `${typeParam}${categoryParam}${subjectParam}`;
 
         const [regRes, topicsRes] = await Promise.all([
           fetch(`/api/analytics/regression?${params}&targets=70,80,90,100`),
@@ -118,7 +121,7 @@ export default function PlateauBreaker({
       }
     };
     fetchData();
-  }, [examTypeFilter, subjectFilter]);
+  }, [examTypeFilter, examCategoryFilter, subjectFilter]);
 
   if (loading) {
     return (
@@ -225,7 +228,6 @@ export default function PlateauBreaker({
             />
             <XAxis
               dataKey="date"
-              data={chartData}
               tick={{ fontSize: 10, fill: "rgba(255,255,255,0.5)" }}
               tickLine={false}
               axisLine={false}

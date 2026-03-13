@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { clsx } from 'clsx';
 import {
-  BookOpen, PenTool, Plus, Trash2, Camera, Loader2, X,
+  BookOpen, PenTool, Plus, Trash2, Loader2, X,
   CheckCircle, Clock, Target, Filter, Calendar, BookMarked, BrainCircuit, Activity,
   ChevronLeft, ChevronRight
 } from "lucide-react";
@@ -39,7 +39,6 @@ interface DailyStudyEntry {
   difficulty: string | null;
   source: string | null;
   duration: number | null;
-  photoUrl: string | null;
   notes: string | null;
   subject: { name: string; examType: { name: string } };
   topic: { name: string } | null;
@@ -51,7 +50,6 @@ interface TopicReviewEntry {
   duration: number | null;
   confidence: string | null;
   method: string | null;
-  photoUrl: string | null;
   notes: string | null;
   subject: { name: string; examType: { name: string } };
   topic: { name: string };
@@ -96,25 +94,6 @@ const DIFFICULTY_MAP: Record<string, { label: string; color: string }> = {
   zor: { label: "Zor", color: "bg-rose-500/10 text-rose-400 border-rose-500/30 shadow-[0_0_10px_rgba(244,63,94,0.2)]" },
 };
 
-// ---------- Helper: Upload Photo ----------
-
-async function uploadPhoto(file: File): Promise<{ photoUrl: string; photoR2Key: string }> {
-  const presignRes = await fetch("/api/upload", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ filename: file.name, contentType: file.type }),
-  });
-  if (!presignRes.ok) throw new Error("Upload alınamadı");
-  const { uploadUrl, publicUrl, r2Key } = await presignRes.json();
-  const uploadRes = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": file.type },
-    body: file,
-  });
-  if (!uploadRes.ok) throw new Error("Dosya yüklenemedi");
-  return { photoUrl: publicUrl, photoR2Key: r2Key };
-}
-
 // ---------- Component ----------
 
 export default function StudyPage() {
@@ -147,9 +126,6 @@ export default function StudyPage() {
   const [sSource, setSSource] = useState("");
   const [sDuration, setSDuration] = useState("");
   const [sNotes, setSNotes] = useState("");
-  const [sPhotoFile, setSPhotoFile] = useState<File | null>(null);
-  const [sPhotoPreview, setSPhotoPreview] = useState<string | null>(null);
-  const sFileRef = useRef<HTMLInputElement>(null);
 
   // Review form fields
   const [rSubjectId, setRSubjectId] = useState("");
@@ -158,9 +134,6 @@ export default function StudyPage() {
   const [rConfidence, setRConfidence] = useState("");
   const [rMethod, setRMethod] = useState("");
   const [rNotes, setRNotes] = useState("");
-  const [rPhotoFile, setRPhotoFile] = useState<File | null>(null);
-  const [rPhotoPreview, setRPhotoPreview] = useState<string | null>(null);
-  const rFileRef = useRef<HTMLInputElement>(null);
 
   // New topic
   const [showNewTopic, setShowNewTopic] = useState(false);
@@ -295,14 +268,6 @@ export default function StudyPage() {
     }
     setSaving(true);
     try {
-      let photoUrl = null;
-      let photoR2Key = null;
-      if (sPhotoFile) {
-        const result = await uploadPhoto(sPhotoFile);
-        photoUrl = result.photoUrl;
-        photoR2Key = result.photoR2Key;
-      }
-
       const qCount = parseInt(sQuestionCount) || 0;
       const cCount = parseInt(sCorrectCount) || 0;
       const wCount = parseInt(sWrongCount) || 0;
@@ -322,8 +287,6 @@ export default function StudyPage() {
           source: sSource || null,
           duration: sDuration ? parseInt(sDuration) : null,
           notes: sNotes || null,
-          photoUrl,
-          photoR2Key,
         }),
       });
       if (!res.ok) throw new Error("Kayıt başarısız");
@@ -348,9 +311,6 @@ export default function StudyPage() {
     setSSource("");
     setSDuration("");
     setSNotes("");
-    setSPhotoFile(null);
-    if (sPhotoPreview) URL.revokeObjectURL(sPhotoPreview);
-    setSPhotoPreview(null);
   }
 
   // ---------- Save Review ----------
@@ -362,14 +322,6 @@ export default function StudyPage() {
     }
     setSaving(true);
     try {
-      let photoUrl = null;
-      let photoR2Key = null;
-      if (rPhotoFile) {
-        const result = await uploadPhoto(rPhotoFile);
-        photoUrl = result.photoUrl;
-        photoR2Key = result.photoR2Key;
-      }
-
       const res = await fetch("/api/topic-reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -381,8 +333,6 @@ export default function StudyPage() {
           confidence: rConfidence || null,
           method: rMethod || null,
           notes: rNotes || null,
-          photoUrl,
-          photoR2Key,
         }),
       });
       if (!res.ok) throw new Error("Kayıt başarısız");
@@ -404,9 +354,6 @@ export default function StudyPage() {
     setRConfidence("");
     setRMethod("");
     setRNotes("");
-    setRPhotoFile(null);
-    if (rPhotoPreview) URL.revokeObjectURL(rPhotoPreview);
-    setRPhotoPreview(null);
   }
 
   // ---------- Delete ----------
@@ -465,18 +412,6 @@ export default function StudyPage() {
     } finally {
       setAddingTopic(false);
     }
-  }
-
-  // ---------- Photo Helpers ----------
-
-  function handleStudyPhoto(file: File) {
-    setSPhotoFile(file);
-    setSPhotoPreview(URL.createObjectURL(file));
-  }
-
-  function handleReviewPhoto(file: File) {
-    setRPhotoFile(file);
-    setRPhotoPreview(URL.createObjectURL(file));
   }
 
   // ---------- Grouped subjects ----------
@@ -793,22 +728,7 @@ export default function StudyPage() {
                     </div>
                   </details>
 
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/10">
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                      <input type="file" accept="image/*" capture="environment" className="hidden" ref={sFileRef} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleStudyPhoto(f); }} />
-                      {sPhotoPreview ? (
-                        <div className="relative w-14 h-14 rounded-lg overflow-hidden border-2 border-pink-500/50 shadow-md">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={sPhotoPreview} alt="Preview" className="w-full h-full object-cover" />
-                          <button onClick={() => { setSPhotoFile(null); if (sPhotoPreview) URL.revokeObjectURL(sPhotoPreview); setSPhotoPreview(null); }} className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"><X size={20} className="text-white bg-rose-500 rounded-full p-0.5" /></button>
-                        </div>
-                      ) : (
-                        <button onClick={() => sFileRef.current?.click()} className="px-4 py-2.5 bg-white/[0.04] border border-white/10 hover:border-pink-500/30 text-white/70 hover:text-pink-300 text-sm font-bold rounded-xl active:bg-white/5 flex items-center gap-2 transition-all">
-                          <Camera size={16} /> Fotoğraf Ekle
-                        </button>
-                      )}
-                    </div>
-
+                  <div className="flex flex-col sm:flex-row items-center justify-end gap-4 pt-4 border-t border-white/10">
                     <motion.button
                       whileHover={!saving ? { scale: 1.02 } : {}}
                       whileTap={!saving ? { scale: 0.98 } : {}}
@@ -876,22 +796,7 @@ export default function StudyPage() {
                     </div>
                   </details>
 
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/10">
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                      <input type="file" accept="image/*" capture="environment" className="hidden" ref={rFileRef} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleReviewPhoto(f); }} />
-                      {rPhotoPreview ? (
-                        <div className="relative w-14 h-14 rounded-lg overflow-hidden border-2 border-purple-500/50 shadow-md">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={rPhotoPreview} alt="Preview" className="w-full h-full object-cover" />
-                          <button onClick={() => { setRPhotoFile(null); if (rPhotoPreview) URL.revokeObjectURL(rPhotoPreview); setRPhotoPreview(null); }} className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"><X size={20} className="text-white bg-rose-500 rounded-full p-0.5" /></button>
-                        </div>
-                      ) : (
-                        <button onClick={() => rFileRef.current?.click()} className="px-4 py-2.5 bg-white/[0.04] border border-white/10 hover:border-purple-500/30 text-white/70 hover:text-purple-300 text-sm font-bold rounded-xl active:bg-white/5 flex items-center gap-2 transition-all">
-                          <Camera size={16} /> Fotoğraf Ekle
-                        </button>
-                      )}
-                    </div>
-
+                  <div className="flex flex-col sm:flex-row items-center justify-end gap-4 pt-4 border-t border-white/10">
                     <motion.button
                       whileHover={!saving ? { scale: 1.02 } : {}}
                       whileTap={!saving ? { scale: 0.98 } : {}}
@@ -978,11 +883,6 @@ export default function StudyPage() {
                             </div>
 
                             <div className="flex items-center gap-2 self-end sm:self-start bg-black/40 p-1.5 rounded-xl border border-white/5">
-                              {s.photoUrl && (
-                                <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-blue-500/20 text-blue-400 transition-colors group/btn" title="Fotoğrafı Gör">
-                                  <Camera size={14} className="group-hover/btn:scale-110 transition-transform" />
-                                </button>
-                              )}
                               <button onClick={() => handleDeleteStudy(s.id)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-rose-500/20 text-white/40 hover:text-rose-400 transition-colors group/btn" title="Sil">
                                 <Trash2 size={14} className="group-hover/btn:scale-110 transition-transform" />
                               </button>
@@ -1045,11 +945,6 @@ export default function StudyPage() {
                             </div>
 
                             <div className="flex items-center gap-2 self-end sm:self-start bg-black/40 p-1.5 rounded-xl border border-white/5">
-                              {r.photoUrl && (
-                                <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-purple-500/20 text-purple-400 transition-colors group/btn" title="Fotoğrafı Gör">
-                                  <Camera size={14} className="group-hover/btn:scale-110 transition-transform" />
-                                </button>
-                              )}
                               <button onClick={() => handleDeleteReview(r.id)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-rose-500/20 text-white/40 hover:text-rose-400 transition-colors group/btn" title="Sil">
                                 <Trash2 size={14} className="group-hover/btn:scale-110 transition-transform" />
                               </button>

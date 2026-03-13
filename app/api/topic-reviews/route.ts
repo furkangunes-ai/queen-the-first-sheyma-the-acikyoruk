@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       date, subjectId, topicId, duration, confidence,
-      method, photoUrl, photoR2Key, notes,
+      method, notes,
     } = body;
 
     if (!subjectId || !topicId) {
@@ -73,8 +73,6 @@ export async function POST(request: NextRequest) {
         duration: duration || null,
         confidence: confidence || null,
         method: method || null,
-        photoUrl: photoUrl || null,
-        photoR2Key: photoR2Key || null,
         notes: notes || null,
       },
       include: {

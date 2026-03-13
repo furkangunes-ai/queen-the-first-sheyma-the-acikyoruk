@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { logApiError } from "@/lib/logger";
 import { ERROR_REASON_LABELS, type ErrorReasonType } from "@/lib/severity";
+import { buildExamCategoryWhere } from "@/lib/exam-metrics";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,6 +16,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const examTypeId = searchParams.get("examTypeId");
     const subjectId = searchParams.get("subjectId");
+    const examCategory = searchParams.get("examCategory");
 
     // CognitiveVoid'lerden hata kök neden analizi
     const voids = await prisma.cognitiveVoid.findMany({
@@ -22,6 +24,7 @@ export async function GET(request: NextRequest) {
         exam: {
           userId,
           ...(examTypeId && { examTypeId }),
+          ...buildExamCategoryWhere(examCategory),
         },
         ...(subjectId && { subjectId }),
       },
@@ -43,6 +46,8 @@ export async function GET(request: NextRequest) {
     >();
 
     for (const v of voids) {
+      // RAW void'ları (errorReason=null) atla
+      if (!v.errorReason) continue;
       const key = v.errorReason;
       const existing = reasonMap.get(key);
       const label = ERROR_REASON_LABELS[key as ErrorReasonType] || key;

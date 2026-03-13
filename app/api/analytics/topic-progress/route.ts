@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getTurkeyDateString } from "@/lib/utils";
 import { logApiError } from "@/lib/logger";
+import { buildExamCategoryWhere } from "@/lib/exam-metrics";
 
 /**
  * GET /api/analytics/topic-progress
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const examTypeId = searchParams.get("examTypeId");
     const subjectId = searchParams.get("subjectId");
+    const examCategory = searchParams.get("examCategory");
 
     // Build subject filter
     const subjectFilter: any = {};
@@ -83,12 +85,13 @@ export async function GET(request: NextRequest) {
           take: 2000,
         }),
 
-        // Exam wrong questions (last 1 year)
-        prisma.examWrongQuestion.findMany({
+        // Cognitive voids (last 1 year)
+        prisma.cognitiveVoid.findMany({
           where: {
             exam: {
               userId,
               ...(examTypeId && { examTypeId }),
+              ...buildExamCategoryWhere(examCategory),
               date: { gte: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000) },
             },
             topicId: { not: null },
@@ -98,6 +101,7 @@ export async function GET(request: NextRequest) {
             topicId: true,
             subjectId: true,
             examId: true,
+            magnitude: true,
             subject: { select: { name: true, examType: { select: { name: true } } } },
             topic: { select: { name: true } },
             exam: { select: { date: true, title: true } },
@@ -260,7 +264,7 @@ export async function GET(request: NextRequest) {
       entry.lastReview = dateStr;
     }
 
-    // Process exam wrongs (group by exam for timeline)
+    // Process cognitive voids (group by exam for timeline)
     const examWrongsByTopicAndExam = new Map<string, Map<string, { date: string; examTitle: string; count: number }>>();
     for (const ew of examWrongs) {
       if (!ew.topicId || !ew.topic) continue;
@@ -271,7 +275,7 @@ export async function GET(request: NextRequest) {
         ew.subject.name,
         ew.subject.examType.name
       );
-      entry.totalExamWrongs++;
+      entry.totalExamWrongs += ew.magnitude;
 
       // Group by exam for chart
       const examKey = ew.examId;
@@ -286,7 +290,7 @@ export async function GET(request: NextRequest) {
           count: 0,
         });
       }
-      examMap.get(examKey)!.count++;
+      examMap.get(examKey)!.count += ew.magnitude;
     }
 
     // Assign exam wrong history

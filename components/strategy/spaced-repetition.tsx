@@ -21,13 +21,13 @@ import {
 
 interface SpacedItem {
   id: string;
-  wrongQuestion: {
-    questionNumber: number;
+  cognitiveVoid: {
+    magnitude: number;
     notes: string | null;
-    photoUrl: string | null;
-    difficulty: string | null;
+    errorReason: string;
+    source: string;
+    severity: number;
     exam: { title: string };
-    errorReason: { label: string } | null;
   };
   subject: { id: string; name: string };
   topic: { id: string; name: string } | null;
@@ -201,50 +201,37 @@ export default function SpacedRepetition() {
                   </span>
                 )}
                 <span className="px-2.5 py-1 rounded-lg bg-white/5 text-white/40 text-xs border border-white/10">
-                  {currentItem.wrongQuestion.exam.title}
+                  {currentItem.cognitiveVoid.exam.title}
                 </span>
+                {currentItem.cognitiveVoid.source === "EMPTY" && (
+                  <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 text-[10px] font-bold">
+                    Boş
+                  </span>
+                )}
               </div>
 
               <div className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-4 space-y-2">
                 <div className="flex items-center gap-2">
                   <BookOpen size={14} className="text-white/30" />
                   <span className="text-sm font-semibold text-white/80">
-                    Soru #{currentItem.wrongQuestion.questionNumber}
+                    Zafiyet (severity: {currentItem.cognitiveVoid.severity.toFixed(1)})
                   </span>
-                  {currentItem.wrongQuestion.difficulty && (
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                      currentItem.wrongQuestion.difficulty === "zor"
-                        ? "bg-red-500/15 text-red-300"
-                        : currentItem.wrongQuestion.difficulty === "orta"
-                        ? "bg-amber-500/15 text-amber-300"
-                        : "bg-emerald-500/15 text-emerald-300"
-                    }`}>
-                      {currentItem.wrongQuestion.difficulty}
+                  {currentItem.cognitiveVoid.magnitude > 1 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/15 text-red-300">
+                      x{currentItem.cognitiveVoid.magnitude}
                     </span>
                   )}
                 </div>
 
-                {currentItem.wrongQuestion.errorReason && (
-                  <p className="text-xs text-white/40 flex items-center gap-1.5">
-                    <AlertTriangle size={11} className="text-amber-400/60" />
-                    {currentItem.wrongQuestion.errorReason.label}
-                  </p>
-                )}
+                <p className="text-xs text-white/40 flex items-center gap-1.5">
+                  <AlertTriangle size={11} className="text-amber-400/60" />
+                  {currentItem.cognitiveVoid.errorReason.replace(/_/g, " ")}
+                </p>
 
-                {currentItem.wrongQuestion.notes && (
+                {currentItem.cognitiveVoid.notes && (
                   <p className="text-xs text-white/50 italic">
-                    &ldquo;{currentItem.wrongQuestion.notes}&rdquo;
+                    &ldquo;{currentItem.cognitiveVoid.notes}&rdquo;
                   </p>
-                )}
-
-                {currentItem.wrongQuestion.photoUrl && (
-                  <div className="mt-2">
-                    <img
-                      src={currentItem.wrongQuestion.photoUrl}
-                      alt="Soru fotoğrafı"
-                      className="rounded-lg max-h-48 w-auto border border-white/10"
-                    />
-                  </div>
                 )}
               </div>
             </div>

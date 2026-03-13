@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { logApiError } from "@/lib/logger";
-import type { ErrorReasonType } from "@/lib/severity";
+import { calculateSeverity, type ErrorReasonType } from "@/lib/severity";
 
 export async function PATCH(
   request: NextRequest,
@@ -54,6 +54,34 @@ export async function PATCH(
     }
 
     if (notes !== undefined) updateData.notes = notes || null;
+
+    // RAW → UNRESOLVED: topic ve reason ikisi de verilmişse otomatik geçiş
+    const finalTopicId = updateData.topicId !== undefined ? updateData.topicId : existing.topicId;
+    const finalReason = updateData.errorReason || existing.errorReason;
+    if (existing.status === 'RAW' && finalTopicId && finalReason && !updateData.status) {
+      updateData.status = 'UNRESOLVED';
+    }
+
+    // Severity yeniden hesapla (reason değiştiyse veya topic eklendiyse)
+    if (updateData.errorReason || updateData.topicId) {
+      let topicWeight = 2;
+      const tid = finalTopicId;
+      if (tid) {
+        const topic = await prisma.topic.findUnique({
+          where: { id: tid },
+          select: { difficulty: true },
+        });
+        if (topic) {
+          topicWeight = topic.difficulty <= 2 ? 3 : topic.difficulty <= 3 ? 2 : 1;
+        }
+      }
+      updateData.severity = calculateSeverity(
+        finalReason as ErrorReasonType | null,
+        topicWeight,
+        existing.magnitude,
+        existing.relapseCount
+      );
+    }
 
     const updated = await prisma.cognitiveVoid.update({
       where: { id: voidId },

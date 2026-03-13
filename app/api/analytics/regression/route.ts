@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getTurkeyDateString } from "@/lib/utils";
 import { logApiError } from "@/lib/logger";
+import { buildExamCategoryWhere } from "@/lib/exam-metrics";
 
 // ─── OLS Linear Regression + Asimptotik Sönümleme ───────────────────
 
@@ -175,6 +176,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const examTypeId = searchParams.get("examTypeId");
     const subjectId = searchParams.get("subjectId");
+    const examCategory = searchParams.get("examCategory");
     const targetsParam = searchParams.get("targets") || "70,80,90,100";
     const targets = targetsParam.split(",").map(Number).filter(n => !isNaN(n));
 
@@ -182,6 +184,7 @@ export async function GET(request: NextRequest) {
       where: {
         userId,
         ...(examTypeId && { examTypeId }),
+        ...buildExamCategoryWhere(examCategory),
         ...(subjectId && {
           subjectResults: {
             some: { subjectId },

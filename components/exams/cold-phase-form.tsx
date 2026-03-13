@@ -1,27 +1,37 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
-import { Brain, ChevronRight, CheckCircle2, Loader2, MessageSquare, Zap } from 'lucide-react';
+import { Brain, CheckCircle2, Loader2, MessageSquare, ChevronDown, ChevronUp, Save } from 'lucide-react';
 import {
   ERROR_REASONS_ORDERED,
   ERROR_REASON_LABELS,
   VOID_STATUS_COLORS,
   getColdPhaseFrictionMessage,
   type ErrorReasonType,
+  type VoidStatusType,
 } from '@/lib/severity';
+import { calculateClarityScore, formatScorePercent } from '@/lib/exam-metrics';
 
 interface ColdPhaseFormProps {
   examId: string;
-  examDate: string; // ISO date
-  subjectResults: Array<{
-    subjectId: string;
-    subjectName: string;
-    wrongCount: number;
-    emptyCount: number;
-  }>;
+  examDate: string;
   onComplete: () => void;
+}
+
+interface RawVoid {
+  id: string;
+  subjectId: string;
+  subject: { id: string; name: string };
+  topic?: { id: string; name: string } | null;
+  topicId: string | null;
+  errorReason: ErrorReasonType | null;
+  source: 'WRONG' | 'EMPTY';
+  status: VoidStatusType;
+  questionNumber: number | null;
+  magnitude: number;
+  notes: string | null;
 }
 
 interface Topic {
@@ -30,183 +40,180 @@ interface Topic {
   subjectId: string;
 }
 
-interface VoidCard {
-  subjectId: string;
-  subjectName: string;
-  source: 'WRONG' | 'EMPTY';
-  count: number; // kaç soru yanlış/boş
-  // Soğuk faz girişleri
+interface VoidEdit {
   topicId: string;
-  errorReason: ErrorReasonType;
+  errorReason: ErrorReasonType | null;
   notes: string;
-  completed: boolean;
+  expanded: boolean;
+  dirty: boolean;
 }
 
 /**
- * Soğuk Faz - Kognitif Zafiyet Haritalama
- * Sıcak Faz'dan sonra (minimum 6 saat), öğrenci dinlendikten sonra
- * zafiyet noktalarını tek tıkla etiketler.
+ * Soğuk Faz — Progresif Zafiyet Haritalama
  *
- * Akış:
- * 1. Her ders için yanlış/boş sayısı kadar kart
- * 2. Kart 1: Konu seçimi (en çok hata yapılan konular üstte)
- * 3. Kart 2: Hata kök nedeni (statik butonlar)
- * 4. Kart 3: Opsiyonel "Eureka" notu
+ * Mevcut RAW void'ları listeler, öğrenci dilediği kadarını
+ * opsiyonel olarak zenginleştirir (konu, neden, not).
+ * Geri kalanlar RAW kalır — cezasız, zorunluluksuz.
  */
-export default function ColdPhaseForm({ examId, examDate, subjectResults, onComplete }: ColdPhaseFormProps) {
+export default function ColdPhaseForm({ examId, examDate, onComplete }: ColdPhaseFormProps) {
+  const [voids, setVoids] = useState<RawVoid[]>([]);
+  const [edits, setEdits] = useState<Map<string, VoidEdit>>(new Map());
   const [topics, setTopics] = useState<Record<string, Topic[]>>({});
-  const [loadingTopics, setLoadingTopics] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   // Friction gate
   const [frictionMessage, setFrictionMessage] = useState<string | null>(null);
   const [frictionBypassed, setFrictionBypassed] = useState(false);
 
-  // Current card index
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1); // 1=topic, 2=reason, 3=notes
-
-  // Generate void cards from subject results
-  const [cards, setCards] = useState<VoidCard[]>([]);
-
   useEffect(() => {
-    // Check friction gate
     const hoursSinceExam = (Date.now() - new Date(examDate).getTime()) / (1000 * 60 * 60);
     const msg = getColdPhaseFrictionMessage(hoursSinceExam);
     setFrictionMessage(msg);
   }, [examDate]);
 
+  // Fetch existing cognitive voids
   useEffect(() => {
-    // Generate cards: one per subject that has wrong or empty
-    const newCards: VoidCard[] = [];
-    for (const sr of subjectResults) {
-      if (sr.wrongCount > 0) {
-        newCards.push({
-          subjectId: sr.subjectId,
-          subjectName: sr.subjectName,
-          source: 'WRONG',
-          count: sr.wrongCount,
-          topicId: '',
-          errorReason: 'BILGI_EKSIKLIGI',
-          notes: '',
-          completed: false,
-        });
-      }
-      if (sr.emptyCount > 0) {
-        newCards.push({
-          subjectId: sr.subjectId,
-          subjectName: sr.subjectName,
-          source: 'EMPTY',
-          count: sr.emptyCount,
-          topicId: '',
-          errorReason: 'SURE_YETISMEDI',
-          notes: '',
-          completed: false,
-        });
-      }
-    }
-    setCards(newCards);
-  }, [subjectResults]);
-
-  // Fetch topics for all subjects
-  useEffect(() => {
-    const subjectIds = [...new Set(subjectResults.map(s => s.subjectId))];
-    if (subjectIds.length === 0) return;
-
-    async function fetchTopics() {
-      setLoadingTopics(true);
+    async function fetchVoids() {
+      setLoading(true);
       try {
-        const topicMap: Record<string, Topic[]> = {};
-        // Fetch all subjects' topics
-        const res = await fetch(`/api/subjects/topics?subjectIds=${subjectIds.join(',')}`);
-        if (res.ok) {
-          const data = await res.json();
-          for (const topic of data) {
-            if (!topicMap[topic.subjectId]) topicMap[topic.subjectId] = [];
-            topicMap[topic.subjectId].push(topic);
+        const res = await fetch(`/api/exams/${examId}/cognitive-voids`);
+        if (!res.ok) throw new Error('Zafiyetler yüklenemedi');
+        const data: RawVoid[] = await res.json();
+        setVoids(data);
+
+        // Initialize edits map
+        const editMap = new Map<string, VoidEdit>();
+        for (const v of data) {
+          editMap.set(v.id, {
+            topicId: v.topicId || '',
+            errorReason: v.errorReason || null,
+            notes: v.notes || '',
+            expanded: false,
+            dirty: false,
+          });
+        }
+        setEdits(editMap);
+
+        // Fetch topics for all subjects
+        const subjectIds = [...new Set(data.map(v => v.subjectId))];
+        if (subjectIds.length > 0) {
+          const topicRes = await fetch(`/api/subjects/topics?subjectIds=${subjectIds.join(',')}`);
+          if (topicRes.ok) {
+            const topicData: Topic[] = await topicRes.json();
+            const topicMap: Record<string, Topic[]> = {};
+            for (const t of topicData) {
+              if (!topicMap[t.subjectId]) topicMap[t.subjectId] = [];
+              topicMap[t.subjectId].push(t);
+            }
+            setTopics(topicMap);
           }
         }
-        setTopics(topicMap);
       } catch {
-        toast.error('Konular yüklenirken hata oluştu');
+        toast.error('Zafiyetler yüklenirken hata oluştu');
       } finally {
-        setLoadingTopics(false);
+        setLoading(false);
       }
     }
-    fetchTopics();
-  }, [subjectResults]);
+    fetchVoids();
+  }, [examId]);
 
-  const currentCard = cards[currentCardIndex];
-  const totalCards = cards.length;
-  const completedCards = cards.filter(c => c.completed).length;
+  // Group voids by subject
+  const groupedVoids = useMemo(() => {
+    const groups = new Map<string, { subjectName: string; voids: RawVoid[] }>();
+    for (const v of voids) {
+      const existing = groups.get(v.subjectId);
+      if (existing) {
+        existing.voids.push(v);
+      } else {
+        groups.set(v.subjectId, { subjectName: v.subject.name, voids: [v] });
+      }
+    }
+    return groups;
+  }, [voids]);
 
-  function updateCurrentCard(updates: Partial<VoidCard>) {
-    setCards(prev => {
-      const updated = [...prev];
-      updated[currentCardIndex] = { ...updated[currentCardIndex], ...updates };
-      return updated;
+  // Clarity score
+  const clarityScore = useMemo(() => {
+    return calculateClarityScore(voids.map(v => {
+      const edit = edits.get(v.id);
+      // Eğer edit'te topic ve reason varsa sınıflandırılmış say
+      if (edit?.dirty && edit.topicId && edit.errorReason) {
+        return { status: 'UNRESOLVED' };
+      }
+      return { status: v.status };
+    }));
+  }, [voids, edits]);
+
+  function updateEdit(voidId: string, updates: Partial<VoidEdit>) {
+    setEdits(prev => {
+      const next = new Map(prev);
+      const current = next.get(voidId);
+      if (current) {
+        next.set(voidId, { ...current, ...updates, dirty: true });
+      }
+      return next;
     });
   }
 
-  function nextStep() {
-    if (currentStep < 3) {
-      setCurrentStep((currentStep + 1) as 1 | 2 | 3);
-    } else {
-      // Mark card as completed and move to next
-      updateCurrentCard({ completed: true });
-      if (currentCardIndex < totalCards - 1) {
-        setCurrentCardIndex(currentCardIndex + 1);
-        setCurrentStep(1);
+  function toggleExpand(voidId: string) {
+    setEdits(prev => {
+      const next = new Map(prev);
+      const current = next.get(voidId);
+      if (current) {
+        next.set(voidId, { ...current, expanded: !current.expanded });
       }
-    }
+      return next;
+    });
   }
 
-  function skipCard() {
-    updateCurrentCard({ completed: true });
-    if (currentCardIndex < totalCards - 1) {
-      setCurrentCardIndex(currentCardIndex + 1);
-      setCurrentStep(1);
-    }
-  }
+  const dirtyCount = useMemo(() => {
+    let count = 0;
+    edits.forEach(e => { if (e.dirty) count++; });
+    return count;
+  }, [edits]);
 
-  async function handleSubmitAll() {
+  async function handleSave() {
     setSubmitting(true);
     try {
-      const completedVoids = cards.filter(c => c.completed && c.topicId);
+      const promises: Promise<Response>[] = [];
 
-      for (const card of completedVoids) {
-        await fetch(`/api/exams/${examId}/cognitive-voids`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            subjectId: card.subjectId,
-            topicId: card.topicId,
-            errorReason: card.errorReason,
-            source: card.source,
-            magnitude: card.count,
-            notes: card.notes || undefined,
-          }),
-        });
+      for (const [voidId, edit] of edits) {
+        if (!edit.dirty) continue;
+
+        const v = voids.find(v => v.id === voidId);
+        if (!v) continue;
+
+        // PATCH existing void with enrichment data
+        promises.push(
+          fetch(`/api/exams/${examId}/cognitive-voids/${voidId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...(edit.topicId && { topicId: edit.topicId }),
+              ...(edit.errorReason && { errorReason: edit.errorReason }),
+              ...(edit.notes && { notes: edit.notes }),
+            }),
+          })
+        );
       }
 
-      // Mark cold phase as completed
-      await fetch(`/api/exams/${examId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ coldPhaseCompleted: true }),
-      });
+      if (promises.length > 0) {
+        const results = await Promise.allSettled(promises);
+        const failed = results.filter(r => r.status === 'rejected').length;
+        if (failed > 0) {
+          toast.error(`${failed} zafiyet kaydedilemedi`);
+        } else {
+          toast.success(`${promises.length} zafiyet güncellendi!`);
+        }
+      }
 
-      toast.success('Zafiyet haritası tamamlandı! Ebbinghaus motoru aktif.');
       onComplete();
     } catch {
-      toast.error('Zafiyet kaydedilirken hata oluştu');
+      toast.error('Kaydetme sırasında hata oluştu');
     } finally {
       setSubmitting(false);
     }
   }
-
-  const allCompleted = completedCards === totalCards && totalCards > 0;
-  const subjectTopics = currentCard ? (topics[currentCard.subjectId] || []) : [];
 
   // Friction gate screen
   if (frictionMessage && !frictionBypassed) {
@@ -234,16 +241,16 @@ export default function ColdPhaseForm({ examId, examDate, subjectResults, onComp
     );
   }
 
-  if (loadingTopics) {
+  if (loading) {
     return (
       <div className="glass-panel p-8 max-w-lg mx-auto text-center">
         <Loader2 size={40} className="mx-auto animate-spin text-pink-400 mb-4" />
-        <p className="text-white/50 text-sm">Konular yükleniyor...</p>
+        <p className="text-white/50 text-sm">Zafiyetler yükleniyor...</p>
       </div>
     );
   }
 
-  if (totalCards === 0) {
+  if (voids.length === 0) {
     return (
       <div className="glass-panel p-8 max-w-lg mx-auto text-center">
         <CheckCircle2 size={48} className="mx-auto text-emerald-400 mb-4" />
@@ -252,182 +259,191 @@ export default function ColdPhaseForm({ examId, examDate, subjectResults, onComp
     );
   }
 
+  const rawCount = voids.filter(v => v.status === 'RAW').length;
+
   return (
     <div className="glass-panel p-6 sm:p-8 max-w-2xl mx-auto relative overflow-hidden">
       <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/10 rounded-full blur-[60px] pointer-events-none" />
 
-      {/* Progress bar */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-bold text-white/50 uppercase tracking-widest">
-            Zafiyet Haritalama
-          </span>
-          <span className="text-[11px] font-bold text-pink-400">
-            {completedCards}/{totalCards}
-          </span>
+      {/* Header with clarity score */}
+      <div className="flex items-center justify-between mb-6 relative z-10">
+        <div>
+          <h2 className="text-xl font-bold text-white">Zafiyet Haritalama</h2>
+          <p className="text-xs text-white/40 mt-1">
+            {rawCount} ham veri, {voids.length} toplam — dilediğin kadarını sınıflandır
+          </p>
         </div>
-        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-          <motion.div
-            className="h-full bg-gradient-to-r from-pink-500 to-pink-400"
-            initial={{ width: 0 }}
-            animate={{ width: `${(completedCards / totalCards) * 100}%` }}
-            transition={{ duration: 0.3 }}
-          />
+        <div className="text-center">
+          <div className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400">
+            {formatScorePercent(clarityScore)}
+          </div>
+          <div className="text-[9px] font-bold text-white/30 uppercase tracking-widest">
+            Netlik
+          </div>
         </div>
       </div>
 
-      {/* All completed → submit */}
-      {allCompleted ? (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center py-8"
-        >
-          <CheckCircle2 size={56} className="mx-auto text-emerald-400 mb-4 drop-shadow-[0_0_20px_rgba(52,211,153,0.3)]" />
-          <h3 className="text-xl font-bold text-white mb-2">Tüm zafiyetler haritalandı!</h3>
-          <p className="text-white/40 text-sm mb-8">Ebbinghaus motoru bu verileri işleyecek.</p>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleSubmitAll}
-            disabled={submitting}
-            className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-8 py-3.5 rounded-xl shadow-[0_0_15px_rgba(52,211,153,0.3)] border border-emerald-400/20 font-bold text-sm flex items-center gap-2 mx-auto"
-          >
-            {submitting ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
-            {submitting ? 'Kaydediliyor...' : 'Zafiyet Haritasını Kaydet'}
-          </motion.button>
-        </motion.div>
-      ) : currentCard && (
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`${currentCardIndex}-${currentStep}`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-          >
-            {/* Card header */}
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/5">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black ${
-                currentCard.source === 'WRONG'
-                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                  : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-              }`}>
-                {currentCard.count}
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white">{currentCard.subjectName}</h3>
-                <p className="text-xs text-white/40">
-                  {currentCard.source === 'WRONG' ? 'Yanlış' : 'Boş'} — Adım {currentStep}/3
-                </p>
-              </div>
+      {/* Void groups by subject */}
+      <div className="space-y-4">
+        {Array.from(groupedVoids.entries()).map(([subjectId, group]) => (
+          <div key={subjectId}>
+            <h3 className="text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-2">
+              {group.subjectName}
+              <span className="text-white/30 ml-2">({group.voids.length})</span>
+            </h3>
+            <div className="space-y-2">
+              {group.voids.map((v) => {
+                const edit = edits.get(v.id);
+                if (!edit) return null;
+                const subjectTopics = topics[v.subjectId] || [];
+                const isClassified = (edit.topicId && edit.errorReason) || v.status !== 'RAW';
+                const statusColor = VOID_STATUS_COLORS[v.status];
+
+                return (
+                  <div
+                    key={v.id}
+                    className={`rounded-xl border transition-all ${
+                      isClassified
+                        ? 'bg-white/[0.02] border-white/[0.06]'
+                        : 'bg-white/[0.03] border-white/10'
+                    }`}
+                  >
+                    {/* Void header — tıklanınca açılır */}
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(v.id)}
+                      className="w-full flex items-center gap-3 p-3 text-left"
+                    >
+                      {/* Source badge */}
+                      <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black flex-shrink-0 ${
+                        v.source === 'WRONG'
+                          ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                          : 'bg-white/[0.06] text-white/40 border border-white/10'
+                      }`}>
+                        {v.questionNumber || '#'}
+                      </span>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white/80">
+                            {v.source === 'WRONG' ? 'Yanlış' : 'Boş'}
+                            {v.questionNumber ? ` — Soru ${v.questionNumber}` : ''}
+                          </span>
+                          {isClassified && (
+                            <CheckCircle2 size={12} className="text-emerald-400 flex-shrink-0" />
+                          )}
+                        </div>
+                        {v.topic && (
+                          <span className="text-[10px] text-white/30">{v.topic.name}</span>
+                        )}
+                        {edit.dirty && !isClassified && (
+                          <span className="text-[10px] text-amber-400">düzenlendi</span>
+                        )}
+                      </div>
+
+                      {/* Status pill */}
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${statusColor.bg} ${statusColor.text} border ${statusColor.border}`}>
+                        {v.status === 'RAW' ? 'Ham' : v.status}
+                      </span>
+
+                      {edit.expanded ? <ChevronUp size={14} className="text-white/30" /> : <ChevronDown size={14} className="text-white/30" />}
+                    </button>
+
+                    {/* Expanded: enrichment fields */}
+                    {edit.expanded && (
+                      <div className="px-3 pb-3 space-y-3 border-t border-white/5 pt-3">
+                        {/* Topic dropdown */}
+                        <div>
+                          <label className="block text-[9px] font-bold text-white/40 uppercase tracking-widest mb-1">
+                            Konu
+                          </label>
+                          <select
+                            value={edit.topicId}
+                            onChange={(e) => updateEdit(v.id, { topicId: e.target.value })}
+                            className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-xs text-white [color-scheme:dark] focus:outline-none focus:ring-1 focus:ring-pink-400/50"
+                          >
+                            <option value="">Konu seç (opsiyonel)</option>
+                            {subjectTopics.map(t => (
+                              <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Error reason buttons */}
+                        <div>
+                          <label className="block text-[9px] font-bold text-white/40 uppercase tracking-widest mb-1">
+                            Hata Nedeni
+                          </label>
+                          <div className="flex flex-wrap gap-1.5">
+                            {ERROR_REASONS_ORDERED.map(reason => (
+                              <button
+                                key={reason}
+                                type="button"
+                                onClick={() => updateEdit(v.id, {
+                                  errorReason: edit.errorReason === reason ? null : reason,
+                                })}
+                                className={`py-1.5 px-3 rounded-lg text-[10px] font-bold transition-all border ${
+                                  edit.errorReason === reason
+                                    ? 'bg-pink-500/20 text-pink-400 border-pink-500/30'
+                                    : 'bg-white/[0.03] text-white/40 border-white/[0.06] hover:text-white/60'
+                                }`}
+                              >
+                                {ERROR_REASON_LABELS[reason]}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Notes */}
+                        <div>
+                          <label className="block text-[9px] font-bold text-white/40 uppercase tracking-widest mb-1">
+                            <span className="flex items-center gap-1">
+                              <MessageSquare size={10} />
+                              Not (opsiyonel)
+                            </span>
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="İçgörün varsa kısaca yaz..."
+                            value={edit.notes}
+                            onChange={(e) => updateEdit(v.id, { notes: e.target.value })}
+                            className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-pink-400/50"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
+          </div>
+        ))}
+      </div>
 
-            {/* Step 1: Topic Selection */}
-            {currentStep === 1 && (
-              <div>
-                <label className="block text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-3">
-                  Zafiyet Konusu
-                </label>
-                <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto custom-scrollbar pr-1">
-                  {subjectTopics.map((topic) => (
-                    <button
-                      key={topic.id}
-                      type="button"
-                      onClick={() => {
-                        updateCurrentCard({ topicId: topic.id });
-                        nextStep();
-                      }}
-                      className={`py-3 px-4 rounded-xl text-sm font-bold tracking-wide transition-all border text-left ${
-                        currentCard.topicId === topic.id
-                          ? 'bg-pink-500/20 text-pink-400 border-pink-500/30 shadow-[0_0_10px_rgba(255,42,133,0.15)]'
-                          : 'bg-white/[0.03] text-white/60 border-white/10 hover:bg-white/[0.06] hover:text-white/80'
-                      }`}
-                    >
-                      {topic.name}
-                    </button>
-                  ))}
-                </div>
-                {subjectTopics.length === 0 && (
-                  <p className="text-white/30 text-sm text-center py-8">Bu ders için konu tanımlanmamış</p>
-                )}
-                <div className="flex justify-between mt-6">
-                  <button
-                    onClick={skipCard}
-                    className="text-white/30 hover:text-white/60 text-xs font-bold uppercase tracking-wider transition-colors"
-                  >
-                    Atla
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Error Reason */}
-            {currentStep === 2 && (
-              <div>
-                <label className="block text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-3">
-                  Hata Kök Nedeni
-                </label>
-                <div className="grid grid-cols-1 gap-2">
-                  {ERROR_REASONS_ORDERED.map((reason) => (
-                    <button
-                      key={reason}
-                      type="button"
-                      onClick={() => {
-                        updateCurrentCard({ errorReason: reason });
-                        nextStep();
-                      }}
-                      className={`py-3.5 px-5 rounded-xl text-sm font-bold tracking-wide transition-all border text-left ${
-                        currentCard.errorReason === reason
-                          ? 'bg-pink-500/20 text-pink-400 border-pink-500/30'
-                          : 'bg-white/[0.03] text-white/60 border-white/10 hover:bg-white/[0.06] hover:text-white/80'
-                      }`}
-                    >
-                      {ERROR_REASON_LABELS[reason]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Optional Notes (Eureka moment) */}
-            {currentStep === 3 && (
-              <div>
-                <label className="block text-[11px] font-bold text-white/50 uppercase tracking-widest px-1 mb-3">
-                  <span className="flex items-center gap-1.5">
-                    <MessageSquare size={12} />
-                    İçgörü Notu <span className="text-white/30 font-normal">(opsiyonel)</span>
-                  </span>
-                </label>
-                <textarea
-                  placeholder="Bu konuyu neden yapamadığına dair bir içgörün varsa yaz..."
-                  value={currentCard.notes}
-                  onChange={(e) => updateCurrentCard({ notes: e.target.value })}
-                  rows={3}
-                  className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm font-medium text-white placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-pink-400/50 focus:border-pink-400/30 transition-all resize-none"
-                />
-                <div className="flex justify-between mt-6">
-                  <button
-                    onClick={() => setCurrentStep(2)}
-                    className="text-white/40 hover:text-white/80 text-sm font-bold uppercase tracking-wider transition-colors"
-                  >
-                    Geri
-                  </button>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={nextStep}
-                    className="bg-gradient-to-r from-pink-500 to-pink-600 text-white px-6 py-2.5 rounded-xl shadow-[0_0_12px_rgba(255,42,133,0.3)] border border-pink-400/20 font-bold text-sm flex items-center gap-2"
-                  >
-                    {currentCardIndex < totalCards - 1 ? 'Sonraki' : 'Tamamla'}
-                    <ChevronRight size={14} />
-                  </motion.button>
-                </div>
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
-      )}
+      {/* Footer: Save + Close */}
+      <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5 relative z-10">
+        <button
+          onClick={onComplete}
+          className="text-white/40 hover:text-white/80 text-sm font-bold uppercase tracking-wider transition-colors"
+        >
+          Sonra Devam Et
+        </button>
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={handleSave}
+          disabled={submitting || dirtyCount === 0}
+          className="bg-gradient-to-r from-pink-500 to-pink-600 text-white px-6 py-2.5 rounded-xl shadow-[0_0_12px_rgba(255,42,133,0.3)] border border-pink-400/20 font-bold text-sm flex items-center gap-2 disabled:opacity-40"
+        >
+          {submitting ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Save size={14} />
+          )}
+          {submitting ? 'Kaydediliyor...' : `Kaydet${dirtyCount > 0 ? ` (${dirtyCount})` : ''}`}
+        </motion.button>
+      </div>
     </div>
   );
 }
