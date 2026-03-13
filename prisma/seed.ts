@@ -184,7 +184,7 @@ async function main() {
 
   // ==================== AYT DERSLER & KONULAR ====================
   const aytSubjects = [
-    { name: "Matematik", questionCount: 40, topics: [
+    { name: "Matematik", questionCount: 30, topics: [
       "Temel Kavramlar", "Sayı Basamakları", "Rasyonel Sayılar", "Ondalıklı Sayılar",
       "Basit Eşitsizlikler", "Mutlak Değer", "Üslü Sayılar", "Köklü Sayılar",
       "Çarpanlara Ayırma", "Denklem Çözme", "Oran-Orantı", "Problemler", "Fonksiyonlar",
@@ -192,6 +192,22 @@ async function main() {
       "2. Dereceden Denklemler", "Karmaşık Sayılar", "Parabol", "Polinomlar", "Mantık",
       "Modüler Aritmetik", "Eşitsizlikler", "Logaritma", "Diziler", "Seriler",
       "Limit ve Süreklilik", "Türev", "İntegral",
+    ]},
+    { name: "Geometri", questionCount: 10, topics: [
+      "Temel Kavramlar", "Doğruda Açılar", "Üçgende Açılar",
+      "Özel Üçgenler - Dik Üçgen", "Özel Üçgenler - İkizkenar Üçgen", "Özel Üçgenler - Eşkenar Üçgen",
+      "Açıortay", "Kenarortay", "Üçgende Alan", "Üçgende Benzerlik",
+      "Açı Kenar Bağıntıları", "Çokgenler",
+      "Özel Dörtgenler", "Dörtgenler - Deltoid", "Dörtgenler - Paralelkenar",
+      "Dörtgenler - Eşkenar Dörtgen", "Dörtgenler - Dikdörtgen", "Dörtgenler - Kare",
+      "Dörtgenler - İkizkenar Yamuk", "Dörtgenler - Yamuk",
+      "Çember ve Daire",
+      "Analitik Geometri - Noktanın Analitiği", "Analitik Geometri - Doğrunun Analitiği",
+      "Analitik Geometri - Dönüşüm Geometrisi",
+      "Katı Cisimler - Dikdörtgenler Prizması", "Katı Cisimler - Küp",
+      "Katı Cisimler - Silindir", "Katı Cisimler - Piramit",
+      "Katı Cisimler - Koni", "Katı Cisimler - Küre",
+      "Çemberin Analitiği",
     ]},
     { name: "Fizik", questionCount: 14, topics: [
       "Kuvvet ve Hareket", "Vektörler", "Bağıl Hareket", "Newton'un Hareket Yasaları",
