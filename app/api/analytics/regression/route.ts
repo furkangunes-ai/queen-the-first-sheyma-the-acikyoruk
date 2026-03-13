@@ -14,35 +14,36 @@ interface DataPoint {
   examTitle: string;
 }
 
-interface RegressionResult {
-  slope: number;
-  intercept: number;
-  rSquared: number;
-  standardError: number;
-  n: number;
-  dataPoints: DataPoint[];
-  trendLine: Array<{ date: string; predicted: number; lower: number; upper: number }>;
-  predictions: Array<{
-    targetNet: number;
-    estimatedDate: string | null;
-    daysFromNow: number | null;
-    confidence: number;
-    lowerDate: string | null;
-    upperDate: string | null;
-  }>;
-  weeklyGrowth: number;
-  dailyGrowth: number;
-  currentEstimate: number;
-  ceiling: number; // Mutlak tavan net
-}
+// Response type — inline kullanılıyor, tip sadece referans olarak tutuluyor
+// predictions[].beyondYKS: true ise hedef YKS'den sonra ulaşılabilir
+// yksDate, daysToYKS, yksEstimate: YKS 2026 bilgileri
 
 // ─── Tavan (Ceiling) Değerleri ───
-// TYT: 120 net mutlak sınır
-// AYT: 80 net genel projeksiyon tavanı
-// Ders bazlı: dersin soru sayısı
+// TYT: 120 net mutlak sınır (40 Türkçe + 40 Mat + 20 Fen + 20 Sosyal)
+// AYT: Branş bazlı tavanlar:
+//   - AYT Fen (Fizik+Kimya+Biyoloji) = 40 net
+//   - AYT Sosyal = 40 net
+//   - AYT Matematik = 40 net
+//   - AYT Edebiyat-Sosyal1 = 40 net
+//   - AYT genel (tüm dersler) = 80 net
+// Ders bazlı: dersin questionCount değeri
 const CEILING_TYT = 120;
-const CEILING_AYT = 80;
+const CEILING_AYT_GENEL = 80;
 const DEFAULT_CEILING = 120;
+
+// Branş deneme tavanları (examCategory → ceiling)
+const BRANS_CEILINGS: Record<string, number> = {
+  'brans-fen': 40,
+  'brans-sosyal': 40,
+  'brans-matematik': 40,
+  'brans-edebiyat-sosyal1': 40,
+  'brans-sosyal2': 40,
+  'brans': 40, // tek ders branş
+};
+
+// ─── YKS 2026 Sınır Tarihi ───
+// Projeksiyon bu tarihten sonrası için anlamsız
+const YKS_2026_DATE = new Date('2026-06-21T00:00:00+03:00');
 
 function linearRegression(points: DataPoint[]): {
   slope: number;
@@ -177,8 +178,14 @@ export async function GET(request: NextRequest) {
     const examTypeId = searchParams.get("examTypeId");
     const subjectId = searchParams.get("subjectId");
     const examCategory = searchParams.get("examCategory");
-    const targetsParam = searchParams.get("targets") || "70,80,90,100";
-    const targets = targetsParam.split(",").map(Number).filter(n => !isNaN(n));
+    const targetsParam = searchParams.get("targets");
+    // Hedef netler: kullanıcı belirtmezse ceiling'e göre otomatik oluştur
+    let targets: number[];
+    if (targetsParam) {
+      targets = targetsParam.split(",").map(Number).filter(n => !isNaN(n));
+    } else {
+      targets = []; // will be filled after ceiling is determined
+    }
 
     const exams = await prisma.exam.findMany({
       where: {
@@ -211,16 +218,35 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Determine ceiling
+    // Determine ceiling — branş + ders bazlı doğru tavanlar
     let ceiling = DEFAULT_CEILING;
     if (subjectId) {
-      // Ders bazlı: dersin soru sayısı
+      // Ders bazlı: dersin soru sayısı (questionCount)
       const subject = await prisma.subject.findUnique({ where: { id: subjectId }, select: { questionCount: true } });
       if (subject) ceiling = subject.questionCount;
+    } else if (examCategory && BRANS_CEILINGS[examCategory]) {
+      // Branş denemesi: sabit tavan
+      ceiling = BRANS_CEILINGS[examCategory];
     } else if (examTypeId) {
       const examType = await prisma.examType.findUnique({ where: { id: examTypeId }, select: { slug: true } });
-      ceiling = examType?.slug === 'ayt' ? CEILING_AYT : CEILING_TYT;
+      ceiling = examType?.slug === 'ayt' ? CEILING_AYT_GENEL : CEILING_TYT;
     }
+
+    // Auto-generate targets based on ceiling if not provided
+    if (targets.length === 0) {
+      if (ceiling <= 40) {
+        // Branş/ders bazlı: 15, 20, 25, 30, 35, 40
+        targets = [15, 20, 25, 30, 35, Math.min(40, ceiling)].filter(t => t <= ceiling);
+      } else if (ceiling <= 80) {
+        // AYT genel: 30, 40, 50, 60, 70, 80
+        targets = [30, 40, 50, 60, 70, Math.min(80, ceiling)].filter(t => t <= ceiling);
+      } else {
+        // TYT: 50, 60, 70, 80, 90, 100, 110, 120
+        targets = [50, 60, 70, 80, 90, 100, 110, 120].filter(t => t <= ceiling);
+      }
+    }
+    // Filter out targets that exceed ceiling
+    targets = targets.filter(t => t <= ceiling);
 
     // Convert exams to data points
     const firstDate = new Date(exams[0].date);
@@ -244,7 +270,9 @@ export async function GET(request: NextRequest) {
     const k = 1.5;
 
     // Trend line: lineer tahmin → sönümlenmiş tahmin
-    const futureEnd = todayX + 90;
+    // YKS 2026 tarihine kadar göster (sonrası anlamsız)
+    const yksX = Math.round((YKS_2026_DATE.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24));
+    const futureEnd = Math.min(todayX + 180, yksX); // YKS tarihi veya max 6 ay
     const trendLine: Array<{ date: string; predicted: number; lower: number; upper: number }> = [];
     const step = Math.max(1, Math.round((futureEnd - 0) / 60));
 
@@ -315,6 +343,20 @@ export async function GET(request: NextRequest) {
       const targetDate = addDays(firstDate, Math.round(targetX));
       const daysFromNow = Math.round(targetX) - todayX;
 
+      // YKS tarihi sınırı: tahmin YKS'den sonraysa "YKS'ye kadar ulaşılamaz" olarak işaretle
+      const daysToYKS = Math.round((YKS_2026_DATE.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysFromNow > daysToYKS && daysToYKS > 0) {
+        return {
+          targetNet,
+          estimatedDate: formatDate(targetDate),
+          daysFromNow,
+          confidence: Math.min(100, Math.round(rSquared * 100)),
+          lowerDate: null,
+          upperDate: null,
+          beyondYKS: true,
+        };
+      }
+
       // Confidence interval
       let lowerDate: string | null = null;
       let upperDate: string | null = null;
@@ -347,7 +389,14 @@ export async function GET(request: NextRequest) {
     const currentLinearY = slope * todayX + intercept;
     const currentEstimate = applyDamping(currentLinearY, ceiling, k);
 
-    const result: RegressionResult = {
+    // YKS'ye kalan gün
+    const daysToYKS = Math.round((YKS_2026_DATE.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+    // YKS günündeki tahmini net
+    const yksLinearY = slope * yksX + intercept;
+    const yksEstimate = slope > 0 ? applyDamping(yksLinearY, ceiling, k) : currentEstimate;
+
+    const result = {
       slope,
       intercept,
       rSquared,
@@ -360,6 +409,9 @@ export async function GET(request: NextRequest) {
       dailyGrowth: Number(slope.toFixed(4)),
       currentEstimate: Number(currentEstimate.toFixed(1)),
       ceiling,
+      yksDate: formatDate(YKS_2026_DATE),
+      daysToYKS: Math.max(0, daysToYKS),
+      yksEstimate: Number(yksEstimate.toFixed(1)),
     };
 
     return NextResponse.json(result);
