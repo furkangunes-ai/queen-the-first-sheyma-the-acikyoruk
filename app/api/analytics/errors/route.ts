@@ -43,6 +43,8 @@ export async function GET(request: NextRequest) {
     >();
 
     for (const v of voids) {
+      // RAW void'ları (errorReason=null) atla
+      if (!v.errorReason) continue;
       const key = v.errorReason;
       const existing = reasonMap.get(key);
       const label = ERROR_REASON_LABELS[key as ErrorReasonType] || key;

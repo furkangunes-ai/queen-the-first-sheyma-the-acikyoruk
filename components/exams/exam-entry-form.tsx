@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { ChevronRight, Save, Loader2, FileText, CheckCircle2, Zap, Sun, Moon, Sunrise, Volume2, VolumeX, Battery, BatteryLow, BatteryFull } from 'lucide-react';
@@ -11,6 +11,8 @@ import {
   BIOLOGICAL_STATE_OPTIONS,
   PERCEIVED_DIFFICULTY_OPTIONS,
 } from "@/lib/severity";
+import SubjectBlock from "./subject-block";
+import type { QuestionState } from "./optical-grid";
 
 interface ExamType {
   id: string;
@@ -79,6 +81,8 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
 
   // Step 2: Subject results
   const [results, setResults] = useState<SubjectResult[]>([]);
+  // Mikro giriş: subjectId → Map<questionNumber, QuestionState>
+  const [microEntries, setMicroEntries] = useState<Map<string, Map<number, QuestionState>>>(new Map());
 
   // Submission
   const [submitting, setSubmitting] = useState(false);
@@ -167,21 +171,47 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
     return nets.reduce((sum, n) => sum + n, 0);
   }, [nets]);
 
-  // Saf integer maskeleme - "05" gibi girdileri engelle
-  function handleIntegerInput(
-    index: number,
-    field: 'correctCount' | 'wrongCount' | 'emptyCount',
-    rawValue: string
-  ) {
-    // Sadece rakamları al, başındaki sıfırları temizle
-    const cleaned = rawValue.replace(/[^0-9]/g, '').replace(/^0+/, '') || '0';
-    const value = Math.max(0, parseInt(cleaned, 10) || 0);
-    setResults((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
-      return updated;
-    });
-  }
+  // Mikro giriş: tek soru state değiştir
+  const handleQuestionStateChange = useCallback(
+    (subjectId: string, questionNumber: number, state: QuestionState) => {
+      setMicroEntries((prev) => {
+        const next = new Map(prev);
+        const subjectMap = new Map(next.get(subjectId) || new Map());
+        if (state === null) {
+          subjectMap.delete(questionNumber);
+        } else {
+          subjectMap.set(questionNumber, state);
+        }
+        next.set(subjectId, subjectMap);
+        return next;
+      });
+    },
+    []
+  );
+
+  // Mikro giriş: toplu state uygula (vector parser'dan)
+  const handleBulkQuestionStates = useCallback(
+    (subjectId: string, states: Map<number, QuestionState>) => {
+      setMicroEntries((prev) => {
+        const next = new Map(prev);
+        next.set(subjectId, states);
+        return next;
+      });
+    },
+    []
+  );
+
+  // Makro field değişikliği
+  const handleMacroChange = useCallback(
+    (index: number, field: 'correctCount' | 'wrongCount' | 'emptyCount', value: number) => {
+      setResults((prev) => {
+        const updated = [...prev];
+        updated[index] = { ...updated[index], [field]: value };
+        return updated;
+      });
+    },
+    []
+  );
 
   function canProceedToStep2() {
     const baseValid = title.trim() !== '' && examTypeId !== '' && date !== '';
@@ -248,6 +278,74 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
       if (!resultsRes.ok) {
         const err = await resultsRes.json();
         throw new Error(err.error || 'Sonuçlar kaydedilemedi');
+      }
+
+      // Mikro girişlerden RAW CognitiveVoid'lar oluştur
+      const voidPromises: Promise<Response>[] = [];
+      for (const [subjectId, stateMap] of microEntries) {
+        for (const [questionNumber, state] of stateMap) {
+          if (state) {
+            voidPromises.push(
+              fetch(`/api/exams/${exam.id}/cognitive-voids`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  subjectId,
+                  source: state, // 'WRONG' veya 'EMPTY'
+                  questionNumber,
+                  magnitude: 1,
+                }),
+              })
+            );
+          }
+        }
+      }
+
+      // Makro girişlerden de soru numarasız RAW void'lar oluştur
+      // (mikro girişlerde işaretlenmemiş yanlış/boş'lar için)
+      for (const r of results) {
+        const subjectMicro = microEntries.get(r.subjectId);
+        const microWrong = subjectMicro
+          ? [...subjectMicro.values()].filter(s => s === 'WRONG').length
+          : 0;
+        const microEmpty = subjectMicro
+          ? [...subjectMicro.values()].filter(s => s === 'EMPTY').length
+          : 0;
+
+        // Makro > mikro ise fark kadarını null-questionNumber olarak kaydet
+        const extraWrong = Math.max(0, r.wrongCount - microWrong);
+        const extraEmpty = Math.max(0, r.emptyCount - microEmpty);
+
+        for (let i = 0; i < extraWrong; i++) {
+          voidPromises.push(
+            fetch(`/api/exams/${exam.id}/cognitive-voids`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                subjectId: r.subjectId,
+                source: 'WRONG',
+                magnitude: 1,
+              }),
+            })
+          );
+        }
+        for (let i = 0; i < extraEmpty; i++) {
+          voidPromises.push(
+            fetch(`/api/exams/${exam.id}/cognitive-voids`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                subjectId: r.subjectId,
+                source: 'EMPTY',
+                magnitude: 1,
+              }),
+            })
+          );
+        }
+      }
+
+      if (voidPromises.length > 0) {
+        await Promise.allSettled(voidPromises);
       }
 
       toast.success('Sınav kaydedildi! Dinlendikten sonra zafiyet analizini yapabilirsin.');
@@ -581,77 +679,41 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
               </div>
             ) : (
               <>
-                <div className="overflow-x-auto rounded-xl border border-white/5 bg-white/[0.02]">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="bg-white/[0.03] border-b border-white/10">
-                        <th className="text-left py-4 px-5 text-[11px] uppercase tracking-widest font-bold text-white/50">Ders</th>
-                        <th className="text-center py-4 px-3 text-[11px] uppercase tracking-widest font-bold text-emerald-400 w-24">Doğru</th>
-                        <th className="text-center py-4 px-3 text-[11px] uppercase tracking-widest font-bold text-rose-400 w-24">Yanlış</th>
-                        <th className="text-center py-4 px-3 text-[11px] uppercase tracking-widest font-bold text-white/50 w-24">Boş</th>
-                        <th className="text-center py-4 px-5 text-[11px] uppercase tracking-widest font-bold text-pink-400 w-24">Net</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {results.map((r, i) => (
-                        <tr key={r.subjectId} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                          <td className="py-3 px-5 text-sm font-bold text-white/90">{r.subjectName}</td>
-                          <td className="py-3 px-3">
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              pattern="[0-9]*"
-                              value={r.correctCount === 0 ? '' : r.correctCount}
-                              onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
-                              onChange={(e) => handleIntegerInput(i, 'correctCount', e.target.value)}
-                              onBlur={(e) => !e.target.value && handleIntegerInput(i, 'correctCount', '0')}
-                              className="w-full py-2 px-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center text-[15px] font-bold text-white focus:outline-none focus:ring-1 focus:ring-emerald-400 transition-colors hover:border-emerald-500/40"
-                            />
-                          </td>
-                          <td className="py-3 px-3">
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              pattern="[0-9]*"
-                              value={r.wrongCount === 0 ? '' : r.wrongCount}
-                              onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
-                              onChange={(e) => handleIntegerInput(i, 'wrongCount', e.target.value)}
-                              onBlur={(e) => !e.target.value && handleIntegerInput(i, 'wrongCount', '0')}
-                              className="w-full py-2 px-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-center text-[15px] font-bold text-white focus:outline-none focus:ring-1 focus:ring-rose-400 transition-colors hover:border-rose-500/40"
-                            />
-                          </td>
-                          <td className="py-3 px-3">
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              pattern="[0-9]*"
-                              value={r.emptyCount === 0 ? '' : r.emptyCount}
-                              onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
-                              onChange={(e) => handleIntegerInput(i, 'emptyCount', e.target.value)}
-                              onBlur={(e) => !e.target.value && handleIntegerInput(i, 'emptyCount', '0')}
-                              className="w-full py-2 px-1 rounded-lg bg-white/[0.04] border border-white/10 text-center text-[15px] font-bold text-white focus:outline-none focus:ring-1 focus:ring-white/30 transition-colors hover:border-white/20"
-                            />
-                          </td>
-                          <td className="py-3 px-5 text-center text-[15px] font-black text-pink-400 bg-pink-500/[0.03]">
-                            {nets[i].toFixed(2)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="bg-gradient-to-r from-pink-500/[0.02] to-pink-500/[0.05] border-t border-white/10">
-                        <td colSpan={4} className="py-4 px-5 text-right text-sm font-bold text-white/60 tracking-wide uppercase">
-                          Toplam Net:
-                        </td>
-                        <td className="py-4 px-5 text-center text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400 drop-shadow-[0_2px_10px_rgba(255,42,133,0.3)]">
-                          {totalNet.toFixed(2)}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
+                <div className="space-y-3">
+                  {results.map((r, i) => {
+                    const subject = subjects.find(s => s.id === r.subjectId);
+                    const questionCount = subject?.questionCount || 40;
+                    return (
+                      <SubjectBlock
+                        key={r.subjectId}
+                        subjectId={r.subjectId}
+                        subjectName={r.subjectName}
+                        questionCount={questionCount}
+                        correctCount={r.correctCount}
+                        wrongCount={r.wrongCount}
+                        emptyCount={r.emptyCount}
+                        questionStates={microEntries.get(r.subjectId) || new Map()}
+                        onMacroChange={(field, value) => handleMacroChange(i, field, value)}
+                        onQuestionStateChange={(qNum, state) => handleQuestionStateChange(r.subjectId, qNum, state)}
+                        onBulkQuestionStates={(states) => handleBulkQuestionStates(r.subjectId, states)}
+                        net={nets[i]}
+                        disabled={submitting}
+                      />
+                    );
+                  })}
                 </div>
 
-                <div className="flex justify-between items-center mt-8">
+                {/* Toplam Net */}
+                <div className="flex items-center justify-end gap-3 mt-4 px-2">
+                  <span className="text-sm font-bold text-white/60 tracking-wide uppercase">
+                    Toplam Net:
+                  </span>
+                  <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400 drop-shadow-[0_2px_10px_rgba(255,42,133,0.3)]">
+                    {totalNet.toFixed(2)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center mt-6">
                   <button
                     onClick={() => setStep(1)}
                     className="text-white/40 hover:text-white/80 transition-colors text-sm font-bold tracking-wider uppercase"
