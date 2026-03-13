@@ -130,12 +130,6 @@ export default function ExamsPage() {
   // For wrong question entry after exam creation
   const [newExamId, setNewExamId] = useState<string>('');
   const [newExamTypeId, setNewExamTypeId] = useState<string>('');
-  const [newExamSubjectResults, setNewExamSubjectResults] = useState<Array<{
-    subjectId: string;
-    subjectName: string;
-    wrongCount: number;
-    emptyCount: number;
-  }>>([]);
 
   const fetchExams = useCallback(async () => {
     try {
@@ -187,14 +181,6 @@ export default function ExamsPage() {
 
       setNewExamId(examId);
       setNewExamTypeId(exam.examTypeId);
-      setNewExamSubjectResults(
-        exam.subjectResults.map((sr: any) => ({
-          subjectId: sr.subjectId,
-          subjectName: sr.subject.name,
-          wrongCount: sr.wrongCount,
-          emptyCount: sr.emptyCount,
-        }))
-      );
       // Sıcak faz tamamlandı, cold-phase'e yönlendir
       setView('cold-phase');
     } catch {
@@ -628,7 +614,6 @@ export default function ExamsPage() {
             <ColdPhaseForm
               examId={newExamId}
               examDate={new Date().toISOString()}
-              subjectResults={newExamSubjectResults}
               onComplete={handleColdPhaseComplete}
             />
           </motion.div>
