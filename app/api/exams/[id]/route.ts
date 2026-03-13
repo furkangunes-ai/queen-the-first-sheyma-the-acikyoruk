@@ -76,8 +76,7 @@ export async function PATCH(
 
     const body = await request.json();
     const { title, date, notes, examTypeId, examCategory,
-            timeOfDay, environment, perceivedDifficulty, biologicalState,
-            coldPhaseCompleted } = body;
+            timeOfDay, environment, perceivedDifficulty, biologicalState } = body;
 
     const exam = await prisma.exam.update({
       where: { id },
@@ -91,10 +90,6 @@ export async function PATCH(
         ...(environment !== undefined && { environment }),
         ...(perceivedDifficulty !== undefined && { perceivedDifficulty }),
         ...(biologicalState !== undefined && { biologicalState }),
-        ...(coldPhaseCompleted !== undefined && {
-          coldPhaseCompleted,
-          coldPhaseCompletedAt: coldPhaseCompleted ? new Date() : null,
-        }),
       },
       include: {
         examType: true,

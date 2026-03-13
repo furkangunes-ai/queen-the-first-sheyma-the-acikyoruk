@@ -187,7 +187,8 @@ enum ErrorReasonType {
 
 // Zafiyet durumu
 enum VoidStatus {
-  UNRESOLVED  // Çözülmemiş - kırmızı
+  RAW         // Henüz sınıflandırılmamış ham veri (konu/neden yok)
+  UNRESOLVED  // Sınıflandırılmış ama çözülmemiş - kırmızı
   REVIEW      // Tekrar gerekiyor - sarı
   RESOLVED    // Çözüldü/Öğrenildi - yeşil
 }
@@ -215,9 +216,8 @@ model Exam {
   perceivedDifficulty   Int?        // 1-5 algılanan zorluk
   biologicalState       String?     // "dinc" | "normal" | "yorgun"
 
-  // Soğuk Faz durumu
-  coldPhaseCompleted    Boolean     @default(false)  // Zafiyet analizi yapıldı mı?
-  coldPhaseCompletedAt  DateTime?   // Ne zaman yapıldı?
+  // coldPhaseCompleted kaldırıldı — yerine ClarityScore (RAW→Classified oranı) kullanılır
+  // Hesaplama: runtime'da CognitiveVoid status'larından türetilir (lib/exam-metrics.ts)
 
   subjectResults  ExamSubjectResult[]
   cognitiveVoids  CognitiveVoid[]
@@ -228,7 +228,6 @@ model Exam {
   @@index([examTypeId])
   @@index([date])
   @@index([userId, date])
-  @@index([userId, coldPhaseCompleted])
 }
 
 model ExamSubjectResult {
@@ -247,36 +246,43 @@ model ExamSubjectResult {
 }
 
 // Kognitif Zafiyet Motoru - Yanlış ve boş soruların birleşik kavramsal temsili
-// Gruplama: Aynı [examId + subjectId + topicId + errorReason] → tek void, magnitude artar
+// Kuantum Veri Modeli: RAW void'lar (konu/neden yok) + sınıflandırılmış void'lar birlikte yaşar
+// Süperpozisyon: questionNumber=null void'lar makro girişi, numaralılar mikro girişi temsil eder
 model CognitiveVoid {
-  id            String          @id @default(cuid())
+  id            String           @id @default(cuid())
   examId        String
-  exam          Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
+  exam          Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
   subjectId     String
-  subject       Subject         @relation(fields: [subjectId], references: [id])
+  subject       Subject          @relation(fields: [subjectId], references: [id])
   topicId       String?
-  topic         Topic?          @relation(fields: [topicId], references: [id])
+  topic         Topic?           @relation(fields: [topicId], references: [id])
 
   // Zafiyet özellikleri
-  source        VoidSource      @default(WRONG)    // Yanlış mı, boş mu?
-  errorReason   ErrorReasonType @default(BILGI_EKSIKLIGI) // 6 statik kök neden
-  magnitude     Int             @default(1)         // Aynı konudaki hata adedi (gruplama)
-  status        VoidStatus      @default(UNRESOLVED) // Çözüm durumu
+  source        VoidSource       @default(WRONG)    // Yanlış mı, boş mu?
+  errorReason   ErrorReasonType?                     // Nullable: RAW void'larda null (lazy evaluation)
+  magnitude     Int              @default(1)         // Aynı konudaki hata adedi (gruplama)
+  status        VoidStatus       @default(RAW)       // RAW → UNRESOLVED → REVIEW → RESOLVED
 
-  // Otomatik hesaplanan severity (TopicWeight × ErrorReason katsayısı)
-  severity      Float           @default(1.0)
+  // Mikro giriş: soru numarası (optik grid veya vektörel komut satırından)
+  questionNumber Int?                                // null = makro giriş (sadece toplam bilinir)
 
-  // Opsiyonel içgörü notu (sadece Soğuk Faz'da, "Eureka" anı)
+  // Otomatik hesaplanan severity (TopicWeight × ErrorReason katsayısı × recidivism)
+  severity      Float            @default(0.1)       // RAW default = 0.1
+
+  // Nüksetme sayacı: "Çözüldü" denip aynı hatanın tekrarlanma sayısı
+  relapseCount  Int              @default(0)         // Ceza: severity *= 1.5^relapseCount
+
+  // Opsiyonel içgörü notu (Soğuk Faz'da veya sonradan, "Eureka" anı)
   notes         String?
 
   // Spaced Repetition bağlantısı
   spacedRepetitionItems SpacedRepetitionItem[]
 
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
-  // Gruplama: Aynı deneme, ders, konu ve hata nedeni birleşir
-  @@unique([examId, subjectId, topicId, errorReason, source])
+  // Mikro giriş: her soru numarası benzersiz (aynı denemede aynı derste aynı soru iki kez olamaz)
+  @@unique([examId, subjectId, questionNumber, source])
   @@index([examId])
   @@index([subjectId])
   @@index([topicId])
