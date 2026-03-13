@@ -52,7 +52,14 @@ model ConceptNode {
 Turkish chars → ASCII: ğ→g, ü→u, ş→s, ı→i, ö→o, ç→c, then kebab-case
 
 ## Current Branch
-`claude/voice-curriculum-assessment-nklEj`
+`claude/document-trial-analysis-FBigJ`
+
+## Active Reform: Deneme Sistemi Yeniden Tasarımı
+**Plan Dokümanı:** `docs/DENEME-REFORM-PLAN.md`
+- 6 fazlı reform: Schema → Sıcak Faz → Soğuk Faz → Ana Ekran → Detay → Analitik
+- Her faz ayrı PR ile merge edilir
+- Temel felsefe: Kuantum Veri Girişi (Lazy Evaluation), Çift Fazlı Metrik (Clarity+Repair), Fog of War analitik, Recidivism ceza sistemi
+- Kademeli Pill Segmentasyonu (dropdown yerine), Odak Merceği (Lens Effect), Triage Flashcard modu
 
 ## Pending Work (as of last session)
 1. Curriculum manager UI improvements: bigger fonts, multi-select delete, bigger delete buttons
