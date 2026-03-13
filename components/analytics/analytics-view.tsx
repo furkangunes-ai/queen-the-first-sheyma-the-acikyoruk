@@ -6,7 +6,7 @@ import {
   AreaChart, Area, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   Legend,
 } from 'recharts';
-import { TrendingUp, Target, Award, BookOpen, AlertTriangle, Loader2, Crosshair, PieChart as PieChartIcon, Activity, Flame, Zap } from 'lucide-react';
+import { TrendingUp, Target, Award, BookOpen, AlertTriangle, Loader2, Crosshair, PieChart as PieChartIcon, Activity, Flame, Zap, Eye, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { RegressionChart, type RegressionData } from '@/components/analytics/regression-chart';
@@ -76,6 +76,8 @@ export default function AnalyticsView() {
   });
   const [regression, setRegression] = useState<RegressionData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [clarityScore, setClarityScore] = useState<number>(1);
+  const [rawVoidCount, setRawVoidCount] = useState<number>(0);
 
   useEffect(() => {
     const fetchExamTypes = async () => {
@@ -150,6 +152,23 @@ export default function AnalyticsView() {
     fetchData();
   }, [fetchData]);
 
+  // Fetch clarity score from heatmap meta
+  useEffect(() => {
+    const fetchClarity = async () => {
+      try {
+        const typeParam = filterType !== 'all' ? `?examTypeId=${filterType}` : '';
+        const res = await fetch(`/api/analytics/heatmap${typeParam}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        if (json?.meta) {
+          setClarityScore(json.meta.clarityScore ?? 1);
+          setRawVoidCount(json.meta.rawVoids ?? 0);
+        }
+      } catch { /* silent */ }
+    };
+    fetchClarity();
+  }, [filterType]);
+
   const stats = useMemo(() => {
     if (trends.length === 0) return { max: 0, avg: 0, count: 0, latest: 0 };
     const nets = trends.map(t => t.totalNet);
@@ -159,6 +178,21 @@ export default function AnalyticsView() {
       count: trends.length,
       latest: nets[nets.length - 1] || 0,
     };
+  }, [trends]);
+
+  // Dynamic teaser: trend detection from last 3 exams
+  const trendTeaser = useMemo(() => {
+    if (trends.length < 3) return null;
+    const last3 = trends.slice(-3).map(t => t.totalNet);
+    const isRising = last3[0] < last3[1] && last3[1] < last3[2];
+    const isFalling = last3[0] > last3[1] && last3[1] > last3[2];
+    const diffs = [Math.abs(last3[1] - last3[0]), Math.abs(last3[2] - last3[1])];
+    const isPlateau = diffs.every(d => d <= 2);
+
+    if (isRising) return { text: 'Yükseliş trendindesin', icon: TrendingUp, color: 'text-emerald-400' };
+    if (isFalling) return { text: 'Düşüş trendi var', icon: AlertTriangle, color: 'text-rose-400' };
+    if (isPlateau) return { text: 'Platoya girdin', icon: Target, color: 'text-amber-400' };
+    return null;
   }, [trends]);
 
   const subjects = useMemo(() => {
@@ -208,6 +242,30 @@ export default function AnalyticsView() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Trend Teaser + Low Confidence Banner */}
+      {(trendTeaser || clarityScore < 1) && (
+        <div className="flex flex-wrap items-center gap-3">
+          {trendTeaser && (
+            <div className={`glass-panel px-4 py-2.5 flex items-center gap-2 ${trendTeaser.color}`}>
+              <trendTeaser.icon size={16} />
+              <span className="text-sm font-bold">{trendTeaser.text}</span>
+              <span className="text-[10px] text-white/30 ml-1">Son 3 deneme</span>
+            </div>
+          )}
+          {clarityScore < 1 && (
+            <div className="glass-panel px-4 py-2.5 flex items-center gap-2 text-slate-400 border-slate-500/20">
+              <Eye size={14} />
+              <span className="text-[12px] font-semibold">
+                Düşük güvenilirlik — {rawVoidCount} ham zafiyet analitikleri bulanıklaştırıyor
+              </span>
+              <span className="text-[10px] bg-slate-500/20 px-2 py-0.5 rounded-full font-bold">
+                Netlik %{Math.round(clarityScore * 100)}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Analytics Tab Navigation & Filters */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-4">
         <div className="flex gap-1 bg-white/[0.04] rounded-[calc(var(--radius)*1.2)] p-1 border border-pink-500/10 w-full md:w-auto overflow-x-auto no-scrollbar">
@@ -275,6 +333,22 @@ export default function AnalyticsView() {
           <Loader2 className="animate-spin text-pink-500" size={40} />
         </div>
       ) : (
+        <div className="relative">
+          {/* Fog overlay for low clarity */}
+          {clarityScore < 0.5 && activeTab !== 'heatmap' && activeTab !== 'targets' && (
+            <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-sm border border-slate-500/20 px-3 py-1.5 rounded-lg">
+              <Lock size={11} className="text-slate-500" />
+              <span className="text-[10px] text-slate-400 font-medium">Bulanık — netlik düşük</span>
+            </div>
+          )}
+          <div
+            className="transition-all duration-700"
+            style={{
+              filter: clarityScore < 1 && activeTab !== 'heatmap' && activeTab !== 'targets'
+                ? `blur(${Math.max(0, (1 - clarityScore) * 3)}px)`
+                : 'none',
+            }}
+          >
         <AnimatePresence mode="wait">
           {/* TRENDS TAB */}
           {activeTab === 'trends' && (
@@ -574,6 +648,8 @@ export default function AnalyticsView() {
             </motion.div>
           )}
         </AnimatePresence>
+          </div>
+        </div>
       )}
     </div>
   );
