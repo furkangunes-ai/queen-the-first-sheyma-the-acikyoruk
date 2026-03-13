@@ -62,7 +62,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { subjectId, topicId, errorReason, source, magnitude, notes } = body;
+    const { subjectId, topicId, errorReason, source, magnitude, notes, questionNumber } = body;
 
     if (!subjectId) {
       return NextResponse.json({ error: "Ders seçimi gerekli" }, { status: 400 });
@@ -72,9 +72,15 @@ export async function POST(
       'BILGI_EKSIKLIGI', 'ISLEM_HATASI', 'DIKKATSIZLIK',
       'SURE_YETISMEDI', 'KAVRAM_YANILGISI', 'SORU_KOKUNU_YANLIS_OKUMA'
     ];
-    const reason = validReasons.includes(errorReason) ? errorReason : 'BILGI_EKSIKLIGI';
+
+    // errorReason nullable — RAW void'lar için null olabilir
+    const reason: ErrorReasonType | null = validReasons.includes(errorReason) ? errorReason : null;
     const voidSource = source === 'EMPTY' ? 'EMPTY' : 'WRONG';
     const mag = Math.max(1, Math.round(magnitude || 1));
+    const qNum = questionNumber ? Math.max(1, Math.round(questionNumber)) : null;
+
+    // Status: topic ve reason varsa UNRESOLVED, yoksa RAW
+    const status = (topicId && reason) ? 'UNRESOLVED' : 'RAW';
 
     // Topic weight: basit heuristic (topic varsa difficulty'den çek)
     let topicWeight = 2;
@@ -84,37 +90,78 @@ export async function POST(
         select: { difficulty: true },
       });
       if (topic) {
-        // Düşük zorluk + prerequisite = temel konu = yüksek ağırlık
         topicWeight = topic.difficulty <= 2 ? 3 : topic.difficulty <= 3 ? 2 : 1;
       }
     }
 
-    const severity = calculateSeverity(reason, topicWeight, mag);
+    // Recidivism kontrolü: aynı subject+topic+errorReason'da RESOLVED void varsa nüksetme
+    let relapseCount = 0;
+    if (topicId && reason) {
+      const resolvedVoid = await prisma.cognitiveVoid.findFirst({
+        where: {
+          exam: { userId },
+          subjectId,
+          topicId,
+          errorReason: reason,
+          status: 'RESOLVED',
+        },
+        orderBy: { updatedAt: 'desc' },
+      });
 
-    // Upsert: Aynı composite key varsa magnitude güncelle
-    const cognitiveVoid = await prisma.cognitiveVoid.upsert({
-      where: {
-        examId_subjectId_topicId_errorReason_source: {
+      if (resolvedVoid) {
+        relapseCount = resolvedVoid.relapseCount + 1;
+        // RESOLVED void'u REVIEW'a düşür
+        await prisma.cognitiveVoid.update({
+          where: { id: resolvedVoid.id },
+          data: { status: 'REVIEW' },
+        });
+      }
+    }
+
+    const severity = calculateSeverity(reason, topicWeight, mag, relapseCount);
+
+    // questionNumber bazlı unique: aynı soru iki kez girilmez
+    if (qNum) {
+      const existing = await prisma.cognitiveVoid.findFirst({
+        where: {
           examId: id,
           subjectId,
-          topicId: topicId || null,
-          errorReason: reason,
+          questionNumber: qNum,
           source: voidSource,
         },
-      },
-      update: {
-        magnitude: { increment: mag },
-        severity: { increment: severity },
-        notes: notes || undefined,
-      },
-      create: {
+      });
+
+      if (existing) {
+        // Mevcut void'u güncelle (süperpozisyon çökmesi: RAW → sınıflandırılmış)
+        const updated = await prisma.cognitiveVoid.update({
+          where: { id: existing.id },
+          data: {
+            ...(topicId && { topicId }),
+            ...(reason && { errorReason: reason }),
+            ...(status !== 'RAW' && { status }),
+            severity,
+            relapseCount,
+            notes: notes || existing.notes,
+          },
+          include: { subject: true, topic: true },
+        });
+        return NextResponse.json(updated);
+      }
+    }
+
+    // Yeni void oluştur
+    const cognitiveVoid = await prisma.cognitiveVoid.create({
+      data: {
         examId: id,
         subjectId,
         topicId: topicId || null,
         errorReason: reason,
         source: voidSource,
         magnitude: mag,
+        status,
         severity,
+        questionNumber: qNum,
+        relapseCount,
         notes: notes || null,
       },
       include: {
