@@ -74,3 +74,35 @@ export function getClarityColorClass(clarityScore: number): {
   }
   return { ring: 'stroke-emerald-400', text: 'text-emerald-400', bg: 'bg-emerald-500/20' };
 }
+
+// ---------------------------------------------------------------------------
+// examCategory Prisma Filter Helper
+// ---------------------------------------------------------------------------
+
+export type ExamCategoryFilter = 'all' | 'genel' | 'brans' | 'brans-fen' | 'brans-sosyal' | 'brans-matematik' | 'brans-edebiyat-sosyal1' | 'brans-sosyal2' | 'brans-tek';
+
+/**
+ * examCategory query parametresinden Prisma where koşulu üretir.
+ * Exam modeli üzerindeki examCategory alanını filtreler.
+ *
+ * - 'all' veya falsy → filtre yok
+ * - 'genel' → examCategory IS NULL (genel deneme)
+ * - 'brans' → examCategory IS NOT NULL (tüm branş + tek ders)
+ * - 'brans-tek' → examCategory = 'brans' (tek ders denemesi)
+ * - 'brans-fen' vb. → examCategory = 'brans-fen'
+ */
+export function buildExamCategoryWhere(category: string | null | undefined): Record<string, unknown> {
+  if (!category || category === 'all') return {};
+
+  switch (category) {
+    case 'genel':
+      return { examCategory: null };
+    case 'brans':
+      return { examCategory: { not: null } };
+    case 'brans-tek':
+      return { examCategory: 'brans' };
+    default:
+      // 'brans-fen', 'brans-sosyal', 'brans-matematik', 'brans-edebiyat-sosyal1', 'brans-sosyal2'
+      return { examCategory: category };
+  }
+}

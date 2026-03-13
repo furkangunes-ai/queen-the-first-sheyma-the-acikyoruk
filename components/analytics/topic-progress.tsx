@@ -523,9 +523,10 @@ function TopicCard({ topic, index }: { topic: TopicProgressData; index: number }
 
 interface TopicProgressProps {
   examTypeFilter?: string;
+  examCategoryFilter?: string;
 }
 
-export default function TopicProgress({ examTypeFilter }: TopicProgressProps) {
+export default function TopicProgress({ examTypeFilter, examCategoryFilter }: TopicProgressProps) {
   const [data, setData] = useState<{
     summary: ProgressSummary;
     topics: TopicProgressData[];
@@ -542,6 +543,9 @@ export default function TopicProgress({ examTypeFilter }: TopicProgressProps) {
       if (examTypeFilter && examTypeFilter !== "all") {
         params.set("examTypeId", examTypeFilter);
       }
+      if (examCategoryFilter && examCategoryFilter !== "all") {
+        params.set("examCategory", examCategoryFilter);
+      }
       const res = await fetch(`/api/analytics/topic-progress?${params}`);
       if (!res.ok) throw new Error();
       const json = await res.json();
@@ -551,7 +555,7 @@ export default function TopicProgress({ examTypeFilter }: TopicProgressProps) {
     } finally {
       setLoading(false);
     }
-  }, [examTypeFilter]);
+  }, [examTypeFilter, examCategoryFilter]);
 
   useEffect(() => {
     fetchData();

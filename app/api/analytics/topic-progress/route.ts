@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getTurkeyDateString } from "@/lib/utils";
 import { logApiError } from "@/lib/logger";
+import { buildExamCategoryWhere } from "@/lib/exam-metrics";
 
 /**
  * GET /api/analytics/topic-progress
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const examTypeId = searchParams.get("examTypeId");
     const subjectId = searchParams.get("subjectId");
+    const examCategory = searchParams.get("examCategory");
 
     // Build subject filter
     const subjectFilter: any = {};
@@ -89,6 +91,7 @@ export async function GET(request: NextRequest) {
             exam: {
               userId,
               ...(examTypeId && { examTypeId }),
+              ...buildExamCategoryWhere(examCategory),
               date: { gte: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000) },
             },
             topicId: { not: null },

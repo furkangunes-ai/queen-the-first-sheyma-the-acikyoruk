@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { logApiError } from "@/lib/logger";
+import { buildExamCategoryWhere } from "@/lib/exam-metrics";
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,12 +15,14 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const examTypeId = searchParams.get("examTypeId");
     const subjectId = searchParams.get("subjectId");
+    const examCategory = searchParams.get("examCategory");
     const limit = Math.min(Math.max(1, parseInt(searchParams.get("limit") || "20", 10)), 100);
 
     const exams = await prisma.exam.findMany({
       where: {
         userId,
         ...(examTypeId && { examTypeId }),
+        ...buildExamCategoryWhere(examCategory),
         // If subjectId is provided, only fetch exams that have results for that subject
         ...(subjectId && {
           subjectResults: {

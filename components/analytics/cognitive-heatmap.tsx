@@ -60,7 +60,7 @@ function getFogBlur(clarityScore: number): number {
   return Math.max(0, (1 - clarityScore) * 6);
 }
 
-export default function CognitiveHeatmap({ examTypeFilter }: { examTypeFilter?: string }) {
+export default function CognitiveHeatmap({ examTypeFilter, examCategoryFilter }: { examTypeFilter?: string; examCategoryFilter?: string }) {
   const [data, setData] = useState<SubjectRow[]>([]);
   const [meta, setMeta] = useState<HeatmapMeta>({ totalVoids: 0, rawVoids: 0, clarityScore: 1 });
   const [loading, setLoading] = useState(true);
@@ -71,7 +71,10 @@ export default function CognitiveHeatmap({ examTypeFilter }: { examTypeFilter?: 
     const fetchData = async () => {
       setLoading(true);
       try {
-        const params = examTypeFilter && examTypeFilter !== "all" ? `?examTypeId=${examTypeFilter}` : "";
+        const parts: string[] = [];
+        if (examTypeFilter && examTypeFilter !== "all") parts.push(`examTypeId=${examTypeFilter}`);
+        if (examCategoryFilter && examCategoryFilter !== "all") parts.push(`examCategory=${examCategoryFilter}`);
+        const params = parts.length > 0 ? `?${parts.join('&')}` : "";
         const res = await fetch(`/api/analytics/heatmap${params}`);
         if (!res.ok) throw new Error();
         const response: HeatmapResponse = await res.json();
@@ -90,7 +93,7 @@ export default function CognitiveHeatmap({ examTypeFilter }: { examTypeFilter?: 
       }
     };
     fetchData();
-  }, [examTypeFilter]);
+  }, [examTypeFilter, examCategoryFilter]);
 
   const fogBlur = useMemo(() => getFogBlur(meta.clarityScore), [meta.clarityScore]);
   const hasRawVoids = meta.rawVoids > 0;
