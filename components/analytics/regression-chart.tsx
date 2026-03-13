@@ -31,6 +31,7 @@ interface Prediction {
   confidence: number;
   lowerDate: string | null;
   upperDate: string | null;
+  beyondYKS?: boolean;
 }
 
 export interface RegressionData {
@@ -45,6 +46,10 @@ export interface RegressionData {
   weeklyGrowth: number;
   dailyGrowth: number;
   currentEstimate: number;
+  ceiling?: number;
+  yksDate?: string;
+  daysToYKS?: number;
+  yksEstimate?: number;
 }
 
 interface RegressionChartProps {
@@ -141,6 +146,25 @@ export function RegressionChart({ data }: RegressionChartProps) {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* YKS Countdown Banner */}
+      {data.daysToYKS !== undefined && data.daysToYKS > 0 && (
+        <div className="bg-gradient-to-r from-amber-500/10 to-pink-500/10 border border-amber-500/20 rounded-xl p-4 flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <Calendar className="text-amber-400" size={20} />
+            <div>
+              <span className="text-sm font-bold text-white">YKS 2026&apos;ya </span>
+              <span className="text-lg font-bold text-amber-400">{data.daysToYKS} gün</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 text-xs text-white/50">
+            <span>Tavan: <span className="text-cyan-400 font-bold">{data.ceiling}</span> net</span>
+            {data.yksEstimate !== undefined && (
+              <span>YKS günü tahmini: <span className="text-pink-400 font-bold">{data.yksEstimate}</span> net</span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Summary Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white/[0.04] p-4 rounded-lg border border-pink-500/15 flex flex-col items-center justify-center py-5">
@@ -273,7 +297,8 @@ export function RegressionChart({ data }: RegressionChartProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {data.predictions.map(pred => {
               const isAchieved = pred.daysFromNow !== null && pred.daysFromNow <= 0;
-              const isReachable = pred.estimatedDate !== null;
+              const isBeyondYKS = (pred as any).beyondYKS === true;
+              const isReachable = pred.estimatedDate !== null && !isBeyondYKS;
 
               return (
                 <div
@@ -349,6 +374,17 @@ export function RegressionChart({ data }: RegressionChartProps) {
                         </p>
                       )}
                     </>
+                  ) : isBeyondYKS ? (
+                    <div>
+                      <p className="text-sm text-amber-400/80 italic">
+                        YKS&apos;ye kadar bu hedefe ulaşılması zor
+                      </p>
+                      {pred.estimatedDate && pred.daysFromNow && (
+                        <p className="text-[10px] text-white/30 mt-1">
+                          Tahmini: {format(new Date(pred.estimatedDate), 'd MMM yy', { locale: tr })} ({pred.daysFromNow} gün sonra)
+                        </p>
+                      )}
+                    </div>
                   ) : (
                     <p className="text-sm text-white/40 italic">
                       Mevcut gidişatla bu hedefe ulaşım tahmin edilemiyor

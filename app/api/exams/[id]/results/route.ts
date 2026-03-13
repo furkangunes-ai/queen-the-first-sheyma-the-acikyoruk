@@ -81,6 +81,13 @@ export async function POST(
       );
     }
 
+    // ── Fetch old results for void sync comparison ──
+    const oldResults = await prisma.examSubjectResult.findMany({
+      where: { examId: id },
+      select: { subjectId: true, wrongCount: true, emptyCount: true },
+    });
+    const oldMap = new Map(oldResults.map(r => [r.subjectId, r]));
+
     // Delete existing results for this exam, then create new ones
     await prisma.examSubjectResult.deleteMany({
       where: { examId: id },
@@ -97,6 +104,100 @@ export async function POST(
       })),
     });
 
+    // ── Void Senkronizasyonu ──
+    // Yanlış/boş sayısı arttıysa yeni RAW void oluştur
+    // Azaldıysa fazla RAW void'ları sil (en düşük bilgi değerindekileri)
+    const voidSyncSummary: Array<{ subjectId: string; created: number; removed: number }> = [];
+
+    for (const result of results as Array<{ subjectId: string; correctCount: number; wrongCount: number; emptyCount: number }>) {
+      const old = oldMap.get(result.subjectId);
+      const oldWrong = old?.wrongCount ?? 0;
+      const oldEmpty = old?.emptyCount ?? 0;
+      const newWrong = result.wrongCount;
+      const newEmpty = result.emptyCount;
+
+      let created = 0;
+      let removed = 0;
+
+      // Handle WRONG count changes
+      const wrongDiff = newWrong - oldWrong;
+      if (wrongDiff > 0) {
+        // Create new RAW voids for added wrong answers
+        const voidData = Array.from({ length: wrongDiff }, () => ({
+          examId: id,
+          subjectId: result.subjectId,
+          source: "WRONG" as const,
+          status: "RAW" as const,
+          magnitude: 1,
+          severity: 0.1,
+          relapseCount: 0,
+        }));
+        await prisma.cognitiveVoid.createMany({ data: voidData });
+        created += wrongDiff;
+      } else if (wrongDiff < 0) {
+        // Remove excess RAW WRONG voids (only unclassified ones)
+        const excessRawVoids = await prisma.cognitiveVoid.findMany({
+          where: {
+            examId: id,
+            subjectId: result.subjectId,
+            source: "WRONG",
+            status: "RAW",
+            topicId: null,
+            errorReason: null,
+          },
+          orderBy: { createdAt: "desc" },
+          take: Math.abs(wrongDiff),
+          select: { id: true },
+        });
+        if (excessRawVoids.length > 0) {
+          await prisma.cognitiveVoid.deleteMany({
+            where: { id: { in: excessRawVoids.map(v => v.id) } },
+          });
+          removed += excessRawVoids.length;
+        }
+      }
+
+      // Handle EMPTY count changes
+      const emptyDiff = newEmpty - oldEmpty;
+      if (emptyDiff > 0) {
+        const voidData = Array.from({ length: emptyDiff }, () => ({
+          examId: id,
+          subjectId: result.subjectId,
+          source: "EMPTY" as const,
+          status: "RAW" as const,
+          magnitude: 1,
+          severity: 0.1,
+          relapseCount: 0,
+        }));
+        await prisma.cognitiveVoid.createMany({ data: voidData });
+        created += emptyDiff;
+      } else if (emptyDiff < 0) {
+        const excessRawVoids = await prisma.cognitiveVoid.findMany({
+          where: {
+            examId: id,
+            subjectId: result.subjectId,
+            source: "EMPTY",
+            status: "RAW",
+            topicId: null,
+            errorReason: null,
+          },
+          orderBy: { createdAt: "desc" },
+          take: Math.abs(emptyDiff),
+          select: { id: true },
+        });
+        if (excessRawVoids.length > 0) {
+          await prisma.cognitiveVoid.deleteMany({
+            where: { id: { in: excessRawVoids.map(v => v.id) } },
+          });
+          removed += excessRawVoids.length;
+        }
+      }
+
+      if (created > 0 || removed > 0) {
+        voidSyncSummary.push({ subjectId: result.subjectId, created, removed });
+      }
+    }
+
     // Compute total net score locally for the response
     const totalNet = results.reduce(
       (sum: number, r: { correctCount: number; wrongCount: number }) =>
@@ -104,15 +205,21 @@ export async function POST(
       0
     );
 
-
     // Fetch the created results with relations
     const createdResults = await prisma.examSubjectResult.findMany({
       where: { examId: id },
       include: { subject: true },
     });
 
+    // Fetch updated voids
+    const updatedVoids = await prisma.cognitiveVoid.findMany({
+      where: { examId: id },
+      include: { subject: true, topic: true },
+      orderBy: [{ severity: "desc" }, { magnitude: "desc" }],
+    });
+
     return NextResponse.json(
-      { results: createdResults, totalNet },
+      { results: createdResults, totalNet, voidSyncSummary, cognitiveVoids: updatedVoids },
       { status: 201 }
     );
   } catch (error) {

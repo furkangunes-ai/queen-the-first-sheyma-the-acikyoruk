@@ -705,6 +705,69 @@ function VoidsTab({
 // ---------- Tab: Analysis (Charts) ----------
 
 function AnalysisTab({ exam }: { exam: ExamDetail }) {
+  // ─── Ders bazlı D/Y/B özet ───
+  const subjectSummary = useMemo(() => {
+    return exam.subjectResults.map(sr => {
+      const voids = exam.cognitiveVoids.filter(v => v.subjectId === sr.subjectId);
+      const classifiedVoids = voids.filter(v => v.topicId && v.errorReason);
+      return {
+        name: sr.subject.name,
+        correctCount: sr.correctCount,
+        wrongCount: sr.wrongCount,
+        emptyCount: sr.emptyCount,
+        netScore: sr.netScore,
+        totalVoids: voids.length,
+        classifiedVoids: classifiedVoids.length,
+        rawVoids: voids.filter(v => v.status === 'RAW').length,
+        unresolvedVoids: voids.filter(v => v.status === 'UNRESOLVED').length,
+        reviewVoids: voids.filter(v => v.status === 'REVIEW').length,
+        resolvedVoids: voids.filter(v => v.status === 'RESOLVED').length,
+      };
+    });
+  }, [exam.subjectResults, exam.cognitiveVoids]);
+
+  // ─── Void istatistikleri ───
+  const voidStats = useMemo(() => {
+    const voids = exam.cognitiveVoids;
+    return {
+      total: voids.length,
+      raw: voids.filter(v => v.status === 'RAW').length,
+      unresolved: voids.filter(v => v.status === 'UNRESOLVED').length,
+      review: voids.filter(v => v.status === 'REVIEW').length,
+      resolved: voids.filter(v => v.status === 'RESOLVED').length,
+      classified: voids.filter(v => v.topicId && v.errorReason).length,
+      totalSeverity: voids.reduce((s, v) => s + v.severity, 0),
+      wrongSource: voids.filter(v => v.source === 'WRONG').length,
+      emptySource: voids.filter(v => v.source === 'EMPTY').length,
+    };
+  }, [exam.cognitiveVoids]);
+
+  // ─── Konu bazlı detay (grouped by topic with full info) ───
+  const topicDetails = useMemo(() => {
+    const map: Record<string, {
+      topic: string; subject: string; severity: number;
+      wrongCount: number; emptyCount: number;
+      reasons: Record<string, number>;
+      statuses: Record<string, number>;
+    }> = {};
+    exam.cognitiveVoids.forEach((v) => {
+      const topicName = v.topic?.name ?? 'Sınıflandırılmamış';
+      const key = `${v.subject.name}::${topicName}`;
+      if (!map[key]) {
+        map[key] = { topic: topicName, subject: v.subject.name, severity: 0, wrongCount: 0, emptyCount: 0, reasons: {}, statuses: {} };
+      }
+      map[key].severity += v.severity;
+      if (v.source === 'WRONG') map[key].wrongCount += v.magnitude;
+      if (v.source === 'EMPTY') map[key].emptyCount += v.magnitude;
+      if (v.errorReason) {
+        const label = ERROR_REASON_LABELS[v.errorReason] || v.errorReason;
+        map[key].reasons[label] = (map[key].reasons[label] || 0) + v.magnitude;
+      }
+      map[key].statuses[v.status] = (map[key].statuses[v.status] || 0) + 1;
+    });
+    return Object.values(map).sort((a, b) => b.severity - a.severity);
+  }, [exam.cognitiveVoids]);
+
   const errorReasonData = useMemo(() => {
     const counts: Record<string, number> = {};
     exam.cognitiveVoids.forEach((v) => {
@@ -715,41 +778,135 @@ function AnalysisTab({ exam }: { exam: ExamDetail }) {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [exam.cognitiveVoids]);
 
-  const topicData = useMemo(() => {
-    const topicMap: Record<string, { topic: string; subject: string; severity: number }> = {};
-    exam.cognitiveVoids.forEach((v) => {
-      const topicName = v.topic?.name ?? 'Belirtilmemiş';
-      const key = `${v.subject.name}::${topicName}`;
-      if (!topicMap[key]) {
-        topicMap[key] = { topic: topicName, subject: v.subject.name, severity: 0 };
-      }
-      topicMap[key].severity += v.severity;
-    });
-    return Object.values(topicMap).sort((a, b) => b.severity - a.severity);
-  }, [exam.cognitiveVoids]);
-
   const subjectColorMap = useMemo(() => {
     const map: Record<string, string> = {};
-    const subjects = [...new Set(topicData.map(d => d.subject))];
+    const subjects = [...new Set(topicDetails.map(d => d.subject))];
     subjects.forEach((name, idx) => {
       map[name] = CHART_COLORS[idx % CHART_COLORS.length];
     });
     return map;
-  }, [topicData]);
+  }, [topicDetails]);
 
-  if (exam.cognitiveVoids.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-white/40">
-        <BarChart3 className="w-12 h-12 mb-4 opacity-50" />
-        <p className="text-lg font-medium">Analiz verisi yok</p>
-        <p className="text-sm mt-1">Zafiyet analizi tamamlandıktan sonra grafikler burada görünecek.</p>
-      </div>
-    );
-  }
+  // Toplam net
+  const totalNet = exam.subjectResults.reduce((s, r) => s + r.netScore, 0);
+  const totalCorrect = exam.subjectResults.reduce((s, r) => s + r.correctCount, 0);
+  const totalWrong = exam.subjectResults.reduce((s, r) => s + r.wrongCount, 0);
+  const totalEmpty = exam.subjectResults.reduce((s, r) => s + r.emptyCount, 0);
 
   return (
-    <div className="space-y-8">
-      {/* Error Reason Pie Chart */}
+    <div className="space-y-6">
+      {/* ─── Genel Özet Kartları ─── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white/[0.04] border border-emerald-500/15 rounded-xl p-3 text-center">
+          <div className="text-2xl font-bold text-emerald-400">{totalCorrect}</div>
+          <div className="text-[10px] text-white/40 uppercase tracking-widest">Doğru</div>
+        </div>
+        <div className="bg-white/[0.04] border border-rose-500/15 rounded-xl p-3 text-center">
+          <div className="text-2xl font-bold text-rose-400">{totalWrong}</div>
+          <div className="text-[10px] text-white/40 uppercase tracking-widest">Yanlış</div>
+        </div>
+        <div className="bg-white/[0.04] border border-amber-500/15 rounded-xl p-3 text-center">
+          <div className="text-2xl font-bold text-amber-400">{totalEmpty}</div>
+          <div className="text-[10px] text-white/40 uppercase tracking-widest">Boş</div>
+        </div>
+        <div className="bg-white/[0.04] border border-pink-500/15 rounded-xl p-3 text-center">
+          <div className="text-2xl font-bold text-pink-400">{totalNet.toFixed(2)}</div>
+          <div className="text-[10px] text-white/40 uppercase tracking-widest">Toplam Net</div>
+        </div>
+      </div>
+
+      {/* ─── Ders Bazlı Tablo ─── */}
+      <div className="bg-white/[0.04] border border-pink-500/[0.12] rounded-xl p-4 overflow-x-auto">
+        <h3 className="text-sm font-semibold text-white/60 mb-3">Ders Bazlı Performans</h3>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-[10px] text-white/40 uppercase tracking-widest border-b border-white/5">
+              <th className="text-left py-2 pr-2">Ders</th>
+              <th className="text-center px-2">D</th>
+              <th className="text-center px-2">Y</th>
+              <th className="text-center px-2">B</th>
+              <th className="text-center px-2">Net</th>
+              <th className="text-center px-2">Zafiyet</th>
+              <th className="text-center px-2">Netlik</th>
+            </tr>
+          </thead>
+          <tbody>
+            {subjectSummary.map(s => {
+              const clarityPct = s.totalVoids > 0 ? Math.round((s.classifiedVoids / s.totalVoids) * 100) : 100;
+              return (
+                <tr key={s.name} className="border-b border-white/5 last:border-0">
+                  <td className="py-2 pr-2 text-white/80 font-medium">{s.name}</td>
+                  <td className="text-center text-emerald-400 font-bold">{s.correctCount}</td>
+                  <td className="text-center text-rose-400 font-bold">{s.wrongCount}</td>
+                  <td className="text-center text-amber-400 font-bold">{s.emptyCount}</td>
+                  <td className="text-center text-white font-bold">{s.netScore.toFixed(2)}</td>
+                  <td className="text-center">
+                    {s.totalVoids > 0 ? (
+                      <span className="text-pink-400">{s.totalVoids}</span>
+                    ) : (
+                      <span className="text-white/20">—</span>
+                    )}
+                  </td>
+                  <td className="text-center">
+                    <span className={`text-xs font-bold ${clarityPct >= 80 ? 'text-emerald-400' : clarityPct >= 50 ? 'text-amber-400' : 'text-rose-400'}`}>
+                      %{clarityPct}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ─── Zafiyet Durum İstatistikleri ─── */}
+      {voidStats.total > 0 && (
+        <div className="bg-white/[0.04] border border-pink-500/[0.12] rounded-xl p-4">
+          <h3 className="text-sm font-semibold text-white/60 mb-3">Zafiyet Durumu</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="text-center">
+              <div className="text-lg font-bold text-slate-400">{voidStats.raw}</div>
+              <div className="text-[10px] text-white/30">RAW</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-rose-400">{voidStats.unresolved}</div>
+              <div className="text-[10px] text-white/30">Çözülmemiş</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-amber-400">{voidStats.review}</div>
+              <div className="text-[10px] text-white/30">İncelemede</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-emerald-400">{voidStats.resolved}</div>
+              <div className="text-[10px] text-white/30">Çözüldü</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-pink-400">{voidStats.totalSeverity.toFixed(1)}</div>
+              <div className="text-[10px] text-white/30">Toplam Severity</div>
+            </div>
+          </div>
+          {/* Clarity progress bar */}
+          <div className="mt-4">
+            <div className="flex justify-between text-[10px] text-white/40 mb-1">
+              <span>Sınıflandırma Oranı</span>
+              <span>%{voidStats.total > 0 ? Math.round((voidStats.classified / voidStats.total) * 100) : 100}</span>
+            </div>
+            <div className="w-full bg-white/10 rounded-full h-2">
+              <div
+                className="bg-gradient-to-r from-pink-500 to-indigo-500 h-2 rounded-full transition-all"
+                style={{ width: `${voidStats.total > 0 ? Math.min(100, (voidStats.classified / voidStats.total) * 100) : 100}%` }}
+              />
+            </div>
+          </div>
+          {/* Source breakdown */}
+          <div className="flex gap-4 mt-3 text-xs text-white/40">
+            <span>Yanlış kaynaklı: <span className="text-rose-400 font-bold">{voidStats.wrongSource}</span></span>
+            <span>Boş kaynaklı: <span className="text-amber-400 font-bold">{voidStats.emptySource}</span></span>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Hata Kök Neden Dağılımı Pie Chart ─── */}
       {errorReasonData.length > 0 && (
         <div className="bg-white/[0.04] border border-pink-500/[0.12] rounded-xl p-4">
           <h3 className="text-sm font-semibold text-white/60 mb-4 text-center">Hata Kök Neden Dağılımı</h3>
@@ -780,39 +937,54 @@ function AnalysisTab({ exam }: { exam: ExamDetail }) {
         </div>
       )}
 
-      {/* Topic Severity Bar Chart */}
-      {topicData.length > 0 && (
+      {/* ─── Konu Bazlı Detay Kartları ─── */}
+      {topicDetails.length > 0 && (
         <div className="bg-white/[0.04] border border-pink-500/[0.12] rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-white/60 mb-4 text-center">Konu Bazında Zafiyet Derinliği</h3>
-          <ResponsiveContainer width="100%" height={Math.max(300, topicData.length * 40)}>
-            <BarChart data={topicData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(244,114,182,0.1)" />
-              <XAxis type="number" tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.5)' }} />
-              <YAxis type="category" dataKey="topic" tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.7)' }} width={140} />
-              <Tooltip
-                contentStyle={{ borderRadius: '8px', fontSize: '12px', background: '#151528', border: '1px solid rgba(244,114,182,0.2)', color: '#fff' }}
-                formatter={(value: any, _name: any, props: any) => [
-                  Number(value).toFixed(1),
-                  props?.payload?.subject ?? '',
-                ]}
-              />
-              <Bar dataKey="severity" name="Severity" radius={[0, 6, 6, 0]}>
-                {topicData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={subjectColorMap[entry.subject] ?? CHART_COLORS[0]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-
-          {/* Legend */}
-          <div className="flex flex-wrap gap-4 justify-center mt-4 pt-3 border-t border-white/10">
-            {Object.entries(subjectColorMap).map(([name, color]) => (
-              <div key={name} className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: color }} />
-                <span className="text-xs text-white/60">{name}</span>
+          <h3 className="text-sm font-semibold text-white/60 mb-4">Konu Bazlı Zafiyet Detayı</h3>
+          <div className="space-y-3">
+            {topicDetails.map((td, idx) => (
+              <div
+                key={idx}
+                className="bg-white/[0.03] border border-white/5 rounded-lg p-3 hover:border-pink-500/15 transition-all"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <span className="text-white font-bold text-sm">{td.topic}</span>
+                    <span
+                      className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                      style={{ backgroundColor: (subjectColorMap[td.subject] ?? CHART_COLORS[0]) + '20', color: subjectColorMap[td.subject] ?? CHART_COLORS[0] }}
+                    >
+                      {td.subject}
+                    </span>
+                  </div>
+                  <span className="text-pink-400 font-bold text-sm">{td.severity.toFixed(1)}</span>
+                </div>
+                <div className="flex flex-wrap gap-3 text-[11px] text-white/50">
+                  {td.wrongCount > 0 && <span>Yanlış: <span className="text-rose-400 font-bold">{td.wrongCount}</span></span>}
+                  {td.emptyCount > 0 && <span>Boş: <span className="text-amber-400 font-bold">{td.emptyCount}</span></span>}
+                  {Object.entries(td.reasons).map(([reason, count]) => (
+                    <span key={reason}>{reason}: <span className="text-white/70 font-bold">{count}</span></span>
+                  ))}
+                </div>
+                {/* Status mini bar */}
+                <div className="flex gap-2 mt-2">
+                  {td.statuses['RAW'] && <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-400">RAW {td.statuses['RAW']}</span>}
+                  {td.statuses['UNRESOLVED'] && <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400">Çözülmemiş {td.statuses['UNRESOLVED']}</span>}
+                  {td.statuses['REVIEW'] && <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">İnceleme {td.statuses['REVIEW']}</span>}
+                  {td.statuses['RESOLVED'] && <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400">Çözüldü {td.statuses['RESOLVED']}</span>}
+                </div>
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {exam.cognitiveVoids.length === 0 && exam.subjectResults.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 text-white/40">
+          <BarChart3 className="w-12 h-12 mb-4 opacity-50" />
+          <p className="text-lg font-medium">Analiz verisi yok</p>
+          <p className="text-sm mt-1">Zafiyet analizi tamamlandıktan sonra grafikler burada görünecek.</p>
         </div>
       )}
     </div>
@@ -1067,7 +1239,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
       if (!resultsRes.ok) throw new Error('Sonuçlar güncellenemedi');
       const resultsData = await resultsRes.json();
 
-      // Update local state with fresh data
+      // Update local state with fresh data (including synced voids)
       setExam(prev => prev ? {
         ...prev,
         title: updated.title,
@@ -1078,7 +1250,20 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
         perceivedDifficulty: patchBody.perceivedDifficulty,
         biologicalState: patchBody.biologicalState,
         subjectResults: resultsData.results,
+        ...(resultsData.cognitiveVoids ? { cognitiveVoids: resultsData.cognitiveVoids } : {}),
       } : prev);
+
+      // Show void sync feedback
+      if (resultsData.voidSyncSummary?.length > 0) {
+        const totalCreated = resultsData.voidSyncSummary.reduce((s: number, v: any) => s + v.created, 0);
+        const totalRemoved = resultsData.voidSyncSummary.reduce((s: number, v: any) => s + v.removed, 0);
+        if (totalCreated > 0) {
+          toast.info(`${totalCreated} yeni zafiyet kaydı oluşturuldu (sınıflandırma bekliyor)`);
+        }
+        if (totalRemoved > 0) {
+          toast.info(`${totalRemoved} sınıflandırılmamış zafiyet kaydı silindi`);
+        }
+      }
 
       toast.success('Deneme güncellendi');
       setEditing(false);

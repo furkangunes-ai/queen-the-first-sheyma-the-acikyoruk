@@ -41,11 +41,15 @@ interface RegressionData {
   weeklyGrowth: number;
   currentEstimate: number;
   ceiling: number;
+  yksDate?: string;
+  daysToYKS?: number;
+  yksEstimate?: number;
   predictions: Array<{
     targetNet: number;
     estimatedDate: string | null;
     daysFromNow: number | null;
     confidence: number;
+    beyondYKS?: boolean;
   }>;
 }
 
@@ -177,7 +181,7 @@ export default function PlateauBreaker({
           <Zap className="text-yellow-400" size={20} />
           <span className="text-white font-bold text-sm">Plato Kırıcı Projeksiyon</span>
         </div>
-        <div className="flex items-center gap-4 text-[11px] text-white/40">
+        <div className="flex items-center gap-4 text-[11px] text-white/40 flex-wrap">
           <span>
             Tavan: <span className="text-cyan-400 font-bold">{regression.ceiling}</span>
           </span>
@@ -187,6 +191,14 @@ export default function PlateauBreaker({
           <span>
             Haftalık büyüme: <span className="text-green-400 font-bold">+{regression.weeklyGrowth}</span>
           </span>
+          {regression.daysToYKS !== undefined && regression.daysToYKS > 0 && (
+            <span>
+              YKS: <span className="text-amber-400 font-bold">{regression.daysToYKS} gün</span>
+              {regression.yksEstimate !== undefined && (
+                <span className="ml-1">→ <span className="text-pink-400 font-bold">{regression.yksEstimate}</span> net</span>
+              )}
+            </span>
+          )}
         </div>
       </div>
 
@@ -378,8 +390,8 @@ export default function PlateauBreaker({
             <span className="text-[10px] text-white/30 uppercase tracking-widest">net hedef</span>
             {pred.daysFromNow !== null ? (
               <>
-                <div className="mt-2 text-[13px] font-bold text-pink-400">
-                  {pred.daysFromNow <= 0 ? "Ulaşıldı!" : `${pred.daysFromNow} gün`}
+                <div className={`mt-2 text-[13px] font-bold ${pred.beyondYKS ? 'text-amber-400' : 'text-pink-400'}`}>
+                  {pred.daysFromNow <= 0 ? "Ulaşıldı!" : pred.beyondYKS ? `${pred.daysFromNow} gün (YKS sonrası)` : `${pred.daysFromNow} gün`}
                 </div>
                 {pred.estimatedDate && (
                   <div className="text-[11px] text-white/40">{pred.estimatedDate}</div>
