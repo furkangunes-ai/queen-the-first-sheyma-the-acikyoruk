@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Paper, Handwriting } from '@/components/skeuomorphic';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, BookOpen, BarChart3, Trash2, Pencil, Check, X, Loader2, Target, Brain, ChevronDown, Sparkles, Bot, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, BookOpen, BarChart3, Trash2, Pencil, Check, X, Loader2, Target, Brain, ChevronDown, Sparkles, Bot, AlertTriangle, CheckCircle, RefreshCw, Save, Sun, Moon, Sunrise, Volume2, VolumeX, Battery, BatteryLow, BatteryFull, MessageSquare, Plus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 import {
@@ -14,8 +14,13 @@ import {
 } from 'recharts';
 import {
   ERROR_REASON_LABELS,
+  ERROR_REASONS_ORDERED,
   VOID_STATUS_LABELS,
   VOID_STATUS_COLORS,
+  TIME_OF_DAY_OPTIONS,
+  ENVIRONMENT_OPTIONS,
+  BIOLOGICAL_STATE_OPTIONS,
+  PERCEIVED_DIFFICULTY_OPTIONS,
   type ErrorReasonType,
 } from '@/lib/severity';
 
@@ -55,6 +60,7 @@ interface ExamDetail {
   id: string;
   title: string;
   date: string;
+  notes?: string | null;
   examTypeId: string;
   examType: { id: string; name: string };
   examCategory?: string | null;
@@ -65,6 +71,16 @@ interface ExamDetail {
   environment?: string | null;
   perceivedDifficulty?: number | null;
   biologicalState?: string | null;
+}
+
+interface TopicOption {
+  id: string;
+  name: string;
+}
+
+interface SubjectTopics {
+  subjectName: string;
+  topics: TopicOption[];
 }
 
 interface ExamDetailViewProps {
@@ -220,6 +236,17 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
         </div>
       )}
 
+      {/* Notes */}
+      {exam.notes && (
+        <div className="bg-white/[0.03] border border-white/10 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <MessageSquare size={14} className="text-white/40" />
+            <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest">Notlar</span>
+          </div>
+          <p className="text-sm text-white/70 whitespace-pre-wrap">{exam.notes}</p>
+        </div>
+      )}
+
       {/* Subject Results Table */}
       {exam.subjectResults.length > 0 && (
         <div className="overflow-x-auto">
@@ -277,15 +304,45 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
 
 function VoidsTab({
   exam,
+  topicsBySubject,
   onStatusChange,
+  onVoidUpdate,
 }: {
   exam: ExamDetail;
+  topicsBySubject: Record<string, SubjectTopics>;
   onStatusChange: (voidId: string, newStatus: 'RAW' | 'UNRESOLVED' | 'REVIEW' | 'RESOLVED') => void;
+  onVoidUpdate: (voidId: string, data: { topicId?: string; errorReason?: string; notes?: string }) => Promise<void>;
 }) {
   const [triageMode, setTriageMode] = useState(false);
   const [triageIndex, setTriageIndex] = useState(0);
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [editingVoidId, setEditingVoidId] = useState<string | null>(null);
+  const [editVoidTopic, setEditVoidTopic] = useState('');
+  const [editVoidReason, setEditVoidReason] = useState('');
+  const [editVoidNotes, setEditVoidNotes] = useState('');
+  const [savingVoid, setSavingVoid] = useState(false);
+
+  const startVoidEdit = (v: CognitiveVoid) => {
+    setEditingVoidId(v.id);
+    setEditVoidTopic(v.topicId || '');
+    setEditVoidReason(v.errorReason || '');
+    setEditVoidNotes(v.notes || '');
+  };
+
+  const handleSaveVoid = async (v: CognitiveVoid) => {
+    setSavingVoid(true);
+    try {
+      await onVoidUpdate(v.id, {
+        topicId: editVoidTopic || undefined,
+        errorReason: editVoidReason || undefined,
+        notes: editVoidNotes || undefined,
+      });
+      setEditingVoidId(null);
+    } finally {
+      setSavingVoid(false);
+    }
+  };
 
   const allSubjects = useMemo(() => {
     const names = new Set<string>();
@@ -460,6 +517,8 @@ function VoidsTab({
               const errorLabel = v.errorReason ? (ERROR_REASON_LABELS[v.errorReason] || v.errorReason) : null;
               const statusLabel = VOID_STATUS_LABELS[v.status] || v.status;
               const statusColors = VOID_STATUS_COLORS[v.status] || VOID_STATUS_COLORS.UNRESOLVED;
+              const isEditing = editingVoidId === v.id;
+              const subjectTopics = topicsBySubject[v.subjectId]?.topics || [];
 
               return (
                 <motion.div
@@ -468,72 +527,171 @@ function VoidsTab({
                   animate={{ opacity: 1, y: 0 }}
                   className={`bg-white/[0.03] border border-white/[0.08] border-l-[3px] ${severityColor} rounded-xl p-4 transition-all hover:bg-white/[0.05]`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {v.topic ? (
-                          <span className="text-sm font-bold text-white/90">{v.topic.name}</span>
-                        ) : (
-                          <span className="text-sm font-medium text-white/40 italic">Konu belirtilmemiş</span>
-                        )}
-                        {v.questionNumber && (
-                          <span className="text-[10px] text-white/40 font-mono bg-white/[0.06] px-1.5 py-0.5 rounded">
-                            S.{v.questionNumber}
+                  {isEditing ? (
+                    /* Inline Edit Mode */
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-pink-400 uppercase tracking-wider">Zafiyet Düzenle</span>
+                        <div className="flex items-center gap-1">
+                          {v.questionNumber && (
+                            <span className="text-[10px] text-white/40 font-mono bg-white/[0.06] px-1.5 py-0.5 rounded mr-1">
+                              S.{v.questionNumber}
+                            </span>
+                          )}
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium border ${
+                            v.source === 'WRONG'
+                              ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                              : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                          }`}>
+                            {v.source === 'WRONG' ? 'Yanlış' : 'Boş'}
                           </span>
-                        )}
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium border ${
-                          v.source === 'WRONG'
-                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                            : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                        }`}>
-                          {v.source === 'WRONG' ? 'Yanlış' : 'Boş'}
-                        </span>
-                        {(v.relapseCount ?? 0) > 0 && (
-                          <span className="text-[10px] text-orange-400 font-bold bg-orange-500/10 px-1.5 py-0.5 rounded border border-orange-500/20">
-                            Nüksetme x{v.relapseCount}
-                          </span>
-                        )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                        {errorLabel && (
-                          <span className="inline-flex items-center rounded-full bg-white/[0.06] text-white/60 px-2 py-0.5 text-[11px] font-medium border border-white/10">
-                            {errorLabel}
-                          </span>
-                        )}
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${statusColors.bg} ${statusColors.text} ${statusColors.border} border`}>
-                          {statusLabel}
-                        </span>
-                        <span className="text-[10px] text-white/20">
-                          {v.severity.toFixed(1)}
-                        </span>
-                      </div>
-                      {v.notes && (
-                        <p className="text-xs text-white/50 mt-2 italic">{v.notes}</p>
-                      )}
-                    </div>
 
-                    {/* Action buttons */}
-                    <div className="flex flex-col gap-1.5 shrink-0">
-                      {v.status !== 'RESOLVED' && (
-                        <button
-                          onClick={() => onStatusChange(v.id, 'RESOLVED')}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500/25"
+                      {/* Topic Select */}
+                      <div>
+                        <label className="text-[10px] text-white/40 block mb-1">Konu</label>
+                        <select
+                          value={editVoidTopic}
+                          onChange={e => setEditVoidTopic(e.target.value)}
+                          className="w-full px-2.5 py-2 bg-white/[0.06] border border-white/10 rounded-lg text-xs text-white focus:outline-none focus:ring-1 focus:ring-pink-400 [color-scheme:dark]"
                         >
-                          <CheckCircle size={13} />
-                          Çözüldü
-                        </button>
-                      )}
-                      {v.status === 'RESOLVED' && (
+                          <option value="">Konu seçin</option>
+                          {subjectTopics.map(t => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Error Reason Select */}
+                      <div>
+                        <label className="text-[10px] text-white/40 block mb-1">Hata Gerekçesi</label>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {ERROR_REASONS_ORDERED.map(reason => (
+                            <button
+                              key={reason}
+                              type="button"
+                              onClick={() => setEditVoidReason(editVoidReason === reason ? '' : reason)}
+                              className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${
+                                editVoidReason === reason
+                                  ? 'bg-pink-500/20 text-pink-400 border-pink-500/30'
+                                  : 'bg-white/[0.03] text-white/40 border-white/10 hover:text-white/60'
+                              }`}
+                            >
+                              {ERROR_REASON_LABELS[reason]}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Notes */}
+                      <div>
+                        <label className="text-[10px] text-white/40 block mb-1">Not</label>
+                        <input
+                          type="text"
+                          value={editVoidNotes}
+                          onChange={e => setEditVoidNotes(e.target.value)}
+                          placeholder="İsteğe bağlı not..."
+                          className="w-full px-2.5 py-2 bg-white/[0.06] border border-white/10 rounded-lg text-xs text-white focus:outline-none focus:ring-1 focus:ring-pink-400 placeholder:text-white/20"
+                        />
+                      </div>
+
+                      {/* Save / Cancel */}
+                      <div className="flex gap-2 pt-1">
                         <button
-                          onClick={() => onStatusChange(v.id, 'UNRESOLVED')}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 bg-white/[0.06] text-white/40 border border-white/10 hover:bg-white/10"
+                          onClick={() => handleSaveVoid(v)}
+                          disabled={savingVoid}
+                          className="px-3 py-1.5 bg-pink-500 text-white rounded-lg text-xs font-bold hover:bg-pink-400 disabled:opacity-50 flex items-center gap-1.5 transition-all"
                         >
-                          <RefreshCw size={13} />
-                          Geri Al
+                          {savingVoid ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                          Kaydet
                         </button>
-                      )}
+                        <button
+                          onClick={() => setEditingVoidId(null)}
+                          disabled={savingVoid}
+                          className="px-3 py-1.5 bg-white/[0.06] text-white/60 border border-white/10 rounded-lg text-xs font-bold hover:bg-white/10 flex items-center gap-1.5"
+                        >
+                          <X size={12} />
+                          İptal
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    /* Display Mode */
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {v.topic ? (
+                            <span className="text-sm font-bold text-white/90">{v.topic.name}</span>
+                          ) : (
+                            <span className="text-sm font-medium text-white/40 italic">Konu belirtilmemiş</span>
+                          )}
+                          {v.questionNumber && (
+                            <span className="text-[10px] text-white/40 font-mono bg-white/[0.06] px-1.5 py-0.5 rounded">
+                              S.{v.questionNumber}
+                            </span>
+                          )}
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium border ${
+                            v.source === 'WRONG'
+                              ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                              : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                          }`}>
+                            {v.source === 'WRONG' ? 'Yanlış' : 'Boş'}
+                          </span>
+                          {(v.relapseCount ?? 0) > 0 && (
+                            <span className="text-[10px] text-orange-400 font-bold bg-orange-500/10 px-1.5 py-0.5 rounded border border-orange-500/20">
+                              Nüksetme x{v.relapseCount}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          {errorLabel && (
+                            <span className="inline-flex items-center rounded-full bg-white/[0.06] text-white/60 px-2 py-0.5 text-[11px] font-medium border border-white/10">
+                              {errorLabel}
+                            </span>
+                          )}
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${statusColors.bg} ${statusColors.text} ${statusColors.border} border`}>
+                            {statusLabel}
+                          </span>
+                          <span className="text-[10px] text-white/20">
+                            {v.severity.toFixed(1)}
+                          </span>
+                        </div>
+                        {v.notes && (
+                          <p className="text-xs text-white/50 mt-2 italic">{v.notes}</p>
+                        )}
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex flex-col gap-1.5 shrink-0">
+                        <button
+                          onClick={() => startVoidEdit(v)}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 bg-white/[0.06] text-white/50 border border-white/10 hover:bg-white/10 hover:text-pink-400"
+                        >
+                          <Pencil size={12} />
+                          Düzenle
+                        </button>
+                        {v.status !== 'RESOLVED' && (
+                          <button
+                            onClick={() => onStatusChange(v.id, 'RESOLVED')}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500/25"
+                          >
+                            <CheckCircle size={13} />
+                            Çözüldü
+                          </button>
+                        )}
+                        {v.status === 'RESOLVED' && (
+                          <button
+                            onClick={() => onStatusChange(v.id, 'UNRESOLVED')}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 bg-white/[0.06] text-white/40 border border-white/10 hover:bg-white/10"
+                          >
+                            <RefreshCw size={13} />
+                            Geri Al
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               );
             })}
@@ -677,7 +835,16 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDate, setEditDate] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+  const [editTimeOfDay, setEditTimeOfDay] = useState('');
+  const [editEnvironment, setEditEnvironment] = useState('');
+  const [editPerceivedDifficulty, setEditPerceivedDifficulty] = useState(0);
+  const [editBiologicalState, setEditBiologicalState] = useState('');
+  const [editResults, setEditResults] = useState<Array<{ subjectId: string; subjectName: string; correctCount: number; wrongCount: number; emptyCount: number }>>([]);
   const [saving, setSaving] = useState(false);
+
+  // Topic data for void editing
+  const [topicsBySubject, setTopicsBySubject] = useState<Record<string, SubjectTopics>>({});
 
   // AI Analysis state
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
@@ -737,6 +904,25 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
     fetchExam();
     return () => { cancelled = true; };
   }, [examId]);
+
+  // Fetch topics when exam loads (for void editing)
+  useEffect(() => {
+    if (!exam) return;
+    const subjectIds = [...new Set(exam.subjectResults.map(sr => sr.subjectId))];
+    if (subjectIds.length === 0) return;
+
+    async function fetchTopics() {
+      try {
+        const res = await fetch(`/api/subjects/topics?subjectIds=${subjectIds.join(',')}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setTopicsBySubject(data);
+      } catch {
+        // silently fail
+      }
+    }
+    fetchTopics();
+  }, [exam?.id, exam?.subjectResults]);
 
   const handleAIAnalysis = async () => {
     setAiAnalysisLoading(true);
@@ -827,26 +1013,113 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
     if (!exam) return;
     setEditTitle(exam.title);
     setEditDate(new Date(exam.date).toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" }));
+    setEditNotes(exam.notes || '');
+    setEditTimeOfDay(exam.timeOfDay || '');
+    setEditEnvironment(exam.environment || '');
+    setEditPerceivedDifficulty(exam.perceivedDifficulty || 0);
+    setEditBiologicalState(exam.biologicalState || '');
+    setEditResults(exam.subjectResults.map(sr => ({
+      subjectId: sr.subjectId,
+      subjectName: sr.subject.name,
+      correctCount: sr.correctCount,
+      wrongCount: sr.wrongCount,
+      emptyCount: sr.emptyCount,
+    })));
     setEditing(true);
   };
 
   const handleSaveEdit = async () => {
     setSaving(true);
     try {
+      // 1. Update exam metadata
+      const patchBody: Record<string, any> = {
+        title: editTitle,
+        date: editDate,
+        notes: editNotes.trim() || null,
+        timeOfDay: editTimeOfDay || null,
+        environment: editEnvironment || null,
+        perceivedDifficulty: editPerceivedDifficulty || null,
+        biologicalState: editBiologicalState || null,
+      };
+
       const res = await fetch(`/api/exams/${examId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: editTitle, date: editDate }),
+        body: JSON.stringify(patchBody),
       });
       if (!res.ok) throw new Error('Güncelleme başarısız');
       const updated = await res.json();
-      setExam(prev => prev ? { ...prev, title: updated.title, date: updated.date } : prev);
+
+      // 2. Update subject results if changed
+      const resultsRes = await fetch(`/api/exams/${examId}/results`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          results: editResults.map(r => ({
+            subjectId: r.subjectId,
+            correctCount: r.correctCount,
+            wrongCount: r.wrongCount,
+            emptyCount: r.emptyCount,
+          })),
+        }),
+      });
+
+      if (!resultsRes.ok) throw new Error('Sonuçlar güncellenemedi');
+      const resultsData = await resultsRes.json();
+
+      // Update local state with fresh data
+      setExam(prev => prev ? {
+        ...prev,
+        title: updated.title,
+        date: updated.date,
+        notes: patchBody.notes,
+        timeOfDay: patchBody.timeOfDay,
+        environment: patchBody.environment,
+        perceivedDifficulty: patchBody.perceivedDifficulty,
+        biologicalState: patchBody.biologicalState,
+        subjectResults: resultsData.results,
+      } : prev);
+
       toast.success('Deneme güncellendi');
       setEditing(false);
     } catch {
       toast.error('Deneme güncellenirken hata oluştu');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Void field update (topic, errorReason, notes)
+  const handleVoidUpdate = async (voidId: string, data: { topicId?: string; errorReason?: string; notes?: string }) => {
+    try {
+      const res = await fetch(`/api/exams/${examId}/cognitive-voids/${voidId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error();
+      const updated = await res.json();
+      // Update local state with server response
+      setExam(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          cognitiveVoids: prev.cognitiveVoids.map(v =>
+            v.id === voidId ? {
+              ...v,
+              topicId: updated.topicId,
+              topic: updated.topic,
+              errorReason: updated.errorReason,
+              notes: updated.notes,
+              status: updated.status,
+              severity: updated.severity,
+            } : v
+          ),
+        };
+      });
+      toast.success('Zafiyet güncellendi');
+    } catch {
+      toast.error('Zafiyet güncellenemedi');
     }
   };
 
@@ -1023,41 +1296,218 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden mb-6"
           >
-            <div className="bg-pink-500/10 border border-pink-500/20 rounded-lg p-4 space-y-3">
-              <h3 className="text-sm font-semibold text-pink-400">Denemeyi Düzenle</h3>
+            <div className="bg-pink-500/10 border border-pink-500/20 rounded-xl p-5 space-y-5">
+              <h3 className="text-sm font-bold text-pink-400 uppercase tracking-wider flex items-center gap-2">
+                <Pencil size={14} />
+                Denemeyi Düzenle
+              </h3>
+
+              {/* Basic Info */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-white/60 block mb-1">Başlık</label>
+                  <label className="text-[11px] font-bold text-white/50 uppercase tracking-widest block mb-1.5">Başlık</label>
                   <input
                     type="text"
                     value={editTitle}
                     onChange={e => setEditTitle(e.target.value)}
-                    className="w-full px-3 py-2 border border-pink-500/[0.12] bg-white/[0.06] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
+                    className="w-full px-3 py-2.5 border border-pink-500/[0.12] bg-white/[0.06] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-white/60 block mb-1">Tarih</label>
+                  <label className="text-[11px] font-bold text-white/50 uppercase tracking-widest block mb-1.5">Tarih</label>
                   <input
                     type="date"
                     value={editDate}
                     onChange={e => setEditDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-pink-500/[0.12] bg-white/[0.06] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
+                    className="w-full px-3 py-2.5 border border-pink-500/[0.12] bg-white/[0.06] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-pink-400 [color-scheme:dark]"
                   />
                 </div>
               </div>
-              <div className="flex gap-2 pt-1">
+
+              {/* Notes */}
+              <div>
+                <label className="text-[11px] font-bold text-white/50 uppercase tracking-widest block mb-1.5">Notlar</label>
+                <textarea
+                  value={editNotes}
+                  onChange={e => setEditNotes(e.target.value)}
+                  rows={2}
+                  placeholder="Sınavla ilgili notlarınız..."
+                  className="w-full px-3 py-2.5 border border-pink-500/[0.12] bg-white/[0.06] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-pink-400 resize-none placeholder:text-white/20"
+                />
+              </div>
+
+              {/* Context Tags */}
+              <div className="space-y-4">
+                <div className="text-[11px] font-bold text-white/50 uppercase tracking-widest">Sınav Bağlamı</div>
+
+                {/* Time of Day */}
+                <div>
+                  <label className="text-[10px] text-white/40 block mb-1.5">Sınav Zamanı</label>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {TIME_OF_DAY_OPTIONS.map(opt => {
+                      const icons: Record<string, React.ReactNode> = { sabah: <Sunrise size={12} />, ogle: <Sun size={12} />, aksam: <Moon size={12} /> };
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setEditTimeOfDay(editTimeOfDay === opt.value ? '' : opt.value)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 ${
+                            editTimeOfDay === opt.value
+                              ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                              : 'bg-white/[0.03] text-white/40 border-white/10 hover:text-white/60'
+                          }`}
+                        >
+                          {icons[opt.value]}
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Environment */}
+                <div>
+                  <label className="text-[10px] text-white/40 block mb-1.5">Ortam</label>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {ENVIRONMENT_OPTIONS.map(opt => {
+                      const icons: Record<string, React.ReactNode> = { sessiz: <VolumeX size={12} />, gurultulu: <Volume2 size={12} /> };
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setEditEnvironment(editEnvironment === opt.value ? '' : opt.value)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 ${
+                            editEnvironment === opt.value
+                              ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'
+                              : 'bg-white/[0.03] text-white/40 border-white/10 hover:text-white/60'
+                          }`}
+                        >
+                          {icons[opt.value]}
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Biological State */}
+                <div>
+                  <label className="text-[10px] text-white/40 block mb-1.5">Enerji Durumu</label>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {BIOLOGICAL_STATE_OPTIONS.map(opt => {
+                      const icons: Record<string, React.ReactNode> = { dinc: <BatteryFull size={12} />, normal: <Battery size={12} />, yorgun: <BatteryLow size={12} /> };
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setEditBiologicalState(editBiologicalState === opt.value ? '' : opt.value)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 ${
+                            editBiologicalState === opt.value
+                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                              : 'bg-white/[0.03] text-white/40 border-white/10 hover:text-white/60'
+                          }`}
+                        >
+                          {icons[opt.value]}
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Perceived Difficulty */}
+                <div>
+                  <label className="text-[10px] text-white/40 block mb-1.5">Algılanan Zorluk</label>
+                  <div className="flex gap-1.5">
+                    {PERCEIVED_DIFFICULTY_OPTIONS.map(val => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setEditPerceivedDifficulty(editPerceivedDifficulty === val ? 0 : val)}
+                        className={`w-9 h-9 rounded-lg text-xs font-bold border transition-all ${
+                          editPerceivedDifficulty === val
+                            ? 'bg-pink-500/20 text-pink-400 border-pink-500/30'
+                            : 'bg-white/[0.03] text-white/40 border-white/10 hover:text-white/60'
+                        }`}
+                      >
+                        {val}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex justify-between text-[9px] text-white/20 mt-1 px-0.5 w-[195px]">
+                    <span>Kolay</span>
+                    <span>Zor</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Subject Results */}
+              {editResults.length > 0 && (
+                <div>
+                  <div className="text-[11px] font-bold text-white/50 uppercase tracking-widest mb-2">Ders Sonuçları</div>
+                  <div className="space-y-2">
+                    {editResults.map((r, i) => (
+                      <div key={r.subjectId} className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center">
+                        <span className="text-xs text-white/70 font-medium truncate">{r.subjectName}</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] text-emerald-400 w-4">D</span>
+                          <input
+                            type="number"
+                            min={0}
+                            value={r.correctCount}
+                            onChange={e => {
+                              const val = Math.max(0, parseInt(e.target.value) || 0);
+                              setEditResults(prev => prev.map((er, idx) => idx === i ? { ...er, correctCount: val } : er));
+                            }}
+                            className="w-14 px-2 py-1.5 border border-emerald-500/20 bg-white/[0.04] rounded text-xs text-white text-center focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] text-rose-400 w-4">Y</span>
+                          <input
+                            type="number"
+                            min={0}
+                            value={r.wrongCount}
+                            onChange={e => {
+                              const val = Math.max(0, parseInt(e.target.value) || 0);
+                              setEditResults(prev => prev.map((er, idx) => idx === i ? { ...er, wrongCount: val } : er));
+                            }}
+                            className="w-14 px-2 py-1.5 border border-rose-500/20 bg-white/[0.04] rounded text-xs text-white text-center focus:outline-none focus:ring-1 focus:ring-rose-400"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] text-amber-400 w-4">B</span>
+                          <input
+                            type="number"
+                            min={0}
+                            value={r.emptyCount}
+                            onChange={e => {
+                              const val = Math.max(0, parseInt(e.target.value) || 0);
+                              setEditResults(prev => prev.map((er, idx) => idx === i ? { ...er, emptyCount: val } : er));
+                            }}
+                            className="w-14 px-2 py-1.5 border border-amber-500/20 bg-white/[0.04] rounded text-xs text-white text-center focus:outline-none focus:ring-1 focus:ring-amber-400"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Save / Cancel */}
+              <div className="flex gap-2 pt-2 border-t border-white/5">
                 <button
                   onClick={handleSaveEdit}
                   disabled={saving || !editTitle.trim()}
-                  className="px-4 py-2 bg-pink-500 text-white rounded-lg text-sm font-medium hover:bg-pink-400 disabled:opacity-50 flex items-center gap-2"
+                  className="px-5 py-2.5 bg-pink-500 text-white rounded-lg text-sm font-bold hover:bg-pink-400 disabled:opacity-50 flex items-center gap-2 transition-all"
                 >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   Kaydet
                 </button>
                 <button
                   onClick={() => setEditing(false)}
                   disabled={saving}
-                  className="px-4 py-2 bg-white/[0.06] text-white/70 border border-white/10 rounded-lg text-sm font-medium hover:bg-white/10 flex items-center gap-2"
+                  className="px-5 py-2.5 bg-white/[0.06] text-white/70 border border-white/10 rounded-lg text-sm font-bold hover:bg-white/10 flex items-center gap-2 transition-all"
                 >
                   <X className="w-4 h-4" />
                   İptal
@@ -1174,7 +1624,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
                 </>
               )}
               {activeTab === 'voids' && (
-                <VoidsTab exam={exam} onStatusChange={handleVoidStatusChange} />
+                <VoidsTab exam={exam} topicsBySubject={topicsBySubject} onStatusChange={handleVoidStatusChange} onVoidUpdate={handleVoidUpdate} />
               )}
               {activeTab === 'analysis' && <AnalysisTab exam={exam} />}
             </motion.div>
