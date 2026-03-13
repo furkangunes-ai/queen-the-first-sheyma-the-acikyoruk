@@ -37,11 +37,13 @@ interface CognitiveVoid {
   topicId: string | null;
   topic: { name: string } | null;
   source: 'WRONG' | 'EMPTY';
-  errorReason: ErrorReasonType;
+  errorReason: ErrorReasonType | null;
   magnitude: number;
-  status: 'UNRESOLVED' | 'REVIEW' | 'RESOLVED';
+  status: 'RAW' | 'UNRESOLVED' | 'REVIEW' | 'RESOLVED';
   severity: number;
   notes: string | null;
+  questionNumber?: number | null;
+  relapseCount?: number;
 }
 
 interface ExamType {
@@ -58,7 +60,7 @@ interface ExamDetail {
   examCategory?: string | null;
   subjectResults: SubjectResult[];
   cognitiveVoids: CognitiveVoid[];
-  coldPhaseCompleted: boolean;
+  coldPhaseCompleted?: boolean;
   timeOfDay?: string | null;
   environment?: string | null;
   perceivedDifficulty?: number | null;
@@ -151,10 +153,12 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
   }, [exam.subjectResults]);
 
   const voidStats = useMemo(() => {
+    const raw = exam.cognitiveVoids.filter(v => v.status === 'RAW').length;
     const unresolved = exam.cognitiveVoids.filter(v => v.status === 'UNRESOLVED').length;
     const review = exam.cognitiveVoids.filter(v => v.status === 'REVIEW').length;
     const resolved = exam.cognitiveVoids.filter(v => v.status === 'RESOLVED').length;
-    return { unresolved, review, resolved, total: exam.cognitiveVoids.length };
+    const pending = raw + unresolved + review;
+    return { raw, unresolved, review, resolved, pending, total: exam.cognitiveVoids.length };
   }, [exam.cognitiveVoids]);
 
   // Context tags
@@ -172,17 +176,37 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
         <Handwriting as="h2" className="text-2xl sm:text-3xl flex-1">
           {exam.title}
         </Handwriting>
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-sm text-white/50">{formatDateTR(exam.date)}</span>
-          <span className="inline-flex items-center rounded-full bg-pink-500/10 text-pink-400 px-3 py-0.5 text-xs font-medium border border-pink-500/20">
-            {exam.examType.name}
-          </span>
-          {!exam.coldPhaseCompleted && (
-            <span className="inline-flex items-center rounded-full bg-amber-500/10 text-amber-400 px-3 py-0.5 text-xs font-medium border border-amber-500/20">
-              Analiz Bekliyor
+        <span className="text-sm text-white/50">{formatDateTR(exam.date)}</span>
+      </div>
+
+      {/* Badge Line */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400 font-mono">
+          {totals.net.toFixed(2)} Net
+        </span>
+        <span className="text-white/30">•</span>
+        <span className="text-sm text-white/60">
+          <span className="text-emerald-400 font-bold">{totals.correct}</span>D,{' '}
+          <span className="text-rose-400 font-bold">{totals.wrong}</span>Y,{' '}
+          <span className="text-amber-400 font-bold">{totals.empty}</span>B
+        </span>
+        {voidStats.total > 0 && (
+          <>
+            <span className="text-white/30">•</span>
+            <span className="text-sm">
+              {voidStats.pending > 0 && (
+                <span className="text-rose-400 font-bold">{voidStats.pending} Bekleyen</span>
+              )}
+              {voidStats.pending > 0 && voidStats.resolved > 0 && ', '}
+              {voidStats.resolved > 0 && (
+                <span className="text-emerald-400 font-bold">{voidStats.resolved} Çözülen</span>
+              )}
             </span>
-          )}
-        </div>
+          </>
+        )}
+        <span className="inline-flex items-center rounded-full bg-pink-500/10 text-pink-400 px-3 py-0.5 text-xs font-medium border border-pink-500/20">
+          {exam.examType.name}
+        </span>
       </div>
 
       {/* Context Tags */}
@@ -193,45 +217,6 @@ function SummaryTab({ exam }: { exam: ExamDetail }) {
               {tag}
             </span>
           ))}
-        </div>
-      )}
-
-      {/* Total Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {[
-          { label: 'Doğru', value: totals.correct, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
-          { label: 'Yanlış', value: totals.wrong, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
-          { label: 'Boş', value: totals.empty, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
-          { label: 'Net', value: totals.net.toFixed(2), color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/20' },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className={`${stat.bg} ${stat.border} border rounded-xl p-4 text-center`}
-          >
-            <p className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1">{stat.label}</p>
-            <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Void Status Summary */}
-      {voidStats.total > 0 && (
-        <div className="grid grid-cols-3 gap-3">
-          <div className={`${VOID_STATUS_COLORS.UNRESOLVED.bg} ${VOID_STATUS_COLORS.UNRESOLVED.border} border rounded-lg p-3 text-center`}>
-            <AlertTriangle className={`w-5 h-5 ${VOID_STATUS_COLORS.UNRESOLVED.text} mx-auto mb-1`} />
-            <p className={`text-lg font-bold ${VOID_STATUS_COLORS.UNRESOLVED.text}`}>{voidStats.unresolved}</p>
-            <p className="text-[10px] text-white/40 uppercase font-medium">Çözülmemiş</p>
-          </div>
-          <div className={`${VOID_STATUS_COLORS.REVIEW.bg} ${VOID_STATUS_COLORS.REVIEW.border} border rounded-lg p-3 text-center`}>
-            <RefreshCw className={`w-5 h-5 ${VOID_STATUS_COLORS.REVIEW.text} mx-auto mb-1`} />
-            <p className={`text-lg font-bold ${VOID_STATUS_COLORS.REVIEW.text}`}>{voidStats.review}</p>
-            <p className="text-[10px] text-white/40 uppercase font-medium">İncelemede</p>
-          </div>
-          <div className={`${VOID_STATUS_COLORS.RESOLVED.bg} ${VOID_STATUS_COLORS.RESOLVED.border} border rounded-lg p-3 text-center`}>
-            <CheckCircle className={`w-5 h-5 ${VOID_STATUS_COLORS.RESOLVED.text} mx-auto mb-1`} />
-            <p className={`text-lg font-bold ${VOID_STATUS_COLORS.RESOLVED.text}`}>{voidStats.resolved}</p>
-            <p className="text-[10px] text-white/40 uppercase font-medium">Çözüldü</p>
-          </div>
         </div>
       )}
 
@@ -295,8 +280,10 @@ function VoidsTab({
   onStatusChange,
 }: {
   exam: ExamDetail;
-  onStatusChange: (voidId: string, newStatus: 'UNRESOLVED' | 'REVIEW' | 'RESOLVED') => void;
+  onStatusChange: (voidId: string, newStatus: 'RAW' | 'UNRESOLVED' | 'REVIEW' | 'RESOLVED') => void;
 }) {
+  const [triageMode, setTriageMode] = useState(false);
+  const [triageIndex, setTriageIndex] = useState(0);
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
@@ -355,6 +342,7 @@ function VoidsTab({
           className="text-sm p-1.5 rounded bg-white/[0.06] border border-pink-500/[0.12] text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
         >
           <option value="all">Tüm Durumlar</option>
+          <option value="RAW">Ham Veri</option>
           <option value="UNRESOLVED">Çözülmemiş</option>
           <option value="REVIEW">İncelemede</option>
           <option value="RESOLVED">Çözüldü</option>
@@ -362,7 +350,101 @@ function VoidsTab({
         <span className="text-[12px] text-white/30 self-center ml-auto">
           {filteredVoids.length} zafiyet
         </span>
+        {/* Triage Mode Button */}
+        {filteredVoids.filter(v => v.status !== 'RESOLVED').length > 0 && (
+          <button
+            onClick={() => { setTriageIndex(0); setTriageMode(true); }}
+            className="px-3 py-1.5 rounded-lg bg-pink-500/20 border border-pink-500/30 text-pink-400 text-xs font-bold hover:bg-pink-500/30 transition-all"
+          >
+            <Target size={12} className="inline mr-1" />
+            Odak Modu
+          </button>
+        )}
       </div>
+
+      {/* Triage Flashcard Mode */}
+      <AnimatePresence>
+        {triageMode && (() => {
+          const triageVoids = filteredVoids
+            .filter(v => v.status !== 'RESOLVED')
+            .sort((a, b) => b.severity - a.severity);
+          const current = triageVoids[triageIndex];
+          if (!current) {
+            return (
+              <motion.div
+                key="triage-done"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+              >
+                <div className="bg-[#1a1a2e] border border-emerald-500/30 rounded-2xl p-8 text-center max-w-md">
+                  <CheckCircle size={48} className="text-emerald-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-white mb-2">Tamamlandı!</h3>
+                  <p className="text-white/50 text-sm mb-4">Tüm zafiyetler işlendi.</p>
+                  <button onClick={() => setTriageMode(false)} className="px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg text-sm font-bold">
+                    Kapat
+                  </button>
+                </div>
+              </motion.div>
+            );
+          }
+          const errorLabel = current.errorReason ? (ERROR_REASON_LABELS[current.errorReason] || current.errorReason) : 'Sınıflandırılmamış';
+          return (
+            <motion.div
+              key="triage-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            >
+              <motion.div
+                key={current.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-[#1a1a2e] border border-white/10 rounded-2xl p-6 max-w-lg w-full space-y-4"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-white/30 font-bold uppercase tracking-wider">
+                    {triageIndex + 1} / {triageVoids.length}
+                  </span>
+                  <button onClick={() => setTriageMode(false)} className="text-white/30 hover:text-white/60">
+                    <X size={18} />
+                  </button>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">{current.topic?.name || 'Konu Belirtilmemiş'}</h3>
+                  <p className="text-sm text-white/50">{current.subject.name} • {errorLabel}</p>
+                  <p className="text-xs text-white/30 mt-1">Severity: {current.severity.toFixed(1)}</p>
+                </div>
+                {current.notes && <p className="text-sm text-white/50 italic">{current.notes}</p>}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => {
+                      onStatusChange(current.id, 'RESOLVED');
+                      if (triageIndex < triageVoids.length - 1) setTriageIndex(i => i + 1);
+                      else setTriageMode(false);
+                    }}
+                    className="flex-1 px-4 py-3 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl text-sm font-bold hover:bg-emerald-500/30 transition-all flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle size={16} />
+                    Çözüldü
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (triageIndex < triageVoids.length - 1) setTriageIndex(i => i + 1);
+                      else setTriageMode(false);
+                    }}
+                    className="flex-1 px-4 py-3 bg-white/[0.06] border border-white/10 text-white/50 rounded-xl text-sm font-bold hover:bg-white/10 transition-all"
+                  >
+                    Atla
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
 
       {/* Void Cards grouped by subject */}
       {groupedVoids.map(([subjectName, voids]) => (
@@ -374,24 +456,29 @@ function VoidsTab({
           </h3>
           <div className="space-y-2">
             {voids.map((v) => {
-              const statusColors = VOID_STATUS_COLORS[v.status];
-              const StatusIcon = STATUS_ICONS[v.status];
-              const nextStatus = STATUS_CYCLE[v.status];
-              const errorLabel = ERROR_REASON_LABELS[v.errorReason] || v.errorReason;
+              const severityColor = v.severity >= 2 ? 'border-l-rose-500' : v.severity >= 1 ? 'border-l-amber-500' : 'border-l-white/20';
+              const errorLabel = v.errorReason ? (ERROR_REASON_LABELS[v.errorReason] || v.errorReason) : null;
+              const statusLabel = VOID_STATUS_LABELS[v.status] || v.status;
+              const statusColors = VOID_STATUS_COLORS[v.status] || VOID_STATUS_COLORS.UNRESOLVED;
 
               return (
                 <motion.div
                   key={v.id}
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`${statusColors.bg} ${statusColors.border} border rounded-xl p-4 transition-all hover:scale-[1.005]`}
+                  className={`bg-white/[0.03] border border-white/[0.08] border-l-[3px] ${severityColor} rounded-xl p-4 transition-all hover:bg-white/[0.05]`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        {v.topic && (
-                          <span className="text-sm font-bold text-white/90">
-                            {v.topic.name}
+                        {v.topic ? (
+                          <span className="text-sm font-bold text-white/90">{v.topic.name}</span>
+                        ) : (
+                          <span className="text-sm font-medium text-white/40 italic">Konu belirtilmemiş</span>
+                        )}
+                        {v.questionNumber && (
+                          <span className="text-[10px] text-white/40 font-mono bg-white/[0.06] px-1.5 py-0.5 rounded">
+                            S.{v.questionNumber}
                           </span>
                         )}
                         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium border ${
@@ -401,18 +488,23 @@ function VoidsTab({
                         }`}>
                           {v.source === 'WRONG' ? 'Yanlış' : 'Boş'}
                         </span>
-                        {v.magnitude > 1 && (
-                          <span className="text-[11px] text-white/50 font-bold">
-                            x{v.magnitude}
+                        {(v.relapseCount ?? 0) > 0 && (
+                          <span className="text-[10px] text-orange-400 font-bold bg-orange-500/10 px-1.5 py-0.5 rounded border border-orange-500/20">
+                            Nüksetme x{v.relapseCount}
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                        <span className="inline-flex items-center rounded-full bg-white/[0.06] text-white/60 px-2 py-0.5 text-[11px] font-medium border border-white/10">
-                          {errorLabel}
+                        {errorLabel && (
+                          <span className="inline-flex items-center rounded-full bg-white/[0.06] text-white/60 px-2 py-0.5 text-[11px] font-medium border border-white/10">
+                            {errorLabel}
+                          </span>
+                        )}
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${statusColors.bg} ${statusColors.text} ${statusColors.border} border`}>
+                          {statusLabel}
                         </span>
-                        <span className="text-[10px] text-white/30">
-                          Severity: {v.severity.toFixed(1)}
+                        <span className="text-[10px] text-white/20">
+                          {v.severity.toFixed(1)}
                         </span>
                       </div>
                       {v.notes && (
@@ -420,15 +512,27 @@ function VoidsTab({
                       )}
                     </div>
 
-                    {/* Single-tap status button */}
-                    <button
-                      onClick={() => onStatusChange(v.id, nextStatus)}
-                      className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 ${statusColors.bg} ${statusColors.text} ${statusColors.border} border hover:brightness-125`}
-                      title={`${VOID_STATUS_LABELS[v.status]} → ${VOID_STATUS_LABELS[nextStatus]}`}
-                    >
-                      <StatusIcon size={14} />
-                      {VOID_STATUS_LABELS[v.status]}
-                    </button>
+                    {/* Action buttons */}
+                    <div className="flex flex-col gap-1.5 shrink-0">
+                      {v.status !== 'RESOLVED' && (
+                        <button
+                          onClick={() => onStatusChange(v.id, 'RESOLVED')}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500/25"
+                        >
+                          <CheckCircle size={13} />
+                          Çözüldü
+                        </button>
+                      )}
+                      {v.status === 'RESOLVED' && (
+                        <button
+                          onClick={() => onStatusChange(v.id, 'UNRESOLVED')}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 bg-white/[0.06] text-white/40 border border-white/10 hover:bg-white/10"
+                        >
+                          <RefreshCw size={13} />
+                          Geri Al
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               );
@@ -446,6 +550,7 @@ function AnalysisTab({ exam }: { exam: ExamDetail }) {
   const errorReasonData = useMemo(() => {
     const counts: Record<string, number> = {};
     exam.cognitiveVoids.forEach((v) => {
+      if (!v.errorReason) return;
       const label = ERROR_REASON_LABELS[v.errorReason] || v.errorReason;
       counts[label] = (counts[label] || 0) + v.magnitude;
     });
@@ -746,7 +851,7 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
   };
 
   // Single-tap void status change
-  const handleVoidStatusChange = async (voidId: string, newStatus: 'UNRESOLVED' | 'REVIEW' | 'RESOLVED') => {
+  const handleVoidStatusChange = async (voidId: string, newStatus: 'RAW' | 'UNRESOLVED' | 'REVIEW' | 'RESOLVED') => {
     // Optimistic update
     setExam(prev => {
       if (!prev) return prev;
