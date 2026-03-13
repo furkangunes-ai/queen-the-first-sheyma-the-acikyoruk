@@ -22,6 +22,8 @@ import {
   Dumbbell,
   BookOpen,
   Settings,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import NotificationBell from '@/components/notifications/notification-bell';
@@ -177,27 +179,51 @@ const ADMIN_NAV_ITEMS = [
 
 // ---------- Sidebar Content ----------
 
-function SidebarContent({ pathname, isAdmin, userName, examTrack, onNavClick }: {
+function SidebarContent({ pathname, isAdmin, userName, examTrack, onNavClick, collapsed, onToggleCollapse }: {
   pathname: string;
   isAdmin: boolean;
   userName: string;
   examTrack?: string | null;
   onNavClick?: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   return (
     <>
-      {/* Logo / Brand */}
-      <div className="p-6 pt-8">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-6 h-6 text-pink-400" />
-          <h1 className="text-2xl font-bold tracking-tight text-gradient-candy">
-            Seyda
-          </h1>
+      {/* Logo / Brand + Collapse Toggle */}
+      <div className={collapsed ? "p-3 pt-6 flex flex-col items-center gap-3" : "p-6 pt-8"}>
+        <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'}`}>
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-pink-400 flex-shrink-0" />
+            {!collapsed && (
+              <h1 className="text-2xl font-bold tracking-tight text-gradient-candy">
+                Seyda
+              </h1>
+            )}
+          </div>
+          {onToggleCollapse && !collapsed && (
+            <button
+              onClick={onToggleCollapse}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
+              title="Menüyü daralt"
+            >
+              <PanelLeftClose size={15} />
+            </button>
+          )}
         </div>
+        {onToggleCollapse && collapsed && (
+          <button
+            onClick={onToggleCollapse}
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
+            title="Menüyü genişlet"
+          >
+            <PanelLeftOpen size={16} />
+          </button>
+        )}
       </div>
 
       {/* Navigation Links */}
-      <nav className="flex-1 py-2 flex flex-col gap-1 px-3 overflow-y-auto no-scrollbar">
+      <nav className={`flex-1 py-2 flex flex-col gap-1 ${collapsed ? 'px-2' : 'px-3'} overflow-y-auto no-scrollbar`}>
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path));
           return (
@@ -205,8 +231,9 @@ function SidebarContent({ pathname, isAdmin, userName, examTrack, onNavClick }: 
               key={item.path}
               href={item.path}
               onClick={onNavClick}
+              title={collapsed ? item.label : undefined}
               className={`
-                group flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-300
+                group flex items-center ${collapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-2.5 rounded-2xl transition-all duration-300
                 ${isActive
                   ? 'bg-pink-500/20 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_4px_12px_rgba(255,42,133,0.3)] border border-pink-400/30'
                   : 'text-white/60 hover:bg-pink-500/10 hover:text-white border border-transparent hover:border-pink-500/20'
@@ -214,7 +241,7 @@ function SidebarContent({ pathname, isAdmin, userName, examTrack, onNavClick }: 
               `}
             >
               <item.icon className={`w-[18px] h-[18px] flex-shrink-0 transition-transform duration-300 ${isActive ? 'scale-110 text-pink-300' : 'group-hover:scale-110 group-hover:text-pink-300'}`} />
-              <span className="text-[14px] font-medium tracking-wide">{item.label}</span>
+              {!collapsed && <span className="text-[14px] font-medium tracking-wide">{item.label}</span>}
             </Link>
           );
         })}
@@ -229,8 +256,9 @@ function SidebarContent({ pathname, isAdmin, userName, examTrack, onNavClick }: 
                   key={item.path}
                   href={item.path}
                   onClick={onNavClick}
+                  title={collapsed ? item.label : undefined}
                   className={`
-                    group flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-300
+                    group flex items-center ${collapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-2.5 rounded-2xl transition-all duration-300
                     ${isActive
                       ? 'bg-cyan-500/20 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_4px_12px_rgba(0,200,200,0.3)] border border-cyan-400/30'
                       : 'text-white/60 hover:bg-cyan-500/10 hover:text-white border border-transparent hover:border-cyan-500/20'
@@ -238,7 +266,7 @@ function SidebarContent({ pathname, isAdmin, userName, examTrack, onNavClick }: 
                   `}
                 >
                   <item.icon className={`w-[18px] h-[18px] flex-shrink-0 transition-transform duration-300 ${isActive ? 'scale-110 text-cyan-300' : 'group-hover:scale-110 group-hover:text-cyan-300'}`} />
-                  <span className="text-[14px] font-medium tracking-wide">{item.label}</span>
+                  {!collapsed && <span className="text-[14px] font-medium tracking-wide">{item.label}</span>}
                 </Link>
               );
             })}
@@ -247,29 +275,44 @@ function SidebarContent({ pathname, isAdmin, userName, examTrack, onNavClick }: 
       </nav>
 
       {/* User Profile + Logout */}
-      <div className="p-4 mt-auto">
-        <div className="glass p-3 flex flex-col gap-2">
-          <div className="flex items-center gap-3 px-2">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-pink-500/30 border border-white/20">
-              <UserCircle className="w-6 h-6 text-white" />
+      <div className={`${collapsed ? 'p-2' : 'p-4'} mt-auto`}>
+        {collapsed ? (
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-pink-500/30 border border-white/20">
+              <UserCircle className="w-5 h-5 text-white" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white/90 truncate">{userName}</p>
-              {isAdmin ? (
-                <span className="text-[10px] text-cyan-300 uppercase tracking-widest font-bold">Admin</span>
-              ) : examTrack ? (
-                <span className="text-[10px] text-pink-300 uppercase tracking-widest font-bold">{getExamTrackLabel(examTrack as ExamTrack)}</span>
-              ) : null}
-            </div>
+            <button
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+              title="Çıkış Yap"
+            >
+              <LogOut size={15} />
+            </button>
           </div>
-          <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
-            className="flex items-center justify-center gap-2 w-full px-4 py-2 mt-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-sm font-medium transition-colors border border-white/5"
-          >
-            <LogOut size={16} />
-            <span>Çıkış Yap</span>
-          </button>
-        </div>
+        ) : (
+          <div className="glass p-3 flex flex-col gap-2">
+            <div className="flex items-center gap-3 px-2">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-pink-500/30 border border-white/20">
+                <UserCircle className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white/90 truncate">{userName}</p>
+                {isAdmin ? (
+                  <span className="text-[10px] text-cyan-300 uppercase tracking-widest font-bold">Admin</span>
+                ) : examTrack ? (
+                  <span className="text-[10px] text-pink-300 uppercase tracking-widest font-bold">{getExamTrackLabel(examTrack as ExamTrack)}</span>
+                ) : null}
+              </div>
+            </div>
+            <button
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="flex items-center justify-center gap-2 w-full px-4 py-2 mt-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-sm font-medium transition-colors border border-white/5"
+            >
+              <LogOut size={16} />
+              <span>Çıkış Yap</span>
+            </button>
+          </div>
+        )}
       </div>
     </>
   );
@@ -281,6 +324,7 @@ export function BinderLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session, update: updateSession } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const userName = session?.user?.name || 'Kullanıcı';
   const isAdmin = (session?.user as any)?.role === 'admin';
@@ -309,16 +353,22 @@ export function BinderLayout({ children }: { children: React.ReactNode }) {
       {!showExamTrackModal && <FeatureTour />}
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-[280px] h-screen sticky top-0 flex-col relative z-20">
+      <motion.aside
+        className="hidden lg:flex h-screen sticky top-0 flex-col relative z-20"
+        animate={{ width: sidebarCollapsed ? 80 : 280 }}
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      >
         <div className="absolute inset-4 glass-panel flex flex-col h-[calc(100vh-2rem)] overflow-hidden">
            <SidebarContent
              pathname={pathname}
              userName={userName}
              isAdmin={isAdmin}
              examTrack={examTrack}
+             collapsed={sidebarCollapsed}
+             onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
            />
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
