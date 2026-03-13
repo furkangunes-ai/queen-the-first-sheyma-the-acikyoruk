@@ -47,7 +47,7 @@ const tooltipStyle = {
   backdropFilter: "blur(12px)",
 };
 
-export default function RootCauseRadar({ examTypeFilter, subjectFilter }: { examTypeFilter?: string; subjectFilter?: string }) {
+export default function RootCauseRadar({ examTypeFilter, examCategoryFilter, subjectFilter }: { examTypeFilter?: string; examCategoryFilter?: string; subjectFilter?: string }) {
   const [data, setData] = useState<RadarData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -56,8 +56,9 @@ export default function RootCauseRadar({ examTypeFilter, subjectFilter }: { exam
       setLoading(true);
       try {
         const typeParam = examTypeFilter && examTypeFilter !== "all" ? `examTypeId=${examTypeFilter}` : "";
+        const categoryParam = examCategoryFilter && examCategoryFilter !== "all" ? `&examCategory=${examCategoryFilter}` : "";
         const subjectParam = subjectFilter && subjectFilter !== "all" ? `&subjectId=${subjectFilter}` : "";
-        const res = await fetch(`/api/analytics/errors?${typeParam}${subjectParam}`);
+        const res = await fetch(`/api/analytics/errors?${typeParam}${categoryParam}${subjectParam}`);
         if (!res.ok) throw new Error();
         setData(await res.json());
       } catch {
@@ -67,7 +68,7 @@ export default function RootCauseRadar({ examTypeFilter, subjectFilter }: { exam
       }
     };
     fetchData();
-  }, [examTypeFilter, subjectFilter]);
+  }, [examTypeFilter, examCategoryFilter, subjectFilter]);
 
   if (loading) {
     return (
