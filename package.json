@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "prisma migrate resolve --applied 0_init 2>/dev/null; prisma migrate deploy && next start",
-    "db:seed-prod": "npx tsx prisma/enable-ai.ts && npx tsx prisma/update-question-counts.ts && npx tsx prisma/seed-ayt-mat-kazanim.ts && npx tsx prisma/seed-cognitive-graph.ts",
+    "db:seed-prod": "npx tsx prisma/enable-ai.ts && npx tsx prisma/update-question-counts.ts && npx tsx prisma/seed-ayt-mat-kazanim.ts && npx tsx prisma/seed-cognitive-graph.ts && npx tsx prisma/seed-ayt-geometri.ts",
     "lint": "next lint",
     "db:migrate": "prisma migrate dev",
     "db:seed": "npx tsx prisma/seed.ts",
