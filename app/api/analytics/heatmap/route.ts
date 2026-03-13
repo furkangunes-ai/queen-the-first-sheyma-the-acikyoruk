@@ -28,19 +28,24 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Ders → Konu → { unresolved, review, resolved, totalSeverity } haritası
+    // Ders → Konu → { raw, unresolved, review, resolved, totalSeverity } haritası
+    // RAW void'lar (topicId=null) ayrı "Bilinmeyen Bölge" sütununda toplanır
     const subjectMap = new Map<
       string,
       {
         subjectId: string;
         subjectName: string;
         sortOrder: number;
+        rawCount: number;
+        rawSeverity: number;
+        rawMagnitude: number;
         topics: Map<
           string,
           {
             topicId: string;
             topicName: string;
             sortOrder: number;
+            raw: number;
             unresolved: number;
             review: number;
             resolved: number;
@@ -51,8 +56,11 @@ export async function GET(request: NextRequest) {
       }
     >();
 
+    let totalVoids = 0;
+    let rawVoids = 0;
+
     for (const v of voids) {
-      if (!v.topicId || !v.topic) continue;
+      totalVoids++;
 
       let subject = subjectMap.get(v.subjectId);
       if (!subject) {
@@ -60,9 +68,21 @@ export async function GET(request: NextRequest) {
           subjectId: v.subjectId,
           subjectName: v.subject.name,
           sortOrder: v.subject.sortOrder,
+          rawCount: 0,
+          rawSeverity: 0,
+          rawMagnitude: 0,
           topics: new Map(),
         };
         subjectMap.set(v.subjectId, subject);
+      }
+
+      // RAW void'lar (topicId yok) → subject seviyesinde "Bilinmeyen Bölge"
+      if (!v.topicId || !v.topic) {
+        subject.rawCount += v.magnitude;
+        subject.rawSeverity += v.severity;
+        subject.rawMagnitude += v.magnitude;
+        rawVoids++;
+        continue;
       }
 
       let topic = subject.topics.get(v.topicId);
@@ -71,6 +91,7 @@ export async function GET(request: NextRequest) {
           topicId: v.topicId,
           topicName: v.topic.name,
           sortOrder: v.topic.sortOrder ?? 0,
+          raw: 0,
           unresolved: 0,
           review: 0,
           resolved: 0,
@@ -82,10 +103,14 @@ export async function GET(request: NextRequest) {
 
       topic.totalMagnitude += v.magnitude;
       topic.totalSeverity += v.severity;
-      if (v.status === "UNRESOLVED") topic.unresolved += v.magnitude;
+      if (v.status === "RAW") topic.raw += v.magnitude;
+      else if (v.status === "UNRESOLVED") topic.unresolved += v.magnitude;
       else if (v.status === "REVIEW") topic.review += v.magnitude;
       else if (v.status === "RESOLVED") topic.resolved += v.magnitude;
     }
+
+    // Clarity score: RAW olmayan / toplam
+    const clarityScore = totalVoids === 0 ? 1 : (totalVoids - rawVoids) / totalVoids;
 
     // Serialize
     const heatmapData = Array.from(subjectMap.values())
@@ -93,11 +118,15 @@ export async function GET(request: NextRequest) {
       .map((subject) => ({
         subjectId: subject.subjectId,
         subjectName: subject.subjectName,
+        rawCount: subject.rawCount,
+        rawSeverity: Number(subject.rawSeverity.toFixed(1)),
+        rawMagnitude: subject.rawMagnitude,
         topics: Array.from(subject.topics.values())
           .sort((a, b) => a.sortOrder - b.sortOrder)
-          .map(({ topicId, topicName, unresolved, review, resolved, totalSeverity, totalMagnitude }) => ({
+          .map(({ topicId, topicName, raw, unresolved, review, resolved, totalSeverity, totalMagnitude }) => ({
             topicId,
             topicName,
+            raw,
             unresolved,
             review,
             resolved,
@@ -106,7 +135,14 @@ export async function GET(request: NextRequest) {
           })),
       }));
 
-    return NextResponse.json(heatmapData);
+    return NextResponse.json({
+      subjects: heatmapData,
+      meta: {
+        totalVoids,
+        rawVoids,
+        clarityScore: Number(clarityScore.toFixed(2)),
+      },
+    });
   } catch (error) {
     logApiError("analytics/heatmap", error);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
