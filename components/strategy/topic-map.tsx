@@ -745,7 +745,7 @@ export default function TopicMap() {
                                 role="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  router.push(`/voice-assessment?subjectId=${subject.id}&mode=quick`);
+                                  router.push(`/voice-assessment?subjectId=${subject.id}`);
                                 }}
                                 className="ml-1 px-2 py-1 rounded text-[10px] font-medium bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors whitespace-nowrap"
                               >

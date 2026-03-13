@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Map, CalendarDays, Bot, RotateCw, Mic } from "lucide-react";
+import { Map, CalendarDays, Bot, RotateCw, ClipboardCheck } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 import TopicMap from "@/components/strategy/topic-map";
@@ -33,18 +33,18 @@ export default function StrategyPage() {
         </p>
       </div>
 
-      {/* Voice Assessment CTA */}
+      {/* Knowledge Update CTA */}
       <Link
         href="/voice-assessment"
         className="flex items-center gap-3 p-4 rounded-xl border border-cyan-500/20 bg-cyan-500/5 hover:bg-cyan-500/10 transition-colors group"
       >
         <div className="p-2 rounded-lg bg-cyan-500/20 group-hover:bg-cyan-500/30 transition-colors">
-          <Mic className="w-5 h-5 text-cyan-400" />
+          <ClipboardCheck className="w-5 h-5 text-cyan-400" />
         </div>
         <div className="flex-1">
-          <span className="text-sm font-medium text-white">Sesli Değerlendirme</span>
+          <span className="text-sm font-medium text-white">Konu Bilgi Durumunu Güncelle</span>
           <p className="text-xs text-zinc-400">
-            Müfredat hakimiyetini sesli olarak anlat, AI değerlendirsin
+            Konulardaki hakimiyet seviyeni tek tek veya toplu olarak güncelle
           </p>
         </div>
         <span className="text-xs text-cyan-400/60 group-hover:text-cyan-400 transition-colors">

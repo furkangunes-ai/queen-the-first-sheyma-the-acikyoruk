@@ -53,7 +53,7 @@ export const SUBJECT_GROUPS: Record<string, SubjectGroup[]> = {
     { label: "Sosyal Bilimler", subjectNames: ["Tarih", "Coğrafya", "Felsefe", "Din Kültürü ve Ahlak Bilgisi"] },
   ],
   AYT: [
-    { label: "", subjectNames: ["Matematik"] },
+    { label: "Matematik", subjectNames: ["Matematik", "Geometri"] },
     { label: "Fen Bilimleri", subjectNames: ["Fizik", "Kimya", "Biyoloji"] },
     { label: "Edebiyat \u2013 Sosyal 1", subjectNames: ["Edebiyat", "Tarih", "Coğrafya"] },
     { label: "Sosyal 2", subjectNames: ["Felsefe", "Mantık", "Psikoloji", "Sosyoloji", "Din Kültürü ve Ahlak Bilgisi"] },
@@ -78,7 +78,7 @@ export const BRANCH_GROUPS: Record<string, BranchGroup[]> = {
   ],
   AYT: [
     { key: "fen", label: "Fen Bilimleri", subjectNames: ["Fizik", "Kimya", "Biyoloji"] },
-    { key: "matematik", label: "Matematik", subjectNames: ["Matematik"] },
+    { key: "matematik", label: "Matematik", subjectNames: ["Matematik", "Geometri"] },
     { key: "edebiyat-sosyal1", label: "Edebiyat \u2013 Sosyal 1", subjectNames: ["Edebiyat", "Tarih", "Coğrafya"] },
     { key: "sosyal2", label: "Sosyal 2", subjectNames: ["Felsefe", "Mantık", "Psikoloji", "Sosyoloji", "Din Kültürü ve Ahlak Bilgisi"] },
   ],

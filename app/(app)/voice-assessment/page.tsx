@@ -29,13 +29,14 @@ import {
   type AssessmentData,
 } from "@/components/voice-assessment/assessment-result";
 import { QuickAssessor } from "@/components/voice-assessment/quick-assessor";
+import { SerialAssessor } from "@/components/voice-assessment/serial-assessor";
+import { type AssessMode } from "@/components/voice-assessment/subject-selector";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type Step = "select" | "record" | "transcribing" | "processing" | "review" | "quick-assess" | "done";
-type AssessMode = "voice" | "quick";
+type Step = "select" | "record" | "transcribing" | "processing" | "review" | "quick-assess" | "serial-assess" | "done";
 
 const AI_FETCH_TIMEOUT = 120_000; // 120 seconds
 
@@ -77,6 +78,7 @@ export default function VoiceAssessmentPage() {
   const [correctionMode, setCorrectionMode] = useState(false);
   const [processingElapsed, setProcessingElapsed] = useState(0);
   const [processingMessage, setProcessingMessage] = useState("");
+  const [autoSelectSubjectId, setAutoSelectSubjectId] = useState<string | null>(null);
   const abortRef = React.useRef<AbortController | null>(null);
 
   // Voice hook
@@ -153,8 +155,17 @@ export default function VoiceAssessmentPage() {
     const mode = searchParams.get("mode");
     if (subjectId && subjects.some((s) => s.id === subjectId)) {
       autoStartRef.current = true;
-      setSelectedSubjectId(subjectId);
-      setStep(mode === "quick" ? "quick-assess" : "quick-assess"); // default to quick
+      if (mode === "serial") {
+        setSelectedSubjectId(subjectId);
+        setStep("serial-assess");
+      } else if (mode === "quick") {
+        setSelectedSubjectId(subjectId);
+        setStep("quick-assess");
+      } else {
+        // No mode specified: show mode selection via SubjectSelector with pre-selected subject
+        setAutoSelectSubjectId(subjectId);
+        setStep("select");
+      }
     }
   }, [subjects, searchParams]);
 
@@ -212,7 +223,13 @@ export default function VoiceAssessmentPage() {
 
   const handleSubjectSelect = (subjectId: string, mode: AssessMode = "voice") => {
     setSelectedSubjectId(subjectId);
-    setStep(mode === "quick" ? "quick-assess" : "record");
+    if (mode === "serial") {
+      setStep("serial-assess");
+    } else if (mode === "quick") {
+      setStep("quick-assess");
+    } else {
+      setStep("record");
+    }
   };
 
   const handleRecordingComplete = async () => {
@@ -464,7 +481,7 @@ export default function VoiceAssessmentPage() {
   };
 
   // ------ Step order helper ------
-  const stepOrder: Step[] = ["select", "record", "quick-assess", "transcribing", "processing", "review", "done"];
+  const stepOrder: Step[] = ["select", "record", "quick-assess", "serial-assess", "transcribing", "processing", "review", "done"];
   const stepIndex = (s: Step) => stepOrder.indexOf(s);
 
   // ------ Render ------
@@ -473,7 +490,7 @@ export default function VoiceAssessmentPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        {step !== "select" && step !== "done" && step !== "transcribing" && step !== "processing" && step !== "quick-assess" && (
+        {step !== "select" && step !== "done" && step !== "transcribing" && step !== "processing" && step !== "quick-assess" && step !== "serial-assess" && (
           <button
             onClick={() => {
               if (step === "record") {
@@ -491,7 +508,7 @@ export default function VoiceAssessmentPage() {
         <div>
           <h1 className="text-2xl font-bold text-gradient-candy font-display tracking-tight flex items-center gap-2">
             <Mic className="w-6 h-6" />
-            Sesli Değerlendirme
+            Konu Bilgi Durumu
           </h1>
           <p className="text-white/50 text-sm mt-0.5">
             {step === "select" && "Müfredat hakimiyetini değerlendir"}
@@ -499,6 +516,7 @@ export default function VoiceAssessmentPage() {
             {step === "transcribing" && "Ses kaydı işleniyor..."}
             {step === "processing" && "Değerlendirme işleniyor..."}
             {step === "quick-assess" && "Her konu için seviye seç (0-5)"}
+            {step === "serial-assess" && "Her konuyu tek tek değerlendir (1-5)"}
             {step === "review" && "Sonuçları kontrol et ve onayla"}
             {step === "done" && "Değerlendirme tamamlandı!"}
           </p>
@@ -559,6 +577,7 @@ export default function VoiceAssessmentPage() {
               subjects={subjectOptions}
               onSelect={handleSubjectSelect}
               loading={loadingSubjects}
+              initialSelectedSubjectId={autoSelectSubjectId}
             />
           )}
 
@@ -670,6 +689,22 @@ export default function VoiceAssessmentPage() {
           {/* Quick assess mode */}
           {step === "quick-assess" && (
             <QuickAssessor
+              topics={selectedCurriculum.flatMap((s) =>
+                s.topics.map((t) => ({
+                  id: t.id,
+                  name: t.name,
+                  subjectName: s.name,
+                  currentLevel: knowledgeMap.get(t.id),
+                }))
+              )}
+              onComplete={handleQuickAssessComplete}
+              onCancel={() => setStep("select")}
+            />
+          )}
+
+          {/* Serial assess mode */}
+          {step === "serial-assess" && (
+            <SerialAssessor
               topics={selectedCurriculum.flatMap((s) =>
                 s.topics.map((t) => ({
                   id: t.id,
