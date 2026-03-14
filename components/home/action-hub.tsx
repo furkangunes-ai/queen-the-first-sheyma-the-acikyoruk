@@ -6,7 +6,6 @@ import {
   BookOpenCheck,
   BrainCircuit,
   BookOpen,
-  FileEdit,
   GraduationCap,
   Map,
   BarChart3,
@@ -21,22 +20,13 @@ interface ActionHubProps {
 
 const STUDY_OPTIONS = [
   {
-    label: 'Konu Çalıştım',
-    description: 'Bugün çalıştığın konuları kaydet',
+    label: 'Ders Çalıştım',
+    description: 'Konu tekrarı ve soru çözümü kaydet',
     icon: BookOpen,
     path: '/study',
     color: 'from-pink-500 to-rose-500',
     border: 'border-pink-500/30',
     glow: 'group-hover:shadow-pink-500/20',
-  },
-  {
-    label: 'Test Çözdüm',
-    description: 'Çözdüğün testlerin sonuçlarını gir',
-    icon: FileEdit,
-    path: '/study?mode=test',
-    color: 'from-purple-500 to-pink-500',
-    border: 'border-purple-500/30',
-    glow: 'group-hover:shadow-purple-500/20',
   },
   {
     label: 'Deneme Çözdüm',

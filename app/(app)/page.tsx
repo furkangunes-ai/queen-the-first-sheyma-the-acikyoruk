@@ -99,24 +99,14 @@ export default function DashboardPage() {
       if (!res.ok) {
         setWeeklyPlan(prev => {
           if (!prev) return prev;
-          return {
-            ...prev,
-            items: prev.items.map(item =>
-              item.id === itemId ? { ...item, completed: currentCompleted } : item
-            ),
-          };
+          return { ...prev, items: prev.items.map(item => item.id === itemId ? { ...item, completed: currentCompleted } : item) };
         });
         toast.error('Plan öğesi güncellenirken hata oluştu');
       }
     } catch {
       setWeeklyPlan(prev => {
         if (!prev) return prev;
-        return {
-          ...prev,
-          items: prev.items.map(item =>
-            item.id === itemId ? { ...item, completed: currentCompleted } : item
-          ),
-        };
+        return { ...prev, items: prev.items.map(item => item.id === itemId ? { ...item, completed: currentCompleted } : item) };
       });
       toast.error('Plan öğesi güncellenirken hata oluştu');
     }
