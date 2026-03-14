@@ -5,11 +5,11 @@ import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { clsx } from 'clsx';
 import {
-  BookOpen, PenTool, Plus, Trash2, Loader2, X,
-  CheckCircle, Clock, Target, Filter, Calendar, BookMarked, BrainCircuit, Activity,
-  ChevronLeft, ChevronRight
+  PenTool, Plus, Trash2, Loader2, X,
+  Clock, BookMarked, BrainCircuit, Activity,
+  ChevronLeft, ChevronRight, Check
 } from "lucide-react";
-import { format, startOfWeek, addDays, isSameDay, isToday } from "date-fns";
+import { format, startOfWeek, addDays, isToday } from "date-fns";
 import { tr } from "date-fns/locale";
 import { useSession } from "next-auth/react";
 import { filterSubjectsByTrack, type ExamTrack } from "@/lib/exam-track-filter";
@@ -55,26 +55,15 @@ interface TopicReviewEntry {
   topic: { name: string };
 }
 
-type EntryType = "questions" | "review";
-
 // ---------- Constants ----------
 
-const DIFFICULTY_OPTIONS = [
-  { value: "", label: "Zorluk..." },
-  { value: "kolay", label: "Kolay" },
-  { value: "orta", label: "Orta" },
-  { value: "zor", label: "Zor" },
-];
-
 const CONFIDENCE_OPTIONS = [
-  { value: "", label: "Özgüven..." },
   { value: "dusuk", label: "Düşük" },
   { value: "orta", label: "Orta" },
   { value: "yuksek", label: "Yüksek" },
 ];
 
 const METHOD_OPTIONS = [
-  { value: "", label: "Yöntem..." },
   { value: "video", label: "Video" },
   { value: "kitap", label: "Kitap" },
   { value: "ders_notu", label: "Ders Notu" },
@@ -82,16 +71,30 @@ const METHOD_OPTIONS = [
   { value: "diger", label: "Diğer" },
 ];
 
+const DIFFICULTY_OPTIONS = [
+  { value: "kolay", label: "Kolay" },
+  { value: "orta", label: "Orta" },
+  { value: "zor", label: "Zor" },
+];
+
 const CONFIDENCE_MAP: Record<string, { label: string; color: string }> = {
-  dusuk: { label: "Düşük", color: "bg-rose-500/10 text-rose-400 border-rose-500/30 shadow-[0_0_10px_rgba(244,63,94,0.2)]" },
-  orta: { label: "Orta", color: "bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]" },
-  yuksek: { label: "Yüksek", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]" },
+  dusuk: { label: "Düşük", color: "bg-rose-500/10 text-rose-400 border-rose-500/30" },
+  orta: { label: "Orta", color: "bg-amber-500/10 text-amber-400 border-amber-500/30" },
+  yuksek: { label: "Yüksek", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" },
 };
 
 const DIFFICULTY_MAP: Record<string, { label: string; color: string }> = {
-  kolay: { label: "Kolay", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]" },
-  orta: { label: "Orta", color: "bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]" },
-  zor: { label: "Zor", color: "bg-rose-500/10 text-rose-400 border-rose-500/30 shadow-[0_0_10px_rgba(244,63,94,0.2)]" },
+  kolay: { label: "Kolay", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" },
+  orta: { label: "Orta", color: "bg-amber-500/10 text-amber-400 border-amber-500/30" },
+  zor: { label: "Zor", color: "bg-rose-500/10 text-rose-400 border-rose-500/30" },
+};
+
+const METHOD_LABEL_MAP: Record<string, string> = {
+  video: "Video",
+  kitap: "Kitap",
+  ders_notu: "Ders Notu",
+  soru_cozumu: "Soru Çözümü",
+  diger: "Diğer",
 };
 
 // ---------- Component ----------
@@ -100,9 +103,7 @@ export default function StudyPage() {
   const { data: session } = useSession();
   const examTrack = (session?.user as any)?.examTrack as ExamTrack;
 
-  const [selectedDate, setSelectedDate] = useState(
-    getTurkeyDateString()
-  );
+  const [selectedDate, setSelectedDate] = useState(getTurkeyDateString());
 
   // Data
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -110,29 +111,35 @@ export default function StudyPage() {
   const [reviews, setReviews] = useState<TopicReviewEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Forms - unified add form with entry type picker
+  // Unified form
   const [showAddForm, setShowAddForm] = useState(false);
-  const [addFormType, setAddFormType] = useState<EntryType>("questions");
   const [saving, setSaving] = useState(false);
 
-  // Study form fields
-  const [sSubjectId, setSSubjectId] = useState("");
-  const [sTopicId, setSTopicId] = useState("");
-  const [sQuestionCount, setSQuestionCount] = useState("");
-  const [sCorrectCount, setSCorrectCount] = useState("");
-  const [sWrongCount, setSWrongCount] = useState("");
-  const [sDifficulty, setSDifficulty] = useState("");
-  const [sSource, setSSource] = useState("");
-  const [sDuration, setSDuration] = useState("");
-  const [sNotes, setSNotes] = useState("");
+  // Shared fields
+  const [subjectId, setSubjectId] = useState("");
+  const [topicId, setTopicId] = useState("");
+  const [totalDuration, setTotalDuration] = useState("");
+  const [notes, setNotes] = useState("");
 
-  // Review form fields
-  const [rSubjectId, setRSubjectId] = useState("");
-  const [rTopicId, setRTopicId] = useState("");
-  const [rDuration, setRDuration] = useState("");
-  const [rConfidence, setRConfidence] = useState("");
-  const [rMethod, setRMethod] = useState("");
-  const [rNotes, setRNotes] = useState("");
+  // Activity toggles
+  const [didReview, setDidReview] = useState(false);
+  const [didQuestions, setDidQuestions] = useState(false);
+
+  // Review specific
+  const [reviewConfidence, setReviewConfidence] = useState("");
+  const [reviewMethod, setReviewMethod] = useState("");
+  const [reviewDuration, setReviewDuration] = useState("");
+
+  // Questions specific
+  const [questionCount, setQuestionCount] = useState("");
+  const [correctCount, setCorrectCount] = useState("");
+  const [wrongCount, setWrongCount] = useState("");
+  const [difficulty, setDifficulty] = useState("");
+  const [source, setSource] = useState("");
+  const [questionDuration, setQuestionDuration] = useState("");
+
+  // Split duration mode
+  const [splitDuration, setSplitDuration] = useState(false);
 
   // New topic
   const [showNewTopic, setShowNewTopic] = useState(false);
@@ -160,15 +167,10 @@ export default function StudyPage() {
     return `${startStr} – ${endStr}`;
   }, [weekStart]);
 
-  // ---------- Derived ----------
-
-  const sTopics = useMemo(() => {
-    return subjects.find((s) => s.id === sSubjectId)?.topics ?? [];
-  }, [subjects, sSubjectId]);
-
-  const rTopics = useMemo(() => {
-    return subjects.find((s) => s.id === rSubjectId)?.topics ?? [];
-  }, [subjects, rSubjectId]);
+  // Derived
+  const topics = useMemo(() => {
+    return subjects.find((s) => s.id === subjectId)?.topics ?? [];
+  }, [subjects, subjectId]);
 
   // ---------- Fetch ----------
 
@@ -219,7 +221,6 @@ export default function StudyPage() {
     fetchData();
   }, [fetchData]);
 
-  // Fetch week summary
   const fetchWeekSummary = useCallback(async () => {
     try {
       const startStr = getTurkeyDateString(weekStart);
@@ -254,40 +255,108 @@ export default function StudyPage() {
   const totalStudyMinutes = studies.reduce((sum, s) => sum + (s.duration || 0), 0) +
     reviews.reduce((sum, r) => sum + (r.duration || 0), 0);
 
-  // ---------- Save Study ----------
+  // ---------- Save ----------
 
-  async function handleSaveStudy() {
-    if (!sSubjectId || !sQuestionCount) {
-      toast.error("Ders ve soru sayısı zorunlu");
+  async function handleSave() {
+    if (!subjectId) {
+      toast.error("Ders seçimi zorunlu");
       return;
     }
+    if (!didReview && !didQuestions) {
+      toast.error("En az bir aktivite seç");
+      return;
+    }
+    if (didQuestions && !questionCount) {
+      toast.error("Soru sayısını gir");
+      return;
+    }
+
     setSaving(true);
     try {
-      const qCount = parseInt(sQuestionCount) || 0;
-      const cCount = parseInt(sCorrectCount) || 0;
-      const wCount = parseInt(sWrongCount) || 0;
+      const promises: Promise<Response>[] = [];
 
-      const res = await fetch("/api/daily-study", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date: selectedDate,
-          subjectId: sSubjectId,
-          topicId: sTopicId || null,
-          questionCount: qCount,
-          correctCount: cCount,
-          wrongCount: wCount,
-          emptyCount: qCount - cCount - wCount,
-          difficulty: sDifficulty || null,
-          source: sSource || null,
-          duration: sDuration ? parseInt(sDuration) : null,
-          notes: sNotes || null,
-        }),
-      });
-      if (!res.ok) throw new Error("Kayıt başarısız");
-      toast.success("Soru çözümü kaydedildi");
-      resetAddForm();
+      // Determine durations
+      let qDur: number | null = null;
+      let rDur: number | null = null;
+
+      if (splitDuration) {
+        qDur = questionDuration ? parseInt(questionDuration) : null;
+        rDur = reviewDuration ? parseInt(reviewDuration) : null;
+      } else if (totalDuration) {
+        const total = parseInt(totalDuration);
+        if (didQuestions && didReview) {
+          // Split evenly if both active
+          qDur = Math.ceil(total / 2);
+          rDur = Math.floor(total / 2);
+        } else if (didQuestions) {
+          qDur = total;
+        } else {
+          rDur = total;
+        }
+      }
+
+      if (didQuestions) {
+        const qCount = parseInt(questionCount) || 0;
+        const cCount = parseInt(correctCount) || 0;
+        const wCount = parseInt(wrongCount) || 0;
+
+        promises.push(
+          fetch("/api/daily-study", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              date: selectedDate,
+              subjectId,
+              topicId: topicId || null,
+              questionCount: qCount,
+              correctCount: cCount,
+              wrongCount: wCount,
+              emptyCount: qCount - cCount - wCount,
+              difficulty: difficulty || null,
+              source: source || null,
+              duration: qDur,
+              notes: notes || null,
+            }),
+          })
+        );
+      }
+
+      if (didReview) {
+        if (!topicId) {
+          toast.error("Konu tekrarı için konu seçimi zorunlu");
+          setSaving(false);
+          return;
+        }
+        promises.push(
+          fetch("/api/topic-reviews", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              date: selectedDate,
+              subjectId,
+              topicId,
+              duration: rDur,
+              confidence: reviewConfidence || null,
+              method: reviewMethod || null,
+              notes: notes || null,
+            }),
+          })
+        );
+      }
+
+      const results = await Promise.all(promises);
+      const allOk = results.every((r) => r.ok);
+
+      if (!allOk) throw new Error("Kayıt başarısız");
+
+      const labels: string[] = [];
+      if (didReview) labels.push("Konu tekrarı");
+      if (didQuestions) labels.push("Soru çözümü");
+      toast.success(`${labels.join(" + ")} kaydedildi`);
+
+      resetForm();
       fetchData();
+      fetchWeekSummary();
     } catch {
       toast.error("Kayıt sırasında hata oluştu");
     } finally {
@@ -295,56 +364,24 @@ export default function StudyPage() {
     }
   }
 
-  // ---------- Save Review ----------
-
-  async function handleSaveReview() {
-    if (!rSubjectId || !rTopicId) {
-      toast.error("Ders ve konu zorunlu");
-      return;
-    }
-    setSaving(true);
-    try {
-      const res = await fetch("/api/topic-reviews", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date: selectedDate,
-          subjectId: rSubjectId,
-          topicId: rTopicId,
-          duration: rDuration ? parseInt(rDuration) : null,
-          confidence: rConfidence || null,
-          method: rMethod || null,
-          notes: rNotes || null,
-        }),
-      });
-      if (!res.ok) throw new Error("Kayıt başarısız");
-      toast.success("Konu tekrarı kaydedildi");
-      resetAddForm();
-      fetchData();
-    } catch {
-      toast.error("Kayıt sırasında hata oluştu");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function resetAddForm() {
+  function resetForm() {
     setShowAddForm(false);
-    setSSubjectId("");
-    setSTopicId("");
-    setSQuestionCount("");
-    setSCorrectCount("");
-    setSWrongCount("");
-    setSDifficulty("");
-    setSSource("");
-    setSDuration("");
-    setSNotes("");
-    setRSubjectId("");
-    setRTopicId("");
-    setRDuration("");
-    setRConfidence("");
-    setRMethod("");
-    setRNotes("");
+    setSubjectId("");
+    setTopicId("");
+    setTotalDuration("");
+    setNotes("");
+    setDidReview(false);
+    setDidQuestions(false);
+    setReviewConfidence("");
+    setReviewMethod("");
+    setReviewDuration("");
+    setQuestionCount("");
+    setCorrectCount("");
+    setWrongCount("");
+    setDifficulty("");
+    setSource("");
+    setQuestionDuration("");
+    setSplitDuration(false);
   }
 
   // ---------- Delete ----------
@@ -418,34 +455,31 @@ export default function StudyPage() {
 
   // ---------- Render ----------
 
-  const inputClass = "w-full bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2 text-sm font-medium text-white placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-pink-400/50 focus:border-pink-400/30 transition-all hover:border-white/20 [color-scheme:dark]";
+  const inputClass = "w-full bg-white/[0.04] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-pink-400/40 focus:border-pink-400/30 transition-all hover:border-white/20 [color-scheme:dark]";
 
   if (loading) {
     return (
       <div className="glass-panel flex flex-col items-center justify-center py-20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent pointer-events-none" />
         <Loader2 className="animate-spin text-pink-400 mb-4 drop-shadow-[0_0_10px_rgba(255,42,133,0.5)]" size={40} />
-        <span className="text-white/60 font-bold tracking-wide">Çalışma verileri yükleniyor...</span>
+        <span className="text-white/60 font-bold tracking-wide">Yükleniyor...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 relative">
+    <div className="space-y-5 relative">
       {/* Background Glows */}
-      <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-pink-500/10 rounded-full blur-[100px] pointer-events-none z-0" />
-      <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none z-0" />
+      <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-pink-500/8 rounded-full blur-[100px] pointer-events-none z-0" />
 
-      {/* Header & Stats Container */}
-      <div className="glass-panel p-6 sm:p-8 relative z-10 overflow-hidden shadow-[0_8px_32px_rgba(255,42,133,0.05)] border-white/10 rounded-3xl">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/10 rounded-full blur-[40px] pointer-events-none" />
-
-        <div className="flex flex-col gap-5 mb-8 relative z-10">
+      {/* Header */}
+      <div className="glass-panel p-5 sm:p-6 relative z-10 border-white/10 rounded-2xl">
+        <div className="flex flex-col gap-4 mb-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <BookMarked size={36} className="text-pink-400 drop-shadow-[0_0_15px_rgba(255,42,133,0.4)]" />
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white drop-shadow-md">
-                Ders Çalıştım
+            <div className="flex items-center gap-2.5">
+              <BookMarked size={28} className="text-pink-400 drop-shadow-[0_0_10px_rgba(255,42,133,0.4)]" />
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                Ders Çalışması
               </h1>
             </div>
             <button
@@ -454,500 +488,568 @@ export default function StudyPage() {
                 setWeekStart(startOfWeek(now, { weekStartsOn: 1 }));
                 setSelectedDate(getTurkeyDateString(now));
               }}
-              className="px-4 py-1.5 rounded-xl text-xs font-bold bg-white/[0.05] border border-white/10 text-white/60 hover:text-white hover:border-pink-400/30 transition-all"
+              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white/[0.05] border border-white/10 text-white/60 hover:text-white hover:border-pink-400/30 transition-all"
             >
               Bugün
             </button>
           </div>
 
-          {/* Week Calendar */}
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => setWeekStart((prev) => addDays(prev, -7))}
-                className="p-2 rounded-xl bg-white/[0.03] border border-white/10 hover:border-pink-400/30 text-white/50 hover:text-white transition-all"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <span className="text-sm font-bold text-white/70 tracking-wide uppercase">
-                {weekLabel}
-              </span>
-              <button
-                onClick={() => setWeekStart((prev) => addDays(prev, 7))}
-                className="p-2 rounded-xl bg-white/[0.03] border border-white/10 hover:border-pink-400/30 text-white/50 hover:text-white transition-all"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
+          {/* Compact Week Calendar */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setWeekStart((prev) => addDays(prev, -7))}
+              className="p-1.5 rounded-lg bg-white/[0.03] border border-white/10 hover:border-pink-400/30 text-white/50 hover:text-white transition-all shrink-0"
+            >
+              <ChevronLeft size={16} />
+            </button>
 
-            <div className="grid grid-cols-7 gap-1.5">
+            <div className="flex-1 grid grid-cols-7 gap-1">
               {weekDays.map((day) => {
                 const dayStr = getTurkeyDateString(day);
                 const isSelected = dayStr === selectedDate;
                 const isDayToday = isToday(day);
                 const hasStudy = weekStudyDays.has(dayStr);
                 const hasReview = weekReviewDays.has(dayStr);
-                const hasActivity = hasStudy || hasReview;
 
                 return (
                   <button
                     key={dayStr}
                     onClick={() => setSelectedDate(dayStr)}
                     className={clsx(
-                      "flex flex-col items-center py-2.5 px-1 rounded-xl transition-all relative",
+                      "flex flex-col items-center py-2 rounded-xl transition-all relative",
                       isSelected
-                        ? "bg-gradient-to-br from-pink-500 to-pink-600 text-white shadow-[0_0_15px_rgba(255,42,133,0.3)]"
+                        ? "bg-gradient-to-br from-pink-500 to-pink-600 text-white shadow-[0_0_12px_rgba(255,42,133,0.3)]"
                         : isDayToday
                           ? "bg-white/[0.05] ring-1 ring-pink-400/40 text-white"
-                          : "bg-white/[0.02] text-white/50 hover:bg-white/[0.05] hover:text-white/80"
+                          : "bg-white/[0.02] text-white/50 hover:bg-white/[0.05]"
                     )}
                   >
                     <span className={clsx(
-                      "text-[10px] font-bold uppercase tracking-widest mb-0.5",
+                      "text-[9px] font-bold uppercase tracking-widest",
                       isSelected ? "text-white/80" : "text-white/30"
                     )}>
                       {format(day, "EEE", { locale: tr })}
                     </span>
-                    <span className={clsx(
-                      "text-lg font-black",
-                      isSelected ? "text-white" : ""
-                    )}>
+                    <span className={clsx("text-base font-black", isSelected ? "text-white" : "")}>
                       {format(day, "d")}
                     </span>
-                    {/* Activity dots */}
-                    <div className="flex gap-1 mt-1 h-1.5">
-                      {hasStudy && (
-                        <div className={clsx(
-                          "w-1.5 h-1.5 rounded-full",
-                          isSelected ? "bg-white/70" : "bg-pink-400"
-                        )} />
-                      )}
-                      {hasReview && (
-                        <div className={clsx(
-                          "w-1.5 h-1.5 rounded-full",
-                          isSelected ? "bg-white/50" : "bg-purple-400"
-                        )} />
-                      )}
-                      {!hasActivity && <div className="w-1.5 h-1.5" />}
+                    <div className="flex gap-0.5 mt-0.5 h-1">
+                      {hasStudy && <div className={clsx("w-1 h-1 rounded-full", isSelected ? "bg-white/70" : "bg-pink-400")} />}
+                      {hasReview && <div className={clsx("w-1 h-1 rounded-full", isSelected ? "bg-white/50" : "bg-purple-400")} />}
                     </div>
                   </button>
                 );
               })}
             </div>
+
+            <button
+              onClick={() => setWeekStart((prev) => addDays(prev, 7))}
+              className="p-1.5 rounded-lg bg-white/[0.03] border border-white/10 hover:border-pink-400/30 text-white/50 hover:text-white transition-all shrink-0"
+            >
+              <ChevronRight size={16} />
+            </button>
           </div>
+
+          <p className="text-[11px] font-bold text-white/30 text-center tracking-wider uppercase">{weekLabel}</p>
         </div>
 
-        {/* Dynamic Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 relative z-10">
+        {/* Compact Stats */}
+        <div className="grid grid-cols-5 gap-2">
           {[
-            { label: "Soru", value: totalQuestions, color: "from-blue-500/20 to-blue-500/5", text: "text-blue-400", border: "border-blue-500/20" },
-            { label: "Doğru", value: totalCorrect, color: "from-emerald-500/20 to-emerald-500/5", text: "text-emerald-400", border: "border-emerald-500/20" },
-            { label: "Yanlış", value: totalWrong, color: "from-rose-500/20 to-rose-500/5", text: "text-rose-400", border: "border-rose-500/20" },
-            { label: "Tekrar", value: totalReviews, color: "from-purple-500/20 to-purple-500/5", text: "text-purple-400", border: "border-purple-500/20" },
-            { label: "Dakika", value: totalStudyMinutes, color: "from-amber-500/20 to-amber-500/5", text: "text-amber-400", border: "border-amber-500/20" }
-          ].map((stat, idx) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05 }}
-              className={`bg-gradient-to-br ${stat.color} border ${stat.border} rounded-2xl p-4 text-center shadow-lg relative overflow-hidden group`}
-            >
-              <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <p className={`text-3xl font-black ${stat.text} drop-shadow-md font-mono tracking-tight`}>{stat.value}</p>
-              <p className={`text-[11px] ${stat.text} uppercase font-bold tracking-widest mt-1 opacity-80`}>{stat.label}</p>
-            </motion.div>
+            { label: "Soru", value: totalQuestions, color: "text-blue-400" },
+            { label: "Doğru", value: totalCorrect, color: "text-emerald-400" },
+            { label: "Yanlış", value: totalWrong, color: "text-rose-400" },
+            { label: "Tekrar", value: totalReviews, color: "text-purple-400" },
+            { label: "Dakika", value: totalStudyMinutes, color: "text-amber-400" },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-white/[0.03] border border-white/5 rounded-xl p-2.5 text-center">
+              <p className={`text-xl font-black ${stat.color} font-mono`}>{stat.value}</p>
+              <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest mt-0.5">{stat.label}</p>
+            </div>
           ))}
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="glass-panel p-6 sm:p-8 relative z-10 shadow-[0_8px_32px_rgba(255,42,133,0.05)] border-white/10 rounded-3xl min-h-[500px] flex flex-col">
-        {/* Actions - single add button */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 border-b border-white/5 pb-6">
-          <p className="text-sm text-white/40 font-medium">
-            Konu tekrar ve soru çözümü kayıtlarını buradan ekleyebilirsin.
+      {/* Main Content */}
+      <div className="glass-panel p-5 sm:p-6 relative z-10 border-white/10 rounded-2xl min-h-[400px] flex flex-col">
+        {/* Action Bar */}
+        <div className="flex items-center justify-between gap-4 mb-5 pb-4 border-b border-white/5">
+          <p className="text-xs text-white/30 font-medium hidden sm:block">
+            Çalışmalarını buradan kaydet
           </p>
-
-          <div className="flex gap-3">
+          <div className="flex gap-2 ml-auto">
             <button
               onClick={() => setShowNewTopic(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-white/[0.03] border border-white/10 hover:border-white/30 text-white/70 hover:text-white hover:bg-white/[0.05] transition-all shadow-sm"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white/[0.03] border border-white/10 hover:border-white/20 text-white/60 hover:text-white transition-all"
             >
-              <Plus size={14} className="text-pink-400" />
-              KONU EKLE
+              <Plus size={12} className="text-pink-400" />
+              Konu Ekle
             </button>
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setShowAddForm(true)}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-[0_0_15px_rgba(255,42,133,0.3)] hover:shadow-[0_0_25px_rgba(255,42,133,0.5)] border border-pink-400/20 transition-all"
+              className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-[0_0_12px_rgba(255,42,133,0.3)] border border-pink-400/20 transition-all"
             >
-              <Plus size={16} />
-              KAYIT EKLE
+              <Plus size={14} />
+              Kayıt Ekle
             </motion.button>
           </div>
         </div>
 
-        {/* Input Forms */}
-        <div className="space-y-4 mb-2">
-          {/* New Topic Form */}
-          <AnimatePresence>
-            {showNewTopic && (
-              <motion.div
-                initial={{ opacity: 0, height: 0, scale: 0.98 }}
-                animate={{ opacity: 1, height: "auto", scale: 1 }}
-                exit={{ opacity: 0, height: 0, scale: 0.98 }}
-                className="overflow-hidden mb-4"
-              >
-                <div className="bg-gradient-to-br from-white/[0.05] to-white/[0.02] border border-white/10 rounded-2xl p-5 shadow-inner backdrop-blur-md">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400 uppercase tracking-widest">Yeni Konu Ekle</h3>
-                    <button onClick={() => setShowNewTopic(false)} className="text-white/40 hover:text-white p-1 bg-white/5 rounded-lg"><X size={14} /></button>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* New Topic Form */}
+        <AnimatePresence>
+          {showNewTopic && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden mb-4"
+            >
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-xs font-bold text-pink-300 uppercase tracking-widest">Yeni Konu</h3>
+                  <button onClick={() => setShowNewTopic(false)} className="text-white/30 hover:text-white p-1"><X size={14} /></button>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <select value={newTopicSubjectId} onChange={(e) => setNewTopicSubjectId(e.target.value)} className={clsx(inputClass, "sm:w-1/3")}>
+                    <option value="">Ders...</option>
+                    {Object.entries(groupedSubjects).map(([etName, subs]) => (
+                      <optgroup key={etName} label={etName}>
+                        {subs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      </optgroup>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Konu adı..."
+                    value={newTopicName}
+                    onChange={(e) => setNewTopicName(e.target.value)}
+                    className={clsx(inputClass, "flex-1")}
+                  />
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={handleAddTopic}
+                    disabled={addingTopic || !newTopicName.trim() || !newTopicSubjectId}
+                    className="px-5 py-2.5 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-bold text-sm rounded-xl disabled:opacity-50 flex items-center gap-1.5 shrink-0"
+                  >
+                    {addingTopic ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                    Ekle
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ===== Unified Add Form ===== */}
+        <AnimatePresence>
+          {showAddForm && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden mb-6"
+            >
+              <div className="bg-gradient-to-br from-pink-500/5 to-purple-500/5 border border-white/10 rounded-2xl p-5 space-y-5">
+                {/* Header */}
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <BookMarked size={16} className="text-pink-400" />
+                    Çalışma Kaydı
+                  </h3>
+                  <button onClick={resetForm} className="text-white/30 hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors">
+                    <X size={16} />
+                  </button>
+                </div>
+
+                {/* Step 1: Subject + Topic */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-white/40 uppercase tracking-widest">Ders & Konu</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <select
-                      value={newTopicSubjectId}
-                      onChange={(e) => setNewTopicSubjectId(e.target.value)}
+                      value={subjectId}
+                      onChange={(e) => { setSubjectId(e.target.value); setTopicId(""); }}
                       className={inputClass}
                     >
-                      <option value="">Ders seçin...</option>
+                      <option value="">Ders seç...</option>
                       {Object.entries(groupedSubjects).map(([etName, subs]) => (
                         <optgroup key={etName} label={etName}>
-                          {subs.map((s) => (
-                            <option key={s.id} value={s.id}>{s.name}</option>
-                          ))}
+                          {subs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                         </optgroup>
                       ))}
                     </select>
-                    <input
-                      type="text"
-                      placeholder="Konu adı..."
-                      value={newTopicName}
-                      onChange={(e) => setNewTopicName(e.target.value)}
+                    <select
+                      value={topicId}
+                      onChange={(e) => setTopicId(e.target.value)}
                       className={inputClass}
-                    />
-                    <motion.button
-                      whileHover={!addingTopic ? { scale: 1.02 } : {}}
-                      whileTap={!addingTopic ? { scale: 0.98 } : {}}
-                      onClick={handleAddTopic}
-                      disabled={addingTopic || !newTopicName.trim() || !newTopicSubjectId}
-                      className="px-4 py-2 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-bold text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(255,42,133,0.3)] transition-all"
+                      disabled={!subjectId}
                     >
-                      {addingTopic ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-                      KAYDET
-                    </motion.button>
+                      <option value="">Konu seç (opsiyonel)...</option>
+                      {topics.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
                   </div>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
-          {/* Unified Add Form */}
-          <AnimatePresence>
-            {showAddForm && (
-              <motion.div
-                initial={{ opacity: 0, height: 0, scale: 0.98 }}
-                animate={{ opacity: 1, height: "auto", scale: 1 }}
-                exit={{ opacity: 0, height: 0, scale: 0.98 }}
-                className="overflow-hidden mb-6"
-              >
-                <div className="bg-gradient-to-br from-pink-500/10 to-transparent border border-pink-500/20 rounded-2xl p-6 shadow-inner backdrop-blur-md">
-                  <div className="flex justify-between items-center mb-5">
-                    <h3 className="text-sm font-black text-pink-300 uppercase tracking-widest flex items-center gap-2">
-                      <BookMarked size={16} /> Ders Çalışması Kaydet
-                    </h3>
-                    <button onClick={resetAddForm} className="text-white/40 hover:text-white p-1 bg-white/5 rounded-lg transition-colors"><X size={14} /></button>
-                  </div>
-
-                  {/* Entry Type Picker */}
-                  <div className="flex bg-white/[0.03] p-1.5 rounded-2xl border border-white/10 mb-5 self-start">
+                {/* Step 2: Activity Toggle Chips */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-white/40 uppercase tracking-widest">Ne yaptın?</label>
+                  <div className="flex gap-2">
                     <button
-                      onClick={() => setAddFormType("questions")}
+                      onClick={() => setDidReview(!didReview)}
                       className={clsx(
-                        "flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300",
-                        addFormType === "questions"
-                          ? "bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-[0_4px_15px_rgba(255,42,133,0.4)]"
-                          : "text-white/50 hover:text-white hover:bg-white/5"
+                        "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border transition-all",
+                        didReview
+                          ? "bg-purple-500/15 border-purple-400/40 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.15)]"
+                          : "bg-white/[0.02] border-white/10 text-white/40 hover:text-white/60 hover:border-white/20"
                       )}
                     >
-                      <PenTool size={14} />
-                      Soru Çözümü
-                    </button>
-                    <button
-                      onClick={() => setAddFormType("review")}
-                      className={clsx(
-                        "flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300",
-                        addFormType === "review"
-                          ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-[0_4px_15px_rgba(168,85,247,0.4)]"
-                          : "text-white/50 hover:text-white hover:bg-white/5"
-                      )}
-                    >
-                      <BrainCircuit size={14} />
+                      {didReview ? <Check size={14} className="text-purple-400" /> : <BrainCircuit size={14} />}
                       Konu Tekrarı
                     </button>
+                    <button
+                      onClick={() => setDidQuestions(!didQuestions)}
+                      className={clsx(
+                        "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border transition-all",
+                        didQuestions
+                          ? "bg-pink-500/15 border-pink-400/40 text-pink-300 shadow-[0_0_12px_rgba(255,42,133,0.15)]"
+                          : "bg-white/[0.02] border-white/10 text-white/40 hover:text-white/60 hover:border-white/20"
+                      )}
+                    >
+                      {didQuestions ? <Check size={14} className="text-pink-400" /> : <PenTool size={14} />}
+                      Test / Soru Çözdüm
+                    </button>
                   </div>
-
-                  {/* Study (Questions) Form */}
-                  {addFormType === "questions" && (
-                    <>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                        <select value={sSubjectId} onChange={(e) => { setSSubjectId(e.target.value); setSTopicId(""); }} className={inputClass}>
-                          <option value="">Ders seçin...</option>
-                          {Object.entries(groupedSubjects).map(([etName, subs]) => (
-                            <optgroup key={etName} label={etName}>
-                              {subs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                            </optgroup>
-                          ))}
-                        </select>
-                        <select value={sTopicId} onChange={(e) => setSTopicId(e.target.value)} className={inputClass}>
-                          <option value="">Konu (opsiyonel)...</option>
-                          {sTopics.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </select>
-                        <input type="number" min={0} placeholder="Toplam Soru *" value={sQuestionCount} onChange={(e) => setSQuestionCount(e.target.value)} className={inputClass} />
-                        <input type="number" min={0} placeholder="Doğru (ops)" value={sCorrectCount} onChange={(e) => setSCorrectCount(e.target.value)} className={inputClass} />
-                      </div>
-
-                      <details className="mb-4 group/details">
-                        <summary className="text-[11px] font-bold text-white/30 uppercase tracking-widest cursor-pointer hover:text-white/50 transition-colors select-none flex items-center gap-1.5 mb-3">
-                          <ChevronRight size={12} className="transition-transform group-open/details:rotate-90" />
-                          Detaylar
-                        </summary>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <input type="number" min={0} placeholder="Yanlış (ops)" value={sWrongCount} onChange={(e) => setSWrongCount(e.target.value)} className={inputClass} />
-                          <select value={sDifficulty} onChange={(e) => setSDifficulty(e.target.value)} className={inputClass}>
-                            {DIFFICULTY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                          </select>
-                          <input type="text" placeholder="Kaynak (ops)" value={sSource} onChange={(e) => setSSource(e.target.value)} className={inputClass} />
-                          <input type="number" min={0} placeholder="Süre (dk)" value={sDuration} onChange={(e) => setSDuration(e.target.value)} className={inputClass} />
-                          <input type="text" placeholder="Notlar (ops)" value={sNotes} onChange={(e) => setSNotes(e.target.value)} className={`md:col-span-3 ${inputClass}`} />
-                        </div>
-                      </details>
-
-                      <div className="flex flex-col sm:flex-row items-center justify-end gap-4 pt-4 border-t border-white/10">
-                        <motion.button
-                          whileHover={!saving ? { scale: 1.02 } : {}}
-                          whileTap={!saving ? { scale: 0.98 } : {}}
-                          onClick={handleSaveStudy}
-                          disabled={saving || !sSubjectId || !sQuestionCount}
-                          className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-black tracking-widest text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(255,42,133,0.3)] transition-all"
-                        >
-                          {saving ? <Loader2 size={16} className="animate-spin" /> : <SaveIcon />}
-                          KAYDET
-                        </motion.button>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Review Form */}
-                  {addFormType === "review" && (
-                    <>
-                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                        <select value={rSubjectId} onChange={(e) => { setRSubjectId(e.target.value); setRTopicId(""); }} className={inputClass}>
-                          <option value="">Ders seçin...</option>
-                          {Object.entries(groupedSubjects).map(([etName, subs]) => (
-                            <optgroup key={etName} label={etName}>
-                              {subs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                            </optgroup>
-                          ))}
-                        </select>
-                        <select value={rTopicId} onChange={(e) => setRTopicId(e.target.value)} className={inputClass}>
-                          <option value="">Konu seçin *...</option>
-                          {rTopics.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </select>
-                        <select value={rConfidence} onChange={(e) => setRConfidence(e.target.value)} className={inputClass}>
-                          {CONFIDENCE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                        </select>
-                      </div>
-
-                      <details className="mb-4 group/details">
-                        <summary className="text-[11px] font-bold text-white/30 uppercase tracking-widest cursor-pointer hover:text-white/50 transition-colors select-none flex items-center gap-1.5 mb-3">
-                          <ChevronRight size={12} className="transition-transform group-open/details:rotate-90" />
-                          Detaylar
-                        </summary>
-                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                          <input type="number" min={0} placeholder="Süre (dk)" value={rDuration} onChange={(e) => setRDuration(e.target.value)} className={inputClass} />
-                          <select value={rMethod} onChange={(e) => setRMethod(e.target.value)} className={inputClass}>
-                            {METHOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                          </select>
-                          <input type="text" placeholder="Notlar (ops)" value={rNotes} onChange={(e) => setRNotes(e.target.value)} className={inputClass} />
-                        </div>
-                      </details>
-
-                      <div className="flex flex-col sm:flex-row items-center justify-end gap-4 pt-4 border-t border-white/10">
-                        <motion.button
-                          whileHover={!saving ? { scale: 1.02 } : {}}
-                          whileTap={!saving ? { scale: 0.98 } : {}}
-                          onClick={handleSaveReview}
-                          disabled={saving || !rSubjectId || !rTopicId}
-                          className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-black tracking-widest text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all"
-                        >
-                          {saving ? <Loader2 size={16} className="animate-spin" /> : <SaveIcon />}
-                          KAYDET
-                        </motion.button>
-                      </div>
-                    </>
-                  )}
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
 
-        {/* Combined Entry List - all entries together */}
-        <div className="flex-1 overflow-y-auto pr-1 sm:pr-2 custom-scrollbar relative z-10">
+                {/* Activity-specific Fields */}
+                <AnimatePresence mode="sync">
+                  {/* Review Fields */}
+                  {didReview && (
+                    <motion.div
+                      key="review-fields"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="bg-purple-500/5 border border-purple-500/15 rounded-xl p-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <BrainCircuit size={14} className="text-purple-400" />
+                          <span className="text-xs font-bold text-purple-300 uppercase tracking-widest">Konu Tekrarı Detayları</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Confidence as pill buttons */}
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Anlama Seviyesi</label>
+                            <div className="flex gap-1.5">
+                              {CONFIDENCE_OPTIONS.map((opt) => (
+                                <button
+                                  key={opt.value}
+                                  onClick={() => setReviewConfidence(reviewConfidence === opt.value ? "" : opt.value)}
+                                  className={clsx(
+                                    "flex-1 py-1.5 rounded-lg text-[11px] font-bold border transition-all",
+                                    reviewConfidence === opt.value
+                                      ? CONFIDENCE_MAP[opt.value].color
+                                      : "bg-white/[0.02] border-white/10 text-white/30 hover:text-white/50"
+                                  )}
+                                >
+                                  {opt.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          {/* Method as pill buttons */}
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Yöntem</label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {METHOD_OPTIONS.map((opt) => (
+                                <button
+                                  key={opt.value}
+                                  onClick={() => setReviewMethod(reviewMethod === opt.value ? "" : opt.value)}
+                                  className={clsx(
+                                    "px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-all",
+                                    reviewMethod === opt.value
+                                      ? "bg-blue-500/15 border-blue-400/40 text-blue-300"
+                                      : "bg-white/[0.02] border-white/10 text-white/30 hover:text-white/50"
+                                  )}
+                                >
+                                  {opt.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Questions Fields */}
+                  {didQuestions && (
+                    <motion.div
+                      key="question-fields"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="bg-pink-500/5 border border-pink-500/15 rounded-xl p-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <PenTool size={14} className="text-pink-400" />
+                          <span className="text-xs font-bold text-pink-300 uppercase tracking-widest">Soru Çözümü</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Toplam Soru *</label>
+                            <input type="number" min={0} value={questionCount} onChange={(e) => setQuestionCount(e.target.value)} className={inputClass} placeholder="0" />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Doğru</label>
+                            <input type="number" min={0} value={correctCount} onChange={(e) => setCorrectCount(e.target.value)} className={inputClass} placeholder="0" />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Yanlış</label>
+                            <input type="number" min={0} value={wrongCount} onChange={(e) => setWrongCount(e.target.value)} className={inputClass} placeholder="0" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Zorluk</label>
+                            <div className="flex gap-1.5">
+                              {DIFFICULTY_OPTIONS.map((opt) => (
+                                <button
+                                  key={opt.value}
+                                  onClick={() => setDifficulty(difficulty === opt.value ? "" : opt.value)}
+                                  className={clsx(
+                                    "flex-1 py-1.5 rounded-lg text-[11px] font-bold border transition-all",
+                                    difficulty === opt.value
+                                      ? DIFFICULTY_MAP[opt.value].color
+                                      : "bg-white/[0.02] border-white/10 text-white/30 hover:text-white/50"
+                                  )}
+                                >
+                                  {opt.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Kaynak</label>
+                            <input type="text" value={source} onChange={(e) => setSource(e.target.value)} className={inputClass} placeholder="Kitap, test adı..." />
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Duration + Notes (shared) */}
+                {(didReview || didQuestions) && (
+                  <div className="space-y-3 pt-2 border-t border-white/5">
+                    {/* Duration */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-1.5">
+                          <Clock size={12} className="text-cyan-400" />
+                          Süre
+                        </label>
+                        {didReview && didQuestions && (
+                          <button
+                            onClick={() => setSplitDuration(!splitDuration)}
+                            className={clsx(
+                              "text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all",
+                              splitDuration
+                                ? "bg-cyan-500/10 border-cyan-400/30 text-cyan-300"
+                                : "bg-white/[0.02] border-white/10 text-white/30 hover:text-white/50"
+                            )}
+                          >
+                            {splitDuration ? "Ayrı Süreler" : "Süreyi Ayır"}
+                          </button>
+                        )}
+                      </div>
+
+                      {splitDuration && didReview && didQuestions ? (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-purple-300/60 uppercase tracking-widest">Tekrar süresi</label>
+                            <div className="relative">
+                              <input type="number" min={0} value={reviewDuration} onChange={(e) => setReviewDuration(e.target.value)} className={inputClass} placeholder="0" />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-white/20">dk</span>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-pink-300/60 uppercase tracking-widest">Test süresi</label>
+                            <div className="relative">
+                              <input type="number" min={0} value={questionDuration} onChange={(e) => setQuestionDuration(e.target.value)} className={inputClass} placeholder="0" />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-white/20">dk</span>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="relative max-w-xs">
+                          <input type="number" min={0} value={totalDuration} onChange={(e) => setTotalDuration(e.target.value)} className={inputClass} placeholder="Toplam süre" />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-white/20">dk</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Notes */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-white/40 uppercase tracking-widest">Not</label>
+                      <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} className={inputClass} placeholder="Opsiyonel not..." />
+                    </div>
+
+                    {/* Save */}
+                    <div className="flex justify-end pt-2">
+                      <motion.button
+                        whileHover={!saving ? { scale: 1.02 } : {}}
+                        whileTap={!saving ? { scale: 0.97 } : {}}
+                        onClick={handleSave}
+                        disabled={saving || !subjectId || (!didReview && !didQuestions)}
+                        className={clsx(
+                          "px-8 py-3 font-bold text-sm rounded-xl disabled:opacity-40 flex items-center gap-2 transition-all",
+                          didReview && didQuestions
+                            ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-[0_0_15px_rgba(168,85,247,0.2)]"
+                            : didReview
+                              ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-[0_0_15px_rgba(168,85,247,0.3)]"
+                              : "bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-[0_0_15px_rgba(255,42,133,0.3)]"
+                        )}
+                      >
+                        {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                        KAYDET
+                        {didReview && didQuestions && (
+                          <span className="text-[10px] opacity-70 ml-1">(2 kayıt)</span>
+                        )}
+                      </motion.button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Entry List */}
+        <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar relative z-10">
           {studies.length === 0 && reviews.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 opacity-50 text-center">
-              <Activity className="w-16 h-16 text-pink-400 mb-6 drop-shadow-[0_0_15px_rgba(255,42,133,0.5)]" />
-              <p className="text-xl font-bold text-white mb-2">Bugün çalışma kaydı yok</p>
-              <p className="text-sm font-medium tracking-wide text-white/50 max-w-xs">Soru çözümü veya konu tekrarı kayıtlarını ekleyerek ilerlemeni takip et</p>
-              <button onClick={() => setShowAddForm(true)} className="mt-6 px-6 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-pink-300 text-sm font-bold rounded-xl transition-colors">
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Activity className="w-12 h-12 text-pink-400/50 mb-4" />
+              <p className="text-lg font-bold text-white/40 mb-1">Bugün kayıt yok</p>
+              <p className="text-xs text-white/25 max-w-xs mb-5">Soru çözümü veya konu tekrarı kayıtlarını ekle</p>
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="px-5 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-pink-300 text-sm font-bold rounded-xl transition-colors"
+              >
                 İlk kaydını ekle
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
-              {/* Soru Çözümü Entries */}
-              {studies.length > 0 && (
-                <>
-                  <div className="flex items-center gap-2 mb-2">
-                    <PenTool size={14} className="text-pink-400" />
-                    <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest">Soru Çözümü ({studies.length})</span>
-                  </div>
-                  {studies.map((s, idx) => {
-                    const diffInfo = s.difficulty ? DIFFICULTY_MAP[s.difficulty] : null;
-                    return (
-                      <motion.div
-                        key={s.id}
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.05 }}
-                        className="group bg-white/[0.02] border border-white/5 hover:border-pink-500/30 hover:bg-white/[0.04] rounded-2xl p-5 sm:p-6 transition-all shadow-sm hover:shadow-[0_4px_20px_rgba(255,42,133,0.05)] relative overflow-hidden"
-                      >
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/5 rounded-full blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 relative z-10">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-wrap items-center gap-2 mb-3">
-                              <span className="font-black text-white text-lg tracking-tight group-hover:text-pink-300 transition-colors">{s.subject.name}</span>
-                              <span className="text-[10px] uppercase font-bold tracking-widest text-white/40 bg-white/5 px-2 py-0.5 rounded-md">{s.subject.examType.name}</span>
-                              {s.topic && <span className="text-[11px] font-bold bg-white/10 px-2.5 py-1 rounded-lg text-white/70">{s.topic.name}</span>}
-                              {diffInfo && <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${diffInfo.color}`}>{diffInfo.label}</span>}
-                            </div>
-
-                            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 mt-4 text-sm bg-black/20 p-3 rounded-xl border border-white/5">
-                              <div className="flex flex-col">
-                                <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">Toplam</span>
-                                <span className="text-pink-400 font-bold xl:text-lg">{s.questionCount} Soru</span>
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">Doğru</span>
-                                <span className="text-emerald-400 font-bold xl:text-lg">{s.correctCount}</span>
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">Yanlış</span>
-                                <span className="text-rose-400 font-bold xl:text-lg">{s.wrongCount}</span>
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">Boş</span>
-                                <span className="text-amber-400 font-bold xl:text-lg">{s.emptyCount}</span>
-                              </div>
-                              {s.duration && (
-                                <div className="flex flex-col col-span-2 sm:col-span-1 border-t sm:border-t-0 sm:border-l border-white/10 pt-2 sm:pt-0 sm:pl-3 mt-2 sm:mt-0">
-                                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">Süre</span>
-                                  <span className="text-cyan-400 font-bold xl:text-lg flex items-center gap-1"><Clock size={14} className="opacity-50" /> {s.duration} dk</span>
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="mt-4 flex flex-col gap-1.5 border-l-2 border-pink-500/20 pl-3">
-                              {s.source && <p className="text-xs font-medium text-white/60"><span className="text-white/30 uppercase text-[10px] tracking-widest mr-2">Kaynak</span> {s.source}</p>}
-                              {s.notes && <p className="text-xs font-medium text-white/60 italic"><span className="text-white/30 uppercase text-[10px] tracking-widest mr-2 not-italic">Not</span> {s.notes}</p>}
-                            </div>
+            <div className="space-y-3">
+              {/* Combined & sorted entries */}
+              {[
+                ...studies.map((s) => ({ type: "study" as const, data: s })),
+                ...reviews.map((r) => ({ type: "review" as const, data: r })),
+              ].map((entry, idx) => {
+                if (entry.type === "study") {
+                  const s = entry.data as DailyStudyEntry;
+                  const diffInfo = s.difficulty ? DIFFICULTY_MAP[s.difficulty] : null;
+                  return (
+                    <motion.div
+                      key={`s-${s.id}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.03 }}
+                      className="group bg-white/[0.02] border border-white/5 hover:border-pink-500/20 rounded-xl p-4 transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                            <PenTool size={12} className="text-pink-400 shrink-0" />
+                            <span className="font-bold text-white text-sm">{s.subject.name}</span>
+                            <span className="text-[9px] uppercase font-bold text-white/30 bg-white/5 px-1.5 py-0.5 rounded">{s.subject.examType.name}</span>
+                            {s.topic && <span className="text-[10px] font-bold bg-white/10 px-2 py-0.5 rounded-lg text-white/60">{s.topic.name}</span>}
+                            {diffInfo && <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${diffInfo.color}`}>{diffInfo.label}</span>}
                           </div>
 
-                          <div className="flex items-center gap-2 self-end sm:self-start bg-black/40 p-1.5 rounded-xl border border-white/5">
-                            <button onClick={() => handleDeleteStudy(s.id)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-rose-500/20 text-white/40 hover:text-rose-400 transition-colors group/btn" title="Sil">
-                              <Trash2 size={14} className="group-hover/btn:scale-110 transition-transform" />
-                            </button>
+                          <div className="flex flex-wrap items-center gap-3 text-sm">
+                            <span className="text-pink-400 font-bold">{s.questionCount} soru</span>
+                            <span className="text-emerald-400 font-bold">{s.correctCount}D</span>
+                            <span className="text-rose-400 font-bold">{s.wrongCount}Y</span>
+                            <span className="text-amber-400 font-bold">{s.emptyCount}B</span>
+                            {s.duration && (
+                              <span className="text-cyan-400/70 font-medium text-xs flex items-center gap-1">
+                                <Clock size={10} /> {s.duration} dk
+                              </span>
+                            )}
                           </div>
+
+                          {(s.source || s.notes) && (
+                            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-white/40">
+                              {s.source && <span>Kaynak: {s.source}</span>}
+                              {s.notes && <span className="italic">Not: {s.notes}</span>}
+                            </div>
+                          )}
                         </div>
-                      </motion.div>
-                    );
-                  })}
-                </>
-              )}
 
-              {/* Konu Tekrarı Entries */}
-              {reviews.length > 0 && (
-                <>
-                  <div className="flex items-center gap-2 mb-2 mt-6">
-                    <BrainCircuit size={14} className="text-purple-400" />
-                    <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest">Konu Tekrarı ({reviews.length})</span>
-                  </div>
-                  {reviews.map((r, idx) => {
-                    const confInfo = r.confidence ? CONFIDENCE_MAP[r.confidence] : null;
-                    return (
-                      <motion.div
-                        key={r.id}
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.05 }}
-                        className="group bg-white/[0.02] border border-white/5 hover:border-purple-500/30 hover:bg-white/[0.04] rounded-2xl p-5 sm:p-6 transition-all shadow-sm hover:shadow-[0_4px_20px_rgba(168,85,247,0.05)] relative overflow-hidden"
-                      >
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <button
+                          onClick={() => handleDeleteStudy(s.id)}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-rose-500/20 text-white/20 hover:text-rose-400 transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+                          title="Sil"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </motion.div>
+                  );
+                } else {
+                  const r = entry.data as TopicReviewEntry;
+                  const confInfo = r.confidence ? CONFIDENCE_MAP[r.confidence] : null;
+                  return (
+                    <motion.div
+                      key={`r-${r.id}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.03 }}
+                      className="group bg-white/[0.02] border border-white/5 hover:border-purple-500/20 rounded-xl p-4 transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                            <BrainCircuit size={12} className="text-purple-400 shrink-0" />
+                            <span className="font-bold text-white text-sm">{r.topic.name}</span>
+                            <span className="text-[9px] uppercase font-bold text-white/30 bg-white/5 px-1.5 py-0.5 rounded">{r.subject.name}</span>
+                            {confInfo && <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${confInfo.color}`}>{confInfo.label}</span>}
+                            {r.method && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border bg-blue-500/10 border-blue-500/20 text-blue-300">{METHOD_LABEL_MAP[r.method] || r.method}</span>}
+                          </div>
 
-                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 relative z-10">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-wrap items-center gap-2 mb-3">
-                              <span className="font-black text-white text-lg tracking-tight group-hover:text-purple-300 transition-colors">{r.topic.name}</span>
-                              <span className="text-[10px] uppercase font-bold tracking-widest text-white/40 bg-white/5 px-2 py-0.5 rounded-md">{r.subject.name} - {r.subject.examType.name}</span>
-                              {confInfo && <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${confInfo.color}`}>{confInfo.label}</span>}
-                              {r.method && <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border text-blue-400 border-blue-500/30 bg-blue-500/10 shadow-[0_0_10px_rgba(59,130,246,0.2)]">
-                                {r.method === "video" ? "Video" : r.method === "kitap" ? "Kitap" : r.method === "ders_notu" ? "Ders Notu" : r.method === "soru_cozumu" ? "Soru Çözümü" : "Diğer"}
-                              </span>}
-                            </div>
-
+                          <div className="flex items-center gap-3 text-sm">
                             {r.duration && (
-                              <div className="inline-flex items-center gap-2 mt-2 text-sm bg-black/20 px-3 py-1.5 rounded-xl border border-white/5">
-                                <Clock size={14} className="text-cyan-400" />
-                                <span className="font-bold text-white/80">{r.duration} dakika çalışıldı</span>
-                              </div>
-                            )}
-
-                            {r.notes && (
-                              <div className="mt-4 border-l-2 border-purple-500/20 pl-3">
-                                <p className="text-xs font-medium text-white/60 italic"><span className="text-white/30 uppercase text-[10px] tracking-widest mr-2 not-italic">Not</span> {r.notes}</p>
-                              </div>
+                              <span className="text-cyan-400/70 font-medium text-xs flex items-center gap-1">
+                                <Clock size={10} /> {r.duration} dk
+                              </span>
                             )}
                           </div>
 
-                          <div className="flex items-center gap-2 self-end sm:self-start bg-black/40 p-1.5 rounded-xl border border-white/5">
-                            <button onClick={() => handleDeleteReview(r.id)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-rose-500/20 text-white/40 hover:text-rose-400 transition-colors group/btn" title="Sil">
-                              <Trash2 size={14} className="group-hover/btn:scale-110 transition-transform" />
-                            </button>
-                          </div>
+                          {r.notes && (
+                            <p className="mt-2 text-[11px] text-white/40 italic">Not: {r.notes}</p>
+                          )}
                         </div>
-                      </motion.div>
-                    );
-                  })}
-                </>
-              )}
+
+                        <button
+                          onClick={() => handleDeleteReview(r.id)}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-rose-500/20 text-white/20 hover:text-rose-400 transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+                          title="Sil"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </motion.div>
+                  );
+                }
+              })}
             </div>
           )}
         </div>
       </div>
     </div>
-  );
-}
-
-// Icon helper
-function SaveIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-      <polyline points="17 21 17 13 7 13 7 21"></polyline>
-      <polyline points="7 3 7 8 15 8"></polyline>
-    </svg>
   );
 }
