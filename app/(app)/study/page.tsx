@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { clsx } from 'clsx';
@@ -55,7 +55,7 @@ interface TopicReviewEntry {
   topic: { name: string };
 }
 
-type ActiveTab = "questions" | "reviews";
+type EntryType = "questions" | "review";
 
 // ---------- Constants ----------
 
@@ -100,7 +100,6 @@ export default function StudyPage() {
   const { data: session } = useSession();
   const examTrack = (session?.user as any)?.examTrack as ExamTrack;
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>("questions");
   const [selectedDate, setSelectedDate] = useState(
     getTurkeyDateString()
   );
@@ -111,9 +110,9 @@ export default function StudyPage() {
   const [reviews, setReviews] = useState<TopicReviewEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Forms
-  const [showStudyForm, setShowStudyForm] = useState(false);
-  const [showReviewForm, setShowReviewForm] = useState(false);
+  // Forms - unified add form with entry type picker
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addFormType, setAddFormType] = useState<EntryType>("questions");
   const [saving, setSaving] = useState(false);
 
   // Study form fields
@@ -184,7 +183,6 @@ export default function StudyPage() {
 
       if (subRes.ok) {
         const examTypes = await subRes.json();
-        // Flatten subjects from all exam types
         const allSubjects: Subject[] = [];
         for (const et of examTypes) {
           if (et.subjects) {
@@ -193,9 +191,7 @@ export default function StudyPage() {
             }
           }
         }
-        // If exam-types doesn't include subjects, fetch separately
         if (allSubjects.length === 0) {
-          // Fetch TYT and AYT subjects
           for (const et of examTypes) {
             const sRes = await fetch(`/api/subjects/${et.id}`);
             if (sRes.ok) {
@@ -206,7 +202,6 @@ export default function StudyPage() {
             }
           }
         }
-        // Filter by exam track (sayısal won't see AYT Edebiyat etc.)
         const filtered = filterSubjectsByTrack(allSubjects, examTrack);
         setSubjects(filtered);
       }
@@ -224,7 +219,7 @@ export default function StudyPage() {
     fetchData();
   }, [fetchData]);
 
-  // Fetch week summary (which days have study data)
+  // Fetch week summary
   const fetchWeekSummary = useCallback(async () => {
     try {
       const startStr = getTurkeyDateString(weekStart);
@@ -291,26 +286,13 @@ export default function StudyPage() {
       });
       if (!res.ok) throw new Error("Kayıt başarısız");
       toast.success("Soru çözümü kaydedildi");
-      resetStudyForm();
+      resetAddForm();
       fetchData();
     } catch {
       toast.error("Kayıt sırasında hata oluştu");
     } finally {
       setSaving(false);
     }
-  }
-
-  function resetStudyForm() {
-    setShowStudyForm(false);
-    setSSubjectId("");
-    setSTopicId("");
-    setSQuestionCount("");
-    setSCorrectCount("");
-    setSWrongCount("");
-    setSDifficulty("");
-    setSSource("");
-    setSDuration("");
-    setSNotes("");
   }
 
   // ---------- Save Review ----------
@@ -337,7 +319,7 @@ export default function StudyPage() {
       });
       if (!res.ok) throw new Error("Kayıt başarısız");
       toast.success("Konu tekrarı kaydedildi");
-      resetReviewForm();
+      resetAddForm();
       fetchData();
     } catch {
       toast.error("Kayıt sırasında hata oluştu");
@@ -346,8 +328,17 @@ export default function StudyPage() {
     }
   }
 
-  function resetReviewForm() {
-    setShowReviewForm(false);
+  function resetAddForm() {
+    setShowAddForm(false);
+    setSSubjectId("");
+    setSTopicId("");
+    setSQuestionCount("");
+    setSCorrectCount("");
+    setSWrongCount("");
+    setSDifficulty("");
+    setSSource("");
+    setSDuration("");
+    setSNotes("");
     setRSubjectId("");
     setRTopicId("");
     setRDuration("");
@@ -396,7 +387,6 @@ export default function StudyPage() {
       });
       if (!res.ok) throw new Error();
       const newTopic = await res.json();
-      // Update local subjects
       setSubjects((prev) =>
         prev.map((s) =>
           s.id === newTopicSubjectId
@@ -455,7 +445,7 @@ export default function StudyPage() {
             <div className="flex items-center gap-3">
               <BookMarked size={36} className="text-pink-400 drop-shadow-[0_0_15px_rgba(255,42,133,0.4)]" />
               <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white drop-shadow-md">
-                Günlük Çalışma
+                Ders Çalıştım
               </h1>
             </div>
             <button
@@ -573,34 +563,11 @@ export default function StudyPage() {
 
       {/* Main Content Area */}
       <div className="glass-panel p-6 sm:p-8 relative z-10 shadow-[0_8px_32px_rgba(255,42,133,0.05)] border-white/10 rounded-3xl min-h-[500px] flex flex-col">
-        {/* Tabs & Actions */}
+        {/* Actions - single add button */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 border-b border-white/5 pb-6">
-          <div className="flex bg-white/[0.03] p-1.5 rounded-2xl border border-white/10 self-start">
-            <button
-              onClick={() => setActiveTab("questions")}
-              className={clsx(
-                "flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
-                activeTab === "questions"
-                  ? "bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-[0_4px_15px_rgba(255,42,133,0.4)]"
-                  : "text-white/50 hover:text-white hover:bg-white/5"
-              )}
-            >
-              <PenTool size={16} className={activeTab === "questions" ? "drop-shadow-md" : ""} />
-              Soru Çözümü
-            </button>
-            <button
-              onClick={() => setActiveTab("reviews")}
-              className={clsx(
-                "flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
-                activeTab === "reviews"
-                  ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-[0_4px_15px_rgba(168,85,247,0.4)]"
-                  : "text-white/50 hover:text-white hover:bg-white/5"
-              )}
-            >
-              <BrainCircuit size={16} className={activeTab === "reviews" ? "drop-shadow-md" : ""} />
-              Konu Tekrarı
-            </button>
-          </div>
+          <p className="text-sm text-white/40 font-medium">
+            Konu tekrar ve soru çözümü kayıtlarını buradan ekleyebilirsin.
+          </p>
 
           <div className="flex gap-3">
             <button
@@ -613,11 +580,11 @@ export default function StudyPage() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => activeTab === "questions" ? setShowStudyForm(true) : setShowReviewForm(true)}
+              onClick={() => setShowAddForm(true)}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-[0_0_15px_rgba(255,42,133,0.3)] hover:shadow-[0_0_25px_rgba(255,42,133,0.5)] border border-pink-400/20 transition-all"
             >
               <Plus size={16} />
-              {activeTab === "questions" ? "KAYIT EKLE" : "TEKRAR EKLE"}
+              KAYIT EKLE
             </motion.button>
           </div>
         </div>
@@ -676,9 +643,9 @@ export default function StudyPage() {
             )}
           </AnimatePresence>
 
-          {/* Study Form */}
+          {/* Unified Add Form */}
           <AnimatePresence>
-            {showStudyForm && (
+            {showAddForm && (
               <motion.div
                 initial={{ opacity: 0, height: 0, scale: 0.98 }}
                 animate={{ opacity: 1, height: "auto", scale: 1 }}
@@ -688,276 +655,286 @@ export default function StudyPage() {
                 <div className="bg-gradient-to-br from-pink-500/10 to-transparent border border-pink-500/20 rounded-2xl p-6 shadow-inner backdrop-blur-md">
                   <div className="flex justify-between items-center mb-5">
                     <h3 className="text-sm font-black text-pink-300 uppercase tracking-widest flex items-center gap-2">
-                      <PenTool size={16} /> Soru Çözümü Kaydet
+                      <BookMarked size={16} /> Ders Çalışması Kaydet
                     </h3>
-                    <button onClick={resetStudyForm} className="text-white/40 hover:text-white p-1 bg-white/5 rounded-lg transition-colors"><X size={14} /></button>
+                    <button onClick={resetAddForm} className="text-white/40 hover:text-white p-1 bg-white/5 rounded-lg transition-colors"><X size={14} /></button>
                   </div>
 
-                  {/* Temel Alanlar */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <select value={sSubjectId} onChange={(e) => { setSSubjectId(e.target.value); setSTopicId(""); }} className={inputClass}>
-                      <option value="">Ders seçin...</option>
-                      {Object.entries(groupedSubjects).map(([etName, subs]) => (
-                        <optgroup key={etName} label={etName}>
-                          {subs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </optgroup>
-                      ))}
-                    </select>
-                    <select value={sTopicId} onChange={(e) => setSTopicId(e.target.value)} className={inputClass}>
-                      <option value="">Konu (opsiyonel)...</option>
-                      {sTopics.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
-                    <input type="number" min={0} placeholder="Toplam Soru *" value={sQuestionCount} onChange={(e) => setSQuestionCount(e.target.value)} className={inputClass} />
-                    <input type="number" min={0} placeholder="Doğru (ops)" value={sCorrectCount} onChange={(e) => setSCorrectCount(e.target.value)} className={inputClass} />
-                  </div>
-
-                  {/* Detaylar — Genişletilebilir */}
-                  <details className="mb-4 group/details">
-                    <summary className="text-[11px] font-bold text-white/30 uppercase tracking-widest cursor-pointer hover:text-white/50 transition-colors select-none flex items-center gap-1.5 mb-3">
-                      <ChevronRight size={12} className="transition-transform group-open/details:rotate-90" />
-                      Detaylar
-                    </summary>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <input type="number" min={0} placeholder="Yanlış (ops)" value={sWrongCount} onChange={(e) => setSWrongCount(e.target.value)} className={inputClass} />
-                      <select value={sDifficulty} onChange={(e) => setSDifficulty(e.target.value)} className={inputClass}>
-                        {DIFFICULTY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                      </select>
-                      <input type="text" placeholder="Kaynak (ops)" value={sSource} onChange={(e) => setSSource(e.target.value)} className={inputClass} />
-                      <input type="number" min={0} placeholder="Süre (dk)" value={sDuration} onChange={(e) => setSDuration(e.target.value)} className={inputClass} />
-                      <input type="text" placeholder="Notlar (ops)" value={sNotes} onChange={(e) => setSNotes(e.target.value)} className={`md:col-span-3 ${inputClass}`} />
-                    </div>
-                  </details>
-
-                  <div className="flex flex-col sm:flex-row items-center justify-end gap-4 pt-4 border-t border-white/10">
-                    <motion.button
-                      whileHover={!saving ? { scale: 1.02 } : {}}
-                      whileTap={!saving ? { scale: 0.98 } : {}}
-                      onClick={handleSaveStudy}
-                      disabled={saving || !sSubjectId || !sQuestionCount}
-                      className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-black tracking-widest text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(255,42,133,0.3)] transition-all"
+                  {/* Entry Type Picker */}
+                  <div className="flex bg-white/[0.03] p-1.5 rounded-2xl border border-white/10 mb-5 self-start">
+                    <button
+                      onClick={() => setAddFormType("questions")}
+                      className={clsx(
+                        "flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300",
+                        addFormType === "questions"
+                          ? "bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-[0_4px_15px_rgba(255,42,133,0.4)]"
+                          : "text-white/50 hover:text-white hover:bg-white/5"
+                      )}
                     >
-                      {saving ? <Loader2 size={16} className="animate-spin" /> : <SaveIcon />}
-                      KAYDET
-                    </motion.button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Review Form */}
-          <AnimatePresence>
-            {showReviewForm && (
-              <motion.div
-                initial={{ opacity: 0, height: 0, scale: 0.98 }}
-                animate={{ opacity: 1, height: "auto", scale: 1 }}
-                exit={{ opacity: 0, height: 0, scale: 0.98 }}
-                className="overflow-hidden mb-6"
-              >
-                <div className="bg-gradient-to-br from-purple-500/10 to-transparent border border-purple-500/20 rounded-2xl p-6 shadow-inner backdrop-blur-md">
-                  <div className="flex justify-between items-center mb-5">
-                    <h3 className="text-sm font-black text-purple-300 uppercase tracking-widest flex items-center gap-2">
-                      <BrainCircuit size={16} /> Konu Tekrarı Kaydet
-                    </h3>
-                    <button onClick={resetReviewForm} className="text-white/40 hover:text-white p-1 bg-white/5 rounded-lg transition-colors"><X size={14} /></button>
-                  </div>
-
-                  {/* Temel Alanlar */}
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                    <select value={rSubjectId} onChange={(e) => { setRSubjectId(e.target.value); setRTopicId(""); }} className={inputClass}>
-                      <option value="">Ders seçin...</option>
-                      {Object.entries(groupedSubjects).map(([etName, subs]) => (
-                        <optgroup key={etName} label={etName}>
-                          {subs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </optgroup>
-                      ))}
-                    </select>
-                    <select value={rTopicId} onChange={(e) => setRTopicId(e.target.value)} className={inputClass}>
-                      <option value="">Konu seçin *...</option>
-                      {rTopics.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
-                    <select value={rConfidence} onChange={(e) => setRConfidence(e.target.value)} className={inputClass}>
-                      {CONFIDENCE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                  </div>
-
-                  {/* Detaylar — Genişletilebilir */}
-                  <details className="mb-4 group/details">
-                    <summary className="text-[11px] font-bold text-white/30 uppercase tracking-widest cursor-pointer hover:text-white/50 transition-colors select-none flex items-center gap-1.5 mb-3">
-                      <ChevronRight size={12} className="transition-transform group-open/details:rotate-90" />
-                      Detaylar
-                    </summary>
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                      <input type="number" min={0} placeholder="Süre (dk)" value={rDuration} onChange={(e) => setRDuration(e.target.value)} className={inputClass} />
-                      <select value={rMethod} onChange={(e) => setRMethod(e.target.value)} className={inputClass}>
-                        {METHOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                      </select>
-                      <input type="text" placeholder="Notlar (ops)" value={rNotes} onChange={(e) => setRNotes(e.target.value)} className={inputClass} />
-                    </div>
-                  </details>
-
-                  <div className="flex flex-col sm:flex-row items-center justify-end gap-4 pt-4 border-t border-white/10">
-                    <motion.button
-                      whileHover={!saving ? { scale: 1.02 } : {}}
-                      whileTap={!saving ? { scale: 0.98 } : {}}
-                      onClick={handleSaveReview}
-                      disabled={saving || !rSubjectId || !rTopicId}
-                      className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-black tracking-widest text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all"
+                      <PenTool size={14} />
+                      Soru Çözümü
+                    </button>
+                    <button
+                      onClick={() => setAddFormType("review")}
+                      className={clsx(
+                        "flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300",
+                        addFormType === "review"
+                          ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-[0_4px_15px_rgba(168,85,247,0.4)]"
+                          : "text-white/50 hover:text-white hover:bg-white/5"
+                      )}
                     >
-                      {saving ? <Loader2 size={16} className="animate-spin" /> : <SaveIcon />}
-                      KAYDET
-                    </motion.button>
+                      <BrainCircuit size={14} />
+                      Konu Tekrarı
+                    </button>
                   </div>
+
+                  {/* Study (Questions) Form */}
+                  {addFormType === "questions" && (
+                    <>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <select value={sSubjectId} onChange={(e) => { setSSubjectId(e.target.value); setSTopicId(""); }} className={inputClass}>
+                          <option value="">Ders seçin...</option>
+                          {Object.entries(groupedSubjects).map(([etName, subs]) => (
+                            <optgroup key={etName} label={etName}>
+                              {subs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            </optgroup>
+                          ))}
+                        </select>
+                        <select value={sTopicId} onChange={(e) => setSTopicId(e.target.value)} className={inputClass}>
+                          <option value="">Konu (opsiyonel)...</option>
+                          {sTopics.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                        <input type="number" min={0} placeholder="Toplam Soru *" value={sQuestionCount} onChange={(e) => setSQuestionCount(e.target.value)} className={inputClass} />
+                        <input type="number" min={0} placeholder="Doğru (ops)" value={sCorrectCount} onChange={(e) => setSCorrectCount(e.target.value)} className={inputClass} />
+                      </div>
+
+                      <details className="mb-4 group/details">
+                        <summary className="text-[11px] font-bold text-white/30 uppercase tracking-widest cursor-pointer hover:text-white/50 transition-colors select-none flex items-center gap-1.5 mb-3">
+                          <ChevronRight size={12} className="transition-transform group-open/details:rotate-90" />
+                          Detaylar
+                        </summary>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <input type="number" min={0} placeholder="Yanlış (ops)" value={sWrongCount} onChange={(e) => setSWrongCount(e.target.value)} className={inputClass} />
+                          <select value={sDifficulty} onChange={(e) => setSDifficulty(e.target.value)} className={inputClass}>
+                            {DIFFICULTY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                          </select>
+                          <input type="text" placeholder="Kaynak (ops)" value={sSource} onChange={(e) => setSSource(e.target.value)} className={inputClass} />
+                          <input type="number" min={0} placeholder="Süre (dk)" value={sDuration} onChange={(e) => setSDuration(e.target.value)} className={inputClass} />
+                          <input type="text" placeholder="Notlar (ops)" value={sNotes} onChange={(e) => setSNotes(e.target.value)} className={`md:col-span-3 ${inputClass}`} />
+                        </div>
+                      </details>
+
+                      <div className="flex flex-col sm:flex-row items-center justify-end gap-4 pt-4 border-t border-white/10">
+                        <motion.button
+                          whileHover={!saving ? { scale: 1.02 } : {}}
+                          whileTap={!saving ? { scale: 0.98 } : {}}
+                          onClick={handleSaveStudy}
+                          disabled={saving || !sSubjectId || !sQuestionCount}
+                          className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-black tracking-widest text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(255,42,133,0.3)] transition-all"
+                        >
+                          {saving ? <Loader2 size={16} className="animate-spin" /> : <SaveIcon />}
+                          KAYDET
+                        </motion.button>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Review Form */}
+                  {addFormType === "review" && (
+                    <>
+                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                        <select value={rSubjectId} onChange={(e) => { setRSubjectId(e.target.value); setRTopicId(""); }} className={inputClass}>
+                          <option value="">Ders seçin...</option>
+                          {Object.entries(groupedSubjects).map(([etName, subs]) => (
+                            <optgroup key={etName} label={etName}>
+                              {subs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            </optgroup>
+                          ))}
+                        </select>
+                        <select value={rTopicId} onChange={(e) => setRTopicId(e.target.value)} className={inputClass}>
+                          <option value="">Konu seçin *...</option>
+                          {rTopics.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                        <select value={rConfidence} onChange={(e) => setRConfidence(e.target.value)} className={inputClass}>
+                          {CONFIDENCE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                      </div>
+
+                      <details className="mb-4 group/details">
+                        <summary className="text-[11px] font-bold text-white/30 uppercase tracking-widest cursor-pointer hover:text-white/50 transition-colors select-none flex items-center gap-1.5 mb-3">
+                          <ChevronRight size={12} className="transition-transform group-open/details:rotate-90" />
+                          Detaylar
+                        </summary>
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                          <input type="number" min={0} placeholder="Süre (dk)" value={rDuration} onChange={(e) => setRDuration(e.target.value)} className={inputClass} />
+                          <select value={rMethod} onChange={(e) => setRMethod(e.target.value)} className={inputClass}>
+                            {METHOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                          </select>
+                          <input type="text" placeholder="Notlar (ops)" value={rNotes} onChange={(e) => setRNotes(e.target.value)} className={inputClass} />
+                        </div>
+                      </details>
+
+                      <div className="flex flex-col sm:flex-row items-center justify-end gap-4 pt-4 border-t border-white/10">
+                        <motion.button
+                          whileHover={!saving ? { scale: 1.02 } : {}}
+                          whileTap={!saving ? { scale: 0.98 } : {}}
+                          onClick={handleSaveReview}
+                          disabled={saving || !rSubjectId || !rTopicId}
+                          className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-black tracking-widest text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all"
+                        >
+                          {saving ? <Loader2 size={16} className="animate-spin" /> : <SaveIcon />}
+                          KAYDET
+                        </motion.button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* Content Lists */}
+        {/* Combined Entry List - all entries together */}
         <div className="flex-1 overflow-y-auto pr-1 sm:pr-2 custom-scrollbar relative z-10">
-          <AnimatePresence mode="wait">
-            {activeTab === "questions" ? (
-              <motion.div key="questions" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
-                {studies.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 opacity-50 text-center">
-                    <Activity className="w-16 h-16 text-pink-400 mb-6 drop-shadow-[0_0_15px_rgba(255,42,133,0.5)]" />
-                    <p className="text-xl font-bold text-white mb-2">Bugün soru çözümü kaydı yok</p>
-                    <p className="text-sm font-medium tracking-wide text-white/50 max-w-xs">Soru çözümlerini kaydederek net başarılarını takip et</p>
-                    <button onClick={() => setShowStudyForm(true)} className="mt-6 px-6 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-pink-300 text-sm font-bold rounded-xl transition-colors">
-                      İlk kaydını ekle
-                    </button>
+          {studies.length === 0 && reviews.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 opacity-50 text-center">
+              <Activity className="w-16 h-16 text-pink-400 mb-6 drop-shadow-[0_0_15px_rgba(255,42,133,0.5)]" />
+              <p className="text-xl font-bold text-white mb-2">Bugün çalışma kaydı yok</p>
+              <p className="text-sm font-medium tracking-wide text-white/50 max-w-xs">Soru çözümü veya konu tekrarı kayıtlarını ekleyerek ilerlemeni takip et</p>
+              <button onClick={() => setShowAddForm(true)} className="mt-6 px-6 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-pink-300 text-sm font-bold rounded-xl transition-colors">
+                İlk kaydını ekle
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Soru Çözümü Entries */}
+              {studies.length > 0 && (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <PenTool size={14} className="text-pink-400" />
+                    <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest">Soru Çözümü ({studies.length})</span>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {studies.map((s, idx) => {
-                      const diffInfo = s.difficulty ? DIFFICULTY_MAP[s.difficulty] : null;
-                      return (
-                        <motion.div
-                          key={s.id}
-                          initial={{ opacity: 0, y: 15 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: idx * 0.05 }}
-                          className="group bg-white/[0.02] border border-white/5 hover:border-pink-500/30 hover:bg-white/[0.04] rounded-2xl p-5 sm:p-6 transition-all shadow-sm hover:shadow-[0_4px_20px_rgba(255,42,133,0.05)] relative overflow-hidden"
-                        >
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/5 rounded-full blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {studies.map((s, idx) => {
+                    const diffInfo = s.difficulty ? DIFFICULTY_MAP[s.difficulty] : null;
+                    return (
+                      <motion.div
+                        key={s.id}
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.05 }}
+                        className="group bg-white/[0.02] border border-white/5 hover:border-pink-500/30 hover:bg-white/[0.04] rounded-2xl p-5 sm:p-6 transition-all shadow-sm hover:shadow-[0_4px_20px_rgba(255,42,133,0.05)] relative overflow-hidden"
+                      >
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/5 rounded-full blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 relative z-10">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-wrap items-center gap-2 mb-3">
-                                <span className="font-black text-white text-lg tracking-tight group-hover:text-pink-300 transition-colors">{s.subject.name}</span>
-                                <span className="text-[10px] uppercase font-bold tracking-widest text-white/40 bg-white/5 px-2 py-0.5 rounded-md">{s.subject.examType.name}</span>
-                                {s.topic && <span className="text-[11px] font-bold bg-white/10 px-2.5 py-1 rounded-lg text-white/70">{s.topic.name}</span>}
-                                {diffInfo && <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${diffInfo.color}`}>{diffInfo.label}</span>}
-                              </div>
-
-                              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 mt-4 text-sm bg-black/20 p-3 rounded-xl border border-white/5">
-                                <div className="flex flex-col">
-                                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">Toplam</span>
-                                  <span className="text-pink-400 font-bold xl:text-lg">{s.questionCount} Soru</span>
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">Doğru</span>
-                                  <span className="text-emerald-400 font-bold xl:text-lg">{s.correctCount}</span>
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">Yanlış</span>
-                                  <span className="text-rose-400 font-bold xl:text-lg">{s.wrongCount}</span>
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">Boş</span>
-                                  <span className="text-amber-400 font-bold xl:text-lg">{s.emptyCount}</span>
-                                </div>
-                                {s.duration && (
-                                  <div className="flex flex-col col-span-2 sm:col-span-1 border-t sm:border-t-0 sm:border-l border-white/10 pt-2 sm:pt-0 sm:pl-3 mt-2 sm:mt-0">
-                                    <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">Süre</span>
-                                    <span className="text-cyan-400 font-bold xl:text-lg flex items-center gap-1"><Clock size={14} className="opacity-50" /> {s.duration} dk</span>
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="mt-4 flex flex-col gap-1.5 border-l-2 border-pink-500/20 pl-3">
-                                {s.source && <p className="text-xs font-medium text-white/60"><span className="text-white/30 uppercase text-[10px] tracking-widest mr-2">Kaynak</span> {s.source}</p>}
-                                {s.notes && <p className="text-xs font-medium text-white/60 italic"><span className="text-white/30 uppercase text-[10px] tracking-widest mr-2 not-italic">Not</span> {s.notes}</p>}
-                              </div>
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 relative z-10">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-3">
+                              <span className="font-black text-white text-lg tracking-tight group-hover:text-pink-300 transition-colors">{s.subject.name}</span>
+                              <span className="text-[10px] uppercase font-bold tracking-widest text-white/40 bg-white/5 px-2 py-0.5 rounded-md">{s.subject.examType.name}</span>
+                              {s.topic && <span className="text-[11px] font-bold bg-white/10 px-2.5 py-1 rounded-lg text-white/70">{s.topic.name}</span>}
+                              {diffInfo && <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${diffInfo.color}`}>{diffInfo.label}</span>}
                             </div>
 
-                            <div className="flex items-center gap-2 self-end sm:self-start bg-black/40 p-1.5 rounded-xl border border-white/5">
-                              <button onClick={() => handleDeleteStudy(s.id)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-rose-500/20 text-white/40 hover:text-rose-400 transition-colors group/btn" title="Sil">
-                                <Trash2 size={14} className="group-hover/btn:scale-110 transition-transform" />
-                              </button>
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                )}
-              </motion.div>
-            ) : (
-              <motion.div key="reviews" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
-                {reviews.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 opacity-50 text-center">
-                    <BrainCircuit className="w-16 h-16 text-purple-400 mb-6 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]" />
-                    <p className="text-xl font-bold text-white mb-2">Bugün konu tekrarı kaydı yok</p>
-                    <p className="text-sm font-medium tracking-wide text-white/50 max-w-xs">Konu tekrarlarını kaydederek ilerlemeni ölçümle</p>
-                    <button onClick={() => setShowReviewForm(true)} className="mt-6 px-6 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-purple-300 text-sm font-bold rounded-xl transition-colors">
-                      İlk kaydını ekle
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {reviews.map((r, idx) => {
-                      const confInfo = r.confidence ? CONFIDENCE_MAP[r.confidence] : null;
-                      return (
-                        <motion.div
-                          key={r.id}
-                          initial={{ opacity: 0, y: 15 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: idx * 0.05 }}
-                          className="group bg-white/[0.02] border border-white/5 hover:border-purple-500/30 hover:bg-white/[0.04] rounded-2xl p-5 sm:p-6 transition-all shadow-sm hover:shadow-[0_4px_20px_rgba(168,85,247,0.05)] relative overflow-hidden"
-                        >
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 relative z-10">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-wrap items-center gap-2 mb-3">
-                                <span className="font-black text-white text-lg tracking-tight group-hover:text-purple-300 transition-colors">{r.topic.name}</span>
-                                <span className="text-[10px] uppercase font-bold tracking-widest text-white/40 bg-white/5 px-2 py-0.5 rounded-md">{r.subject.name} - {r.subject.examType.name}</span>
-                                {confInfo && <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${confInfo.color}`}>{confInfo.label}</span>}
-                                {r.method && <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border text-blue-400 border-blue-500/30 bg-blue-500/10 shadow-[0_0_10px_rgba(59,130,246,0.2)]">
-                                  {r.method === "video" ? "Video" : r.method === "kitap" ? "Kitap" : r.method === "ders_notu" ? "Ders Notu" : r.method === "soru_cozumu" ? "Soru Çözümü" : "Diğer"}
-                                </span>}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 mt-4 text-sm bg-black/20 p-3 rounded-xl border border-white/5">
+                              <div className="flex flex-col">
+                                <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">Toplam</span>
+                                <span className="text-pink-400 font-bold xl:text-lg">{s.questionCount} Soru</span>
                               </div>
-
-                              {r.duration && (
-                                <div className="inline-flex items-center gap-2 mt-2 text-sm bg-black/20 px-3 py-1.5 rounded-xl border border-white/5">
-                                  <Clock size={14} className="text-cyan-400" />
-                                  <span className="font-bold text-white/80">{r.duration} dakika çalışıldı</span>
-                                </div>
-                              )}
-
-                              {r.notes && (
-                                <div className="mt-4 border-l-2 border-purple-500/20 pl-3">
-                                  <p className="text-xs font-medium text-white/60 italic"><span className="text-white/30 uppercase text-[10px] tracking-widest mr-2 not-italic">Not</span> {r.notes}</p>
+                              <div className="flex flex-col">
+                                <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">Doğru</span>
+                                <span className="text-emerald-400 font-bold xl:text-lg">{s.correctCount}</span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">Yanlış</span>
+                                <span className="text-rose-400 font-bold xl:text-lg">{s.wrongCount}</span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">Boş</span>
+                                <span className="text-amber-400 font-bold xl:text-lg">{s.emptyCount}</span>
+                              </div>
+                              {s.duration && (
+                                <div className="flex flex-col col-span-2 sm:col-span-1 border-t sm:border-t-0 sm:border-l border-white/10 pt-2 sm:pt-0 sm:pl-3 mt-2 sm:mt-0">
+                                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">Süre</span>
+                                  <span className="text-cyan-400 font-bold xl:text-lg flex items-center gap-1"><Clock size={14} className="opacity-50" /> {s.duration} dk</span>
                                 </div>
                               )}
                             </div>
 
-                            <div className="flex items-center gap-2 self-end sm:self-start bg-black/40 p-1.5 rounded-xl border border-white/5">
-                              <button onClick={() => handleDeleteReview(r.id)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-rose-500/20 text-white/40 hover:text-rose-400 transition-colors group/btn" title="Sil">
-                                <Trash2 size={14} className="group-hover/btn:scale-110 transition-transform" />
-                              </button>
+                            <div className="mt-4 flex flex-col gap-1.5 border-l-2 border-pink-500/20 pl-3">
+                              {s.source && <p className="text-xs font-medium text-white/60"><span className="text-white/30 uppercase text-[10px] tracking-widest mr-2">Kaynak</span> {s.source}</p>}
+                              {s.notes && <p className="text-xs font-medium text-white/60 italic"><span className="text-white/30 uppercase text-[10px] tracking-widest mr-2 not-italic">Not</span> {s.notes}</p>}
                             </div>
                           </div>
-                        </motion.div>
-                      );
-                    })}
+
+                          <div className="flex items-center gap-2 self-end sm:self-start bg-black/40 p-1.5 rounded-xl border border-white/5">
+                            <button onClick={() => handleDeleteStudy(s.id)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-rose-500/20 text-white/40 hover:text-rose-400 transition-colors group/btn" title="Sil">
+                              <Trash2 size={14} className="group-hover/btn:scale-110 transition-transform" />
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </>
+              )}
+
+              {/* Konu Tekrarı Entries */}
+              {reviews.length > 0 && (
+                <>
+                  <div className="flex items-center gap-2 mb-2 mt-6">
+                    <BrainCircuit size={14} className="text-purple-400" />
+                    <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest">Konu Tekrarı ({reviews.length})</span>
                   </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  {reviews.map((r, idx) => {
+                    const confInfo = r.confidence ? CONFIDENCE_MAP[r.confidence] : null;
+                    return (
+                      <motion.div
+                        key={r.id}
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.05 }}
+                        className="group bg-white/[0.02] border border-white/5 hover:border-purple-500/30 hover:bg-white/[0.04] rounded-2xl p-5 sm:p-6 transition-all shadow-sm hover:shadow-[0_4px_20px_rgba(168,85,247,0.05)] relative overflow-hidden"
+                      >
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 relative z-10">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-3">
+                              <span className="font-black text-white text-lg tracking-tight group-hover:text-purple-300 transition-colors">{r.topic.name}</span>
+                              <span className="text-[10px] uppercase font-bold tracking-widest text-white/40 bg-white/5 px-2 py-0.5 rounded-md">{r.subject.name} - {r.subject.examType.name}</span>
+                              {confInfo && <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${confInfo.color}`}>{confInfo.label}</span>}
+                              {r.method && <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border text-blue-400 border-blue-500/30 bg-blue-500/10 shadow-[0_0_10px_rgba(59,130,246,0.2)]">
+                                {r.method === "video" ? "Video" : r.method === "kitap" ? "Kitap" : r.method === "ders_notu" ? "Ders Notu" : r.method === "soru_cozumu" ? "Soru Çözümü" : "Diğer"}
+                              </span>}
+                            </div>
+
+                            {r.duration && (
+                              <div className="inline-flex items-center gap-2 mt-2 text-sm bg-black/20 px-3 py-1.5 rounded-xl border border-white/5">
+                                <Clock size={14} className="text-cyan-400" />
+                                <span className="font-bold text-white/80">{r.duration} dakika çalışıldı</span>
+                              </div>
+                            )}
+
+                            {r.notes && (
+                              <div className="mt-4 border-l-2 border-purple-500/20 pl-3">
+                                <p className="text-xs font-medium text-white/60 italic"><span className="text-white/30 uppercase text-[10px] tracking-widest mr-2 not-italic">Not</span> {r.notes}</p>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2 self-end sm:self-start bg-black/40 p-1.5 rounded-xl border border-white/5">
+                            <button onClick={() => handleDeleteReview(r.id)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-rose-500/20 text-white/40 hover:text-rose-400 transition-colors group/btn" title="Sil">
+                              <Trash2 size={14} className="group-hover/btn:scale-110 transition-transform" />
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

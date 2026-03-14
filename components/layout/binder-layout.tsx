@@ -166,7 +166,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { path: '/', label: 'Genel Bakış', icon: LayoutDashboard },
-  { path: '/study', label: 'Günlük Çalışma', icon: BookOpenCheck },
+  { path: '/study', label: 'Ders Çalıştım', icon: BookOpenCheck },
   { path: '/exams', label: 'Denemeler', icon: GraduationCap },
   { path: '/strategy', label: 'Strateji', icon: BrainCircuit },
   { path: '/training', label: 'Antrenman', icon: Dumbbell },
@@ -359,6 +359,9 @@ export function BinderLayout({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Hide sidebar on the overview/home page for full-screen experience
+  const isOverviewPage = pathname === '/';
+
   const handleExamTrackSelect = useCallback(async (track: string) => {
     // Update the JWT session with the new examTrack
     await updateSession({ examTrack: track });
@@ -380,23 +383,25 @@ export function BinderLayout({ children }: { children: React.ReactNode }) {
       {/* Onboarding Feature Tour (shown after exam track is set, if onboarding not completed) */}
       {!showExamTrackModal && <FeatureTour />}
 
-      {/* Desktop Sidebar */}
-      <motion.aside
-        className="hidden lg:flex h-screen sticky top-0 flex-col relative z-20"
-        animate={{ width: sidebarCollapsed ? 80 : 280 }}
-        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <div className="absolute inset-4 glass-panel flex flex-col h-[calc(100vh-2rem)] overflow-hidden">
-           <SidebarContent
-             pathname={pathname}
-             userName={userName}
-             isAdmin={isAdmin}
-             examTrack={examTrack}
-             collapsed={sidebarCollapsed}
-             onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
-           />
-        </div>
-      </motion.aside>
+      {/* Desktop Sidebar — hidden on overview page */}
+      {!isOverviewPage && (
+        <motion.aside
+          className="hidden lg:flex h-screen sticky top-0 flex-col relative z-20"
+          animate={{ width: sidebarCollapsed ? 80 : 280 }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="absolute inset-4 glass-panel flex flex-col h-[calc(100vh-2rem)] overflow-hidden">
+             <SidebarContent
+               pathname={pathname}
+               userName={userName}
+               isAdmin={isAdmin}
+               examTrack={examTrack}
+               collapsed={sidebarCollapsed}
+               onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
+             />
+          </div>
+        </motion.aside>
+      )}
 
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
@@ -443,13 +448,15 @@ export function BinderLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-4">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl glass text-white/80 active:bg-white/10 transition-colors"
+              className={`${isOverviewPage ? '' : 'lg:hidden'} w-10 h-10 flex items-center justify-center rounded-xl glass text-white/80 active:bg-white/10 transition-colors`}
             >
               <Menu size={20} />
             </button>
-            <div className="hidden lg:block text-white/50 text-sm font-medium tracking-wide">
-              Yaşam Takibi App
-            </div>
+            {!isOverviewPage && (
+              <div className="hidden lg:block text-white/50 text-sm font-medium tracking-wide">
+                Yaşam Takibi App
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
