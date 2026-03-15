@@ -2,6 +2,12 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { logApiError } from "@/lib/logger";
+import {
+  updateFromExamError,
+  updateFromImplicitPositive,
+  calculateSpeedWeight,
+  estimateDiscrimination,
+} from "@/lib/bayesian-engine";
 
 export async function POST(
   request: NextRequest,
@@ -94,13 +100,14 @@ export async function POST(
     });
 
     const subjectResults = await prisma.examSubjectResult.createMany({
-      data: results.map((result: { subjectId: string; correctCount: number; wrongCount: number; emptyCount: number }) => ({
+      data: results.map((result: { subjectId: string; correctCount: number; wrongCount: number; emptyCount: number; durationMinutes?: number }) => ({
         examId: id,
         subjectId: result.subjectId,
         correctCount: result.correctCount,
         wrongCount: result.wrongCount,
         emptyCount: result.emptyCount,
         netScore: result.correctCount - (result.wrongCount / 4),
+        durationMinutes: result.durationMinutes != null ? Math.round(result.durationMinutes) : null,
       })),
     });
 
@@ -211,6 +218,22 @@ export async function POST(
       include: { subject: true },
     });
 
+    // ── Bayesyen Biliş Güncellemesi (Post-Exam Signal Processing) ──
+    // Aksiyom 1: Her deneme gürültülü sinyal → Bayesyen posterior güncelleme
+    // Aksiyom 2: Hız ağırlığı → durationMinutes kullanılarak speed weight hesaplanır
+    try {
+      await processPostExamBeliefUpdates(userId, id, results as Array<{
+        subjectId: string;
+        correctCount: number;
+        wrongCount: number;
+        emptyCount: number;
+        durationMinutes?: number;
+      }>);
+    } catch (beliefError) {
+      // Belief güncellemesi başarısız olursa sınav sonuçlarını etkilememeli
+      console.error("Belief update error (non-critical):", beliefError);
+    }
+
     // Fetch updated voids
     const updatedVoids = await prisma.cognitiveVoid.findMany({
       where: { examId: id },
@@ -227,6 +250,134 @@ export async function POST(
     return NextResponse.json(
       { error: "Sunucu hatası" },
       { status: 500 }
+    );
+  }
+}
+
+// ==================== Post-Exam Bayesian Belief Update ====================
+
+/**
+ * Deneme sonuçları girildiğinde tüm sınanan konuların TopicBelief'ini günceller.
+ *
+ * Her subject result için:
+ * 1. O dersteki tüm topic'leri getir
+ * 2. O sınavdaki CognitiveVoid'ları getir (topic ile eşleşmiş olanlar)
+ * 3. Speed weight hesapla (durationMinutes varsa)
+ * 4. Her topic için:
+ *    - CognitiveVoid VARSA → updateFromExamError (negatif sinyal)
+ *    - CognitiveVoid YOKSA → updateFromImplicitPositive (gürültülü pozitif sinyal)
+ * 5. TopicBelief upsert
+ */
+async function processPostExamBeliefUpdates(
+  userId: string,
+  examId: string,
+  results: Array<{
+    subjectId: string;
+    correctCount: number;
+    wrongCount: number;
+    emptyCount: number;
+    durationMinutes?: number;
+  }>
+) {
+  // Batch: tüm topic'leri ve mevcut void'ları çek
+  const subjectIds = results.map((r) => r.subjectId);
+
+  const [topics, voids, existingBeliefs] = await Promise.all([
+    prisma.topic.findMany({
+      where: { subjectId: { in: subjectIds } },
+      select: { id: true, subjectId: true, difficulty: true },
+    }),
+    prisma.cognitiveVoid.findMany({
+      where: { examId, topicId: { not: null } },
+      select: { topicId: true, severity: true, source: true },
+    }),
+    prisma.topicBelief.findMany({
+      where: { userId, topic: { subjectId: { in: subjectIds } } },
+      select: { id: true, topicId: true, alpha: true, beta: true },
+    }),
+  ]);
+
+  // Map'ler
+  const topicsBySubject = new Map<string, typeof topics>();
+  for (const topic of topics) {
+    const existing = topicsBySubject.get(topic.subjectId) ?? [];
+    existing.push(topic);
+    topicsBySubject.set(topic.subjectId, existing);
+  }
+
+  // Void'ları topic bazlı grupla
+  const voidsByTopic = new Map<string, number>(); // topicId → total severity
+  for (const v of voids) {
+    if (v.topicId) {
+      voidsByTopic.set(v.topicId, (voidsByTopic.get(v.topicId) ?? 0) + v.severity);
+    }
+  }
+
+  // Mevcut belief'ler
+  const beliefMap = new Map(existingBeliefs.map((b) => [b.topicId, b]));
+
+  // Her subject result için güncelle
+  const upserts: Array<{
+    userId: string;
+    topicId: string;
+    alpha: number;
+    beta: number;
+  }> = [];
+
+  for (const result of results) {
+    const subjectTopics = topicsBySubject.get(result.subjectId) ?? [];
+    if (subjectTopics.length === 0) continue;
+
+    const totalQuestions = result.correctCount + result.wrongCount + result.emptyCount;
+    const successRate = totalQuestions > 0 ? result.correctCount / totalQuestions : 0.5;
+    const attempted = result.correctCount + result.wrongCount;
+
+    for (const topic of subjectTopics) {
+      const existing = beliefMap.get(topic.id);
+      let alpha = existing?.alpha ?? 1.0;
+      let beta = existing?.beta ?? 1.0;
+
+      const speedWeight = calculateSpeedWeight(
+        result.durationMinutes ?? null,
+        attempted,
+        topic.difficulty
+      );
+
+      const totalSeverity = voidsByTopic.get(topic.id);
+
+      if (totalSeverity != null && totalSeverity > 0) {
+        // Bu konuda yanlış/boş var → negatif sinyal
+        const updated = updateFromExamError(alpha, beta, totalSeverity, speedWeight);
+        alpha = updated.alpha;
+        beta = updated.beta;
+      } else {
+        // Bu konuda yanlış yok → gürültülü pozitif sinyal
+        // VARSAYIM YIKIMI: yanlış yapmamak ≠ biliyor
+        // Discrimination factor'e göre ağırlıklandır
+        const discrimination = estimateDiscrimination(
+          successRate,
+          topic.difficulty,
+          subjectTopics.length
+        );
+        const updated = updateFromImplicitPositive(alpha, beta, discrimination, speedWeight);
+        alpha = updated.alpha;
+        beta = updated.beta;
+      }
+
+      upserts.push({ userId, topicId: topic.id, alpha, beta });
+    }
+  }
+
+  // Batch upsert (Prisma transaction)
+  if (upserts.length > 0) {
+    await prisma.$transaction(
+      upserts.map((u) =>
+        prisma.topicBelief.upsert({
+          where: { userId_topicId: { userId: u.userId, topicId: u.topicId } },
+          update: { alpha: u.alpha, beta: u.beta },
+          create: { userId: u.userId, topicId: u.topicId, alpha: u.alpha, beta: u.beta },
+        })
+      )
     );
   }
 }

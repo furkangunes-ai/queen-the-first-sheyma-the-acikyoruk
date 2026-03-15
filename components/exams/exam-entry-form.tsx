@@ -83,6 +83,8 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
   const [results, setResults] = useState<SubjectResult[]>([]);
   // Mikro giriş: subjectId → Map<questionNumber, QuestionState>
   const [microEntries, setMicroEntries] = useState<Map<string, Map<number, QuestionState>>>(new Map());
+  // Aksiyom 2: Ders bazı süre (dakika) — opsiyonel, hız ağırlığı için
+  const [subjectDurations, setSubjectDurations] = useState<Map<string, number>>(new Map());
 
   // Submission
   const [submitting, setSubmitting] = useState(false);
@@ -271,6 +273,7 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
             correctCount: r.correctCount,
             wrongCount: r.wrongCount,
             emptyCount: r.emptyCount,
+            durationMinutes: subjectDurations.get(r.subjectId) || undefined,
           })),
         }),
       });
@@ -698,6 +701,15 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                         onBulkQuestionStates={(states) => handleBulkQuestionStates(r.subjectId, states)}
                         net={nets[i]}
                         disabled={submitting}
+                        durationMinutes={subjectDurations.get(r.subjectId)}
+                        onDurationChange={(minutes) => {
+                          setSubjectDurations(prev => {
+                            const next = new Map(prev);
+                            if (minutes > 0) next.set(r.subjectId, minutes);
+                            else next.delete(r.subjectId);
+                            return next;
+                          });
+                        }}
                       />
                     );
                   })}
