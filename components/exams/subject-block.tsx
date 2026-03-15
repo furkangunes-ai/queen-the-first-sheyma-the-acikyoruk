@@ -19,6 +19,9 @@ interface SubjectBlockProps {
   onBulkQuestionStates: (states: Map<number, QuestionState>) => void;
   net: number;
   disabled?: boolean;
+  /** Ders bazı süre (dakika) — opsiyonel, Aksiyom 2: Hız ağırlığı */
+  durationMinutes?: number;
+  onDurationChange?: (minutes: number) => void;
 }
 
 /**
@@ -38,6 +41,8 @@ export default function SubjectBlock({
   onBulkQuestionStates,
   net,
   disabled = false,
+  durationMinutes,
+  onDurationChange,
 }: SubjectBlockProps) {
   const [gridOpen, setGridOpen] = useState(false);
   const [vectorInput, setVectorInput] = useState("");
@@ -182,6 +187,29 @@ export default function SubjectBlock({
           )}
         </div>
       </div>
+
+      {/* Süre girişi — Aksiyom 2: Hız ağırlığı (opsiyonel) */}
+      {onDurationChange && (
+        <div className="flex items-center gap-2 mb-3">
+          <label className="text-[10px] text-white/30 font-bold whitespace-nowrap">
+            Süre
+          </label>
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            placeholder="dk"
+            value={durationMinutes || ""}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "");
+              onDurationChange(val ? parseInt(val, 10) : 0);
+            }}
+            disabled={disabled}
+            className="w-16 py-1.5 px-2 rounded-lg text-center text-[13px] font-bold text-white/70 bg-white/[0.04] border border-white/10 focus:outline-none focus:ring-1 focus:ring-white/20 transition-colors"
+          />
+          <span className="text-[9px] text-white/20">dk (opsiyonel)</span>
+        </div>
+      )}
 
       {/* Mikro Giriş Toggle */}
       <button
