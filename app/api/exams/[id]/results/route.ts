@@ -364,7 +364,7 @@ async function processPostExamBeliefUpdates(
           subjectTopics.length
         );
         const updated = updateFromImplicitPositiveWithCoverage(
-          alpha, beta, discrimination, speedWeight, attempted, subjectTopics.length
+          alpha, beta, discrimination, speedWeight, attempted, subjectTopics.length, successRate
         );
         alpha = updated.alpha;
         beta = updated.beta;

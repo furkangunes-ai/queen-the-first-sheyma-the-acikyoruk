@@ -386,10 +386,19 @@ export function updateFromExamErrorWeighted(
 }
 
 /**
- * Kapsam faktörlü implicit positive.
+ * Kapsam + performans faktörlü implicit positive.
  *
- * 40 soruluk sınavda 50 konu varsa, hata yapmamak = biliyor demek değil.
- * coverageFactor bu belirsizliği yansıtır.
+ * 3 katmanlı filtreleme:
+ * 1. coverageFactor: 40 soruluk sınavda 50 konu → hata yapmamak ≠ biliyor
+ * 2. performanceScaler: 35/40 yapan → güçlü artı, 10/40 yapan → neredeyse sıfır
+ * 3. discriminationFactor: konu zorluğu + sınav zorluğu
+ *
+ * Performans çarpanı (successRate^1.5):
+ *   0.90 → 0.85 (güçlü artı)
+ *   0.70 → 0.59 (orta artı)
+ *   0.50 → 0.35 (zayıf artı)
+ *   0.25 → 0.13 (çok zayıf)
+ *   0.10 → 0.03 (neredeyse sıfır)
  */
 export function updateFromImplicitPositiveWithCoverage(
   alpha: number,
@@ -397,13 +406,18 @@ export function updateFromImplicitPositiveWithCoverage(
   discriminationFactor: number,
   speedWeight: number,
   attemptedQuestions: number,
-  topicsInSubject: number
+  topicsInSubject: number,
+  subjectSuccessRate: number = 0.5
 ): BeliefUpdate {
-  // Kapsam faktörü: 1.2 (eskiden 1.5 idi — daha az cezalandırıcı)
-  // 40 soru, 30 konu → coverage = 40/36 ≈ 1.0
-  // 40 soru, 50 konu → coverage = 40/60 ≈ 0.67
+  // Kapsam faktörü
   const coverageFactor = Math.min(1.0, attemptedQuestions / (topicsInSubject * 1.2));
-  const adjustedDiscrimination = discriminationFactor * coverageFactor;
+
+  // Performans çarpanı: düşük net yapan öğrenciye artı vermemeli
+  // successRate^1.5 → düşük performansta hızla sıfıra yaklaşır
+  const clampedRate = Math.max(0, Math.min(1, subjectSuccessRate));
+  const performanceScaler = Math.pow(clampedRate, 1.5);
+
+  const adjustedDiscrimination = discriminationFactor * coverageFactor * performanceScaler;
   return updateFromImplicitPositive(alpha, beta, adjustedDiscrimination, speedWeight);
 }
 
