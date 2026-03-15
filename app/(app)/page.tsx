@@ -20,6 +20,7 @@ import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import ActionHub from '@/components/home/action-hub';
 import NextActionWidget from '@/components/home/next-action-widget';
+import StudentAnalyticsPanel from '@/components/home/student-analytics-panel';
 
 interface WeeklyPlanItem {
   id: string;
@@ -251,11 +252,23 @@ export default function DashboardPage() {
         </div>
       </motion.div>
 
-      {/* Ne yapmak istiyorsun? */}
+      {/* Analitik Panel — Trendler, Profil, Net Tahmin */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
+      >
+        <p className="text-xs text-white/30 uppercase tracking-widest font-bold mb-3 px-1">
+          Analiz & İçgörüler
+        </p>
+        <StudentAnalyticsPanel />
+      </motion.div>
+
+      {/* Ne yapmak istiyorsun? */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
       >
         <p className="text-xs text-white/30 uppercase tracking-widest font-bold mb-3 px-1">
           Ne yapmak istiyorsun?
