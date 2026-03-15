@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2, Play, ChevronDown, Clock, Zap, BookOpen, RotateCcw, Compass, ArrowRight } from 'lucide-react';
+import { Loader2, Play, ChevronDown, Clock, Zap, BookOpen, RotateCcw, Compass, ArrowRight, Sparkles, SlidersHorizontal } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useRouter } from 'next/navigation';
 import type { NextAction, TopicROI, ActionType } from '@/lib/roi-engine';
 import MasteryBadge from './mastery-badge';
 import StudySessionOverlay from './study-session-overlay';
+import GuidedActionWizard from './guided-action-wizard';
 
 const ACTION_ICONS: Record<ActionType, React.ReactNode> = {
   focused_practice: <Zap size={14} />,
@@ -16,19 +17,22 @@ const ACTION_ICONS: Record<ActionType, React.ReactNode> = {
   explore: <Compass size={14} />,
 };
 
+type WidgetMode = 'entry' | 'system' | 'guided';
+
 /**
  * Sıradaki Hamle Widget'ı — Dashboard'un en üst aksiyonu.
  *
- * Aksiyom 3: Minimum Direnç Yolu.
- * Newton'un Eylemsizlik Prensibi: Duran cisim durmaya devam eder.
- * Her ekstra tıklama = vazgeçme olasılığı.
+ * İki mod:
+ * 1. Sistem Önerisi — Otomatik ROI-bazlı öneri (eski davranış)
+ * 2. Kendim Planlayayım — Adım adım soru wizard'ı ile kişiselleştirilmiş öneri
  *
- * Tek buton → timer başlar → oturum bitince belief güncellenir.
+ * Giriş ekranında öğrenci her zaman seçim yapabilir.
  */
 export default function NextActionWidget() {
   const router = useRouter();
+  const [mode, setMode] = useState<WidgetMode>('entry');
   const [data, setData] = useState<NextAction | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [empty, setEmpty] = useState(false);
   const [showAlternatives, setShowAlternatives] = useState(false);
   const [sessionOpen, setSessionOpen] = useState(false);
@@ -55,7 +59,8 @@ export default function NextActionWidget() {
     }
   }, []);
 
-  useEffect(() => {
+  const handleSystemMode = useCallback(() => {
+    setMode('system');
     fetchNextAction();
   }, [fetchNextAction]);
 
@@ -67,9 +72,75 @@ export default function NextActionWidget() {
   const handleSessionComplete = useCallback(() => {
     setSessionOpen(false);
     setSelectedTopic(null);
-    // Yeni next action fetch (cache invalidate)
     fetchNextAction();
   }, [fetchNextAction]);
+
+  // ==================== Guided Mode ====================
+  if (mode === 'guided') {
+    return (
+      <GuidedActionWizard
+        onBack={() => setMode('entry')}
+      />
+    );
+  }
+
+  // ==================== Entry Mode ====================
+  if (mode === 'entry') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.03 }}
+        className="glass-panel relative overflow-hidden"
+      >
+        <div className="absolute top-0 left-0 w-48 h-48 bg-pink-500/8 rounded-full blur-[50px] pointer-events-none" />
+        <div className="p-5 relative z-10">
+          <div className="mb-4">
+            <span className="text-[9px] text-white/30 uppercase tracking-widest font-bold">
+              Sıradaki Hamlen
+            </span>
+            <h3 className="text-base font-bold text-white mt-1">
+              Ne yapmak istiyorsun?
+            </h3>
+          </div>
+
+          <div className="space-y-2.5">
+            {/* Kendim Planlayayım */}
+            <button
+              onClick={() => setMode('guided')}
+              className="w-full flex items-center gap-3 p-4 rounded-xl border bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-pink-500/20 transition-all text-left group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500/15 to-amber-500/15 border border-pink-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                <SlidersHorizontal size={18} className="text-pink-400" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-white">Kendim Planlayayım</p>
+                <p className="text-[10px] text-white/35 mt-0.5">Birkaç soru ile kişisel çalışma planı</p>
+              </div>
+              <ArrowRight size={14} className="text-white/15 group-hover:text-white/40 transition-colors" />
+            </button>
+
+            {/* Sistem Önersin */}
+            <button
+              onClick={handleSystemMode}
+              className="w-full flex items-center gap-3 p-4 rounded-xl border bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-cyan-500/20 transition-all text-left group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/15 to-emerald-500/15 border border-cyan-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                <Sparkles size={18} className="text-cyan-400" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-white">Sistem Önersin</p>
+                <p className="text-[10px] text-white/35 mt-0.5">Verilerine göre en verimli konuyu otomatik seç</p>
+              </div>
+              <ArrowRight size={14} className="text-white/15 group-hover:text-white/40 transition-colors" />
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // ==================== System Mode ====================
 
   if (loading) {
     return (
@@ -94,8 +165,15 @@ export default function NextActionWidget() {
         className="glass-panel relative overflow-hidden"
       >
         <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/5 rounded-full blur-[40px] pointer-events-none" />
-        <div className="p-5 text-center relative z-10">
-          <p className="text-sm text-white/50 font-medium mb-3">
+        <div className="p-5 relative z-10">
+          <button
+            onClick={() => setMode('entry')}
+            className="text-[10px] text-white/25 hover:text-white/40 transition-colors mb-3 flex items-center gap-1"
+          >
+            <ArrowRight size={10} className="rotate-180" />
+            Geri
+          </button>
+          <p className="text-sm text-white/50 font-medium mb-3 text-center">
             Seni tanımak için veriye ihtiyacım var.
           </p>
           <div className="flex items-center justify-center gap-3">
@@ -137,13 +215,17 @@ export default function NextActionWidget() {
         )} />
 
         <div className="p-5 relative z-10">
-          {/* Header: Konu + Badge */}
+          {/* Back + Header */}
           <div className="flex items-start justify-between mb-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[9px] text-white/30 uppercase tracking-widest font-bold">
+                <button
+                  onClick={() => setMode('entry')}
+                  className="text-[9px] text-white/30 uppercase tracking-widest font-bold hover:text-white/50 transition-colors flex items-center gap-1"
+                >
+                  <ArrowRight size={8} className="rotate-180" />
                   Sıradaki Hamlen
-                </span>
+                </button>
               </div>
               <h3 className="text-base font-bold text-white truncate">
                 {primary.topicName}
