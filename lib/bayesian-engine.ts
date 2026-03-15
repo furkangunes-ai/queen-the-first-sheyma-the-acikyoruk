@@ -161,7 +161,8 @@ export function updateFromImplicitPositive(
   discriminationFactor: number,
   speedWeight: number = 1.0
 ): BeliefUpdate {
-  const positiveDelta = Math.max(0.05, discriminationFactor * speedWeight);
+  // Minimum 0.1 (eskiden 0.05 idi — 5 hatasız deneme anlamlı birikim yapmalı)
+  const positiveDelta = Math.max(0.1, discriminationFactor * speedWeight);
 
   return {
     alpha: alpha + positiveDelta,
@@ -346,14 +347,19 @@ export const RAW_ERROR_COEFFICIENT = 0.5;
 /**
  * Hata türüne göre ağırlıklı + zorluk duyarlı exam error güncellemesi.
  *
- * 4 faktör:
- * 1. severity: CognitiveVoid'dan gelen baz ağırlık
- * 2. errorType: hata türü katsayısı (kavram yanılgısı=1.0, dikkatsizlik=0.2)
- * 3. topicDifficulty: kolay konuda yanlış → ağır ceza, zor konuda → hafif
- * 4. speedWeight: yavaş yanlış → düşünüp yapamamış → ağır
+ * 5 faktör:
+ * 1. severity: CognitiveVoid'dan gelen baz ağırlık (RAW = 0.1)
+ * 2. BASE_ERROR_WEIGHT: severity amplifikatörü (RAW 0.1 → etkili 0.25)
+ * 3. errorType: hata türü katsayısı (kavram yanılgısı=1.0, dikkatsizlik=0.2)
+ * 4. topicDifficulty: kolay konuda yanlış → ağır ceza, zor konuda → hafif
+ * 5. speedWeight: yavaş yanlış → düşünüp yapamamış → ağır
  *
- * Minimum 0.03 (eskiden 0.1 idi — farkların hissedilmesini sağlar)
+ * Hedef: 10 RAW hata → ~1.1 beta artışı (4/5 → ~3.3/5 düşüş)
+ * Hedef: 10 kavram yanılgısı → ~2.3 beta (ciddi düşüş)
+ * Hedef: 10 dikkatsizlik → ~0.45 beta (hafif etki)
  */
+const BASE_ERROR_WEIGHT = 2.5;
+
 export function updateFromExamErrorWeighted(
   alpha: number,
   beta: number,
@@ -371,7 +377,7 @@ export function updateFromExamErrorWeighted(
   const difficultyModifier = Math.max(0.3, 1.5 - (topicDifficulty * 0.22));
 
   const negativeSpeedWeight = Math.max(0.3, 2.0 - speedWeight);
-  const delta = severity * errorCoeff * difficultyModifier * negativeSpeedWeight;
+  const delta = severity * BASE_ERROR_WEIGHT * errorCoeff * difficultyModifier * negativeSpeedWeight;
 
   return {
     alpha,
@@ -393,7 +399,10 @@ export function updateFromImplicitPositiveWithCoverage(
   attemptedQuestions: number,
   topicsInSubject: number
 ): BeliefUpdate {
-  const coverageFactor = Math.min(1.0, attemptedQuestions / (topicsInSubject * 1.5));
+  // Kapsam faktörü: 1.2 (eskiden 1.5 idi — daha az cezalandırıcı)
+  // 40 soru, 30 konu → coverage = 40/36 ≈ 1.0
+  // 40 soru, 50 konu → coverage = 40/60 ≈ 0.67
+  const coverageFactor = Math.min(1.0, attemptedQuestions / (topicsInSubject * 1.2));
   const adjustedDiscrimination = discriminationFactor * coverageFactor;
   return updateFromImplicitPositive(alpha, beta, adjustedDiscrimination, speedWeight);
 }
