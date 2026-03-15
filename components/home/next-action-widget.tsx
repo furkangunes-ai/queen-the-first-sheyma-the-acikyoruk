@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2, Play, ChevronDown, Clock, Zap, BookOpen, RotateCcw, Compass, ArrowRight, Sparkles, SlidersHorizontal } from 'lucide-react';
+import { Loader2, Play, ChevronDown, Clock, Zap, BookOpen, RotateCcw, Compass, ArrowRight, Sparkles, SlidersHorizontal, CalendarPlus, Home } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import type { NextAction, TopicROI, ActionType } from '@/lib/roi-engine';
 import MasteryBadge from './mastery-badge';
 import StudySessionOverlay from './study-session-overlay';
@@ -19,16 +20,14 @@ const ACTION_ICONS: Record<ActionType, React.ReactNode> = {
 
 type WidgetMode = 'entry' | 'system' | 'guided';
 
+interface NextActionWidgetProps {
+  onReturnHome?: () => void;
+}
+
 /**
- * Sıradaki Hamle Widget'ı — Dashboard'un en üst aksiyonu.
- *
- * İki mod:
- * 1. Sistem Önerisi — Otomatik ROI-bazlı öneri (eski davranış)
- * 2. Kendim Planlayayım — Adım adım soru wizard'ı ile kişiselleştirilmiş öneri
- *
- * Giriş ekranında öğrenci her zaman seçim yapabilir.
+ * Sıradaki Hamle Widget'ı — /plan sayfasında tam sayfa olarak gösterilir.
  */
-export default function NextActionWidget() {
+export default function NextActionWidget({ onReturnHome }: NextActionWidgetProps) {
   const router = useRouter();
   const [mode, setMode] = useState<WidgetMode>('entry');
   const [data, setData] = useState<NextAction | null>(null);
@@ -37,6 +36,15 @@ export default function NextActionWidget() {
   const [showAlternatives, setShowAlternatives] = useState(false);
   const [sessionOpen, setSessionOpen] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<TopicROI | null>(null);
+  const [addingToPlan, setAddingToPlan] = useState<string | null>(null);
+
+  const goHome = useCallback(() => {
+    if (onReturnHome) {
+      onReturnHome();
+    } else {
+      router.push('/');
+    }
+  }, [onReturnHome, router]);
 
   const fetchNextAction = useCallback(async () => {
     try {
@@ -64,7 +72,7 @@ export default function NextActionWidget() {
     fetchNextAction();
   }, [fetchNextAction]);
 
-  const handleStartSession = useCallback((topic: TopicROI, duration: number) => {
+  const handleStartSession = useCallback((topic: TopicROI) => {
     setSelectedTopic(topic);
     setSessionOpen(true);
   }, []);
@@ -72,14 +80,36 @@ export default function NextActionWidget() {
   const handleSessionComplete = useCallback(() => {
     setSessionOpen(false);
     setSelectedTopic(null);
-    fetchNextAction();
-  }, [fetchNextAction]);
+    goHome();
+  }, [goHome]);
+
+  const handleAddToPlan = useCallback(async (topic: TopicROI) => {
+    setAddingToPlan(topic.topicId);
+    try {
+      const res = await fetch('/api/weekly-plans/add-item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subjectId: topic.subjectId,
+          topicId: topic.topicId,
+          duration: topic.estimatedDuration,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(`${topic.topicName} bugünün planına eklendi`);
+    } catch {
+      toast.error('Plana eklenirken hata oluştu');
+    } finally {
+      setAddingToPlan(null);
+    }
+  }, []);
 
   // ==================== Guided Mode ====================
   if (mode === 'guided') {
     return (
       <GuidedActionWizard
         onBack={() => setMode('entry')}
+        onReturnHome={goHome}
       />
     );
   }
@@ -195,7 +225,7 @@ export default function NextActionWidget() {
     );
   }
 
-  const { primary, alternatives, sessionDuration, dailyBudgetRemaining, todayCompleted } = data;
+  const { primary, alternatives, sessionDuration, todayCompleted } = data;
 
   return (
     <>
@@ -205,7 +235,7 @@ export default function NextActionWidget() {
         transition={{ delay: 0.03 }}
         className="glass-panel relative overflow-hidden"
       >
-        {/* Gradient accent (reason'a göre renk) */}
+        {/* Gradient accent */}
         <div className={clsx(
           "absolute top-0 left-0 w-48 h-48 rounded-full blur-[50px] pointer-events-none",
           primary.reason === 'retention_critical' ? 'bg-red-500/8' :
@@ -264,15 +294,24 @@ export default function NextActionWidget() {
             )}
           </div>
 
-          {/* CTA Button — Hemen Başla */}
-          <button
-            onClick={() => handleStartSession(primary, sessionDuration)}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500/80 to-amber-500/80 text-white text-sm font-bold hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-          >
-            <Play size={16} />
-            Hemen Başla
-            <span className="text-white/60 text-xs">({sessionDuration}dk)</span>
-          </button>
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleAddToPlan(primary)}
+              disabled={addingToPlan === primary.topicId}
+              className="flex-1 py-3 rounded-xl bg-white/[0.04] border border-white/10 text-white/70 text-sm font-bold hover:bg-white/[0.08] hover:border-amber-500/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <CalendarPlus size={16} />
+              Plana Ekle
+            </button>
+            <button
+              onClick={() => handleStartSession(primary)}
+              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-pink-500/80 to-amber-500/80 text-white text-sm font-bold hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            >
+              <Play size={16} />
+              Hemen Başla
+            </button>
+          </div>
 
           {/* Alternatifler + Günlük bütçe */}
           <div className="mt-3 flex items-center justify-between">
@@ -332,19 +371,39 @@ export default function NextActionWidget() {
                           </span>
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleStartSession(alt, alt.estimatedDuration)}
-                        className="ml-2 px-3 py-1.5 rounded-lg text-[10px] font-bold text-pink-300 bg-pink-500/10 border border-pink-500/20 hover:bg-pink-500/20 transition-all flex items-center gap-1"
-                      >
-                        Seç
-                        <ArrowRight size={10} />
-                      </button>
+                      <div className="flex items-center gap-1.5 ml-2">
+                        <button
+                          onClick={() => handleAddToPlan(alt)}
+                          disabled={addingToPlan === alt.topicId}
+                          className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1 disabled:opacity-50"
+                        >
+                          <CalendarPlus size={10} />
+                        </button>
+                        <button
+                          onClick={() => handleStartSession(alt)}
+                          className="px-3 py-1.5 rounded-lg text-[10px] font-bold text-pink-300 bg-pink-500/10 border border-pink-500/20 hover:bg-pink-500/20 transition-all flex items-center gap-1"
+                        >
+                          Seç
+                          <ArrowRight size={10} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Ana Sayfaya Dön */}
+          <div className="mt-4 pt-3 border-t border-white/5 flex justify-center">
+            <button
+              onClick={goHome}
+              className="text-[11px] text-white/30 hover:text-white/50 transition-colors flex items-center gap-1.5"
+            >
+              <Home size={12} />
+              Ana Sayfaya Dön
+            </button>
+          </div>
         </div>
       </motion.div>
 
@@ -361,7 +420,6 @@ export default function NextActionWidget() {
           subjectName={selectedTopic.subjectName}
           actionType={selectedTopic.actionType}
           actionLabel={selectedTopic.actionLabel}
-          sessionDuration={sessionDuration}
           onSessionComplete={handleSessionComplete}
         />
       )}
