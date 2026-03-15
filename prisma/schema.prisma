@@ -50,6 +50,7 @@ model User {
   studentProfile StudentProfile?
   kazanimProgress KazanimProgress[]
   cognitiveStates UserCognitiveState[]
+  topicBeliefs   TopicBelief[]
   subscription    UserSubscription?
   passwordResetTokens PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
@@ -173,6 +174,7 @@ model Topic {
   concepts         TopicConcept[]
   kazanimlar       TopicKazanim[]
   conceptNodes     ConceptNode[]
+  topicBeliefs     TopicBelief[]
   sortOrder       Int      @default(0)
 
   @@index([subjectId])
@@ -242,7 +244,8 @@ model ExamSubjectResult {
   correctCount Int
   wrongCount   Int
   emptyCount   Int
-  netScore     Float   // Doğru - (Yanlış / 4)
+  netScore        Float   // Doğru - (Yanlış / 4)
+  durationMinutes Int?    // Ders bazında toplam harcanan süre (dakika) — Aksiyom 2: Hız ağırlığı
 
   @@unique([examId, subjectId])
   @@index([examId])
@@ -857,4 +860,26 @@ model EmailVerificationToken {
 
   @@index([token])
   @@index([userId])
+}
+
+// ==================== BAYESYEN BİLİŞ MOTORU ====================
+// Her (userId, topicId) çifti için Beta(α, β) dağılımı.
+// Prior: Beta(1, 1) = uniform (hiçbir şey bilmiyoruz)
+// Posterior: Deneme, çalışma, self-rating sinyalleriyle güncellenir
+// Aksiyom 1: Sinyal/Gürültü — her gözlem gürültülü, kesin yargı yok
+
+model TopicBelief {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topicId   String
+  topic     Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  alpha     Float    @default(1.0)   // Pozitif kanıt gücü (bilgi var sinyalleri)
+  beta      Float    @default(1.0)   // Negatif kanıt gücü (bilgi yok sinyalleri)
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([userId, topicId])
+  @@index([userId])
+  @@index([topicId])
 }
