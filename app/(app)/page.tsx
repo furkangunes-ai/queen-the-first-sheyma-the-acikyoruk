@@ -19,6 +19,7 @@ import { useSession } from 'next-auth/react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import ActionHub from '@/components/home/action-hub';
+import NextActionWidget from '@/components/home/next-action-widget';
 
 interface WeeklyPlanItem {
   id: string;
@@ -140,6 +141,9 @@ export default function DashboardPage() {
           <Sparkles size={18} className="text-pink-400" />
         </div>
       </motion.div>
+
+      {/* Sıradaki Hamlen — Aksiyom 3: Çevre Mimarisi */}
+      <NextActionWidget />
 
       {/* Bugünün Planı */}
       <motion.div
