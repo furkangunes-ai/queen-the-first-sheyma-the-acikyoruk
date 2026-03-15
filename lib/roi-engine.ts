@@ -17,8 +17,8 @@ import {
   CATEGORY_LABELS,
   type MasteryCategory,
 } from './bayesian-engine';
-import { calculateRetention, type CognitiveStateData } from './cognitive-engine/ebbinghaus';
-import { CRITICAL_RETENTION_THRESHOLD } from './cognitive-engine/types';
+import { calculateRetention } from './cognitive-engine/ebbinghaus';
+import { CRITICAL_RETENTION_THRESHOLD, type CognitiveStateData } from './cognitive-engine/types';
 
 // ==================== Tip Tanımları ====================
 
