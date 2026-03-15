@@ -5,11 +5,13 @@ import { logApiError } from "@/lib/logger";
 import { getTurkeyDateString } from "@/lib/utils";
 import {
   calculateTopicROI,
+  calculateKnowledgeModifier,
   selectNextAction,
   type TopicInput,
   type BeliefInput,
   type DAGContext,
 } from "@/lib/roi-engine";
+import { betaMean, evidenceCount as getEvidenceCount } from "@/lib/bayesian-engine";
 import type { CognitiveStateData } from "@/lib/cognitive-engine/types";
 
 /**
@@ -46,6 +48,7 @@ export async function GET(request: NextRequest) {
     const [
       allTopics,
       beliefs,
+      topicKnowledgeList,
       conceptNodes,
       edges,
       cognitiveStates,
@@ -58,6 +61,7 @@ export async function GET(request: NextRequest) {
         },
       }),
       prisma.topicBelief.findMany({ where: { userId } }),
+      prisma.topicKnowledge.findMany({ where: { userId }, select: { topicId: true, level: true } }),
       prisma.conceptNode.findMany({
         select: { id: true, parentTopicId: true },
       }),
@@ -120,6 +124,11 @@ export async function GET(request: NextRequest) {
     // Map'ler oluştur
     const beliefMap = new Map<string, BeliefInput>(
       beliefs.map((b) => [b.topicId, { alpha: b.alpha, beta: b.beta }])
+    );
+
+    // TopicKnowledge map (müfredat bilgi seviyeleri)
+    const knowledgeMap = new Map<string, number>(
+      topicKnowledgeList.map((k) => [k.topicId, k.level])
     );
 
     // Topic → ConceptNode eşlemesi
@@ -202,13 +211,20 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // Knowledge modifier: müfredat bilgi seviyesi + Bayesyen veri entegrasyonu
+      const topicKnowledgeLevel = knowledgeMap.get(topic.id) ?? null;
+      const bMean = betaMean(belief.alpha, belief.beta);
+      const bEvidence = getEvidenceCount(belief.alpha, belief.beta);
+      const knowledgeMod = calculateKnowledgeModifier(topicKnowledgeLevel, bMean, bEvidence, 'auto');
+
       return calculateTopicROI(
         topicInput,
         belief,
         dagContext,
         worstState,
         spacedRepTopicSet.has(topic.id),
-        totalQuestions
+        totalQuestions,
+        knowledgeMod
       );
     });
 

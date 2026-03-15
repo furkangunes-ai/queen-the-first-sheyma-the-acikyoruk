@@ -4,10 +4,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { logApiError } from "@/lib/logger";
 import {
   calculateTopicROI,
+  calculateKnowledgeModifier,
   type TopicInput,
   type BeliefInput,
   type DAGContext,
+  type StudyGoal,
 } from "@/lib/roi-engine";
+import { betaMean, evidenceCount as getEvidenceCount, detectInconsistency } from "@/lib/bayesian-engine";
 import type { CognitiveStateData } from "@/lib/cognitive-engine/types";
 
 /**
@@ -33,6 +36,7 @@ export async function GET(request: NextRequest) {
     const selectedSubjectIds = (params.get("subjects") || "").split(",").filter(Boolean);
     const totalDuration = parseInt(params.get("duration") || "120") || 120;
     const recentSubjectIds = (params.get("recentSubjects") || "").split(",").filter(Boolean);
+    const studyGoal = (params.get("studyGoal") || "auto") as StudyGoal;
 
     if (selectedSubjectIds.length === 0) {
       return NextResponse.json({
@@ -45,6 +49,7 @@ export async function GET(request: NextRequest) {
     const [
       topics,
       beliefs,
+      topicKnowledgeList,
       conceptNodes,
       edges,
       cognitiveStates,
@@ -61,6 +66,8 @@ export async function GET(request: NextRequest) {
       }),
       // Bayesian belief'ler
       prisma.topicBelief.findMany({ where: { userId } }),
+      // Müfredat bilgi seviyeleri
+      prisma.topicKnowledge.findMany({ where: { userId }, select: { topicId: true, level: true } }),
       // ConceptNode'lar
       prisma.conceptNode.findMany({
         select: { id: true, parentTopicId: true },
@@ -131,6 +138,10 @@ export async function GET(request: NextRequest) {
     // Map'ler
     const beliefMap = new Map<string, BeliefInput>(
       beliefs.map((b) => [b.topicId, { alpha: b.alpha, beta: b.beta }])
+    );
+
+    const knowledgeMap = new Map<string, number>(
+      topicKnowledgeList.map((k) => [k.topicId, k.level])
     );
 
     const topicNodeMap = new Map<string, string[]>();
@@ -242,13 +253,20 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // Knowledge modifier: müfredat bilgi seviyesi + studyGoal entegrasyonu
+      const topicKnowledgeLevel = knowledgeMap.get(topic.id) ?? null;
+      const bMean = betaMean(belief.alpha, belief.beta);
+      const bEvidence = getEvidenceCount(belief.alpha, belief.beta);
+      const knowledgeMod = calculateKnowledgeModifier(topicKnowledgeLevel, bMean, bEvidence, studyGoal);
+
       const roi = calculateTopicROI(
         topicInput,
         belief,
         dagContext,
         worstState,
         spacedRepTopicSet.has(topic.id),
-        totalQuestions
+        totalQuestions,
+        knowledgeMod
       );
 
       // Son çalışılan derslere penalti uygula (çeşitlilik)
@@ -290,10 +308,23 @@ export async function GET(request: NextRequest) {
       const share = totalROI > 0 ? r.roi / totalROI : 1 / selected.length;
       const suggestedDuration = Math.max(15, Math.round(totalDuration * share / 5) * 5); // 5dk yuvarlama
 
-      // Insight oluştur
+      // Insight oluştur (tutarsızlık tespiti dahil)
       const errorStats = topicErrorStats.get(r.topicId);
       const subjectStats = subjectExamStats.get(r.subjectId);
-      const { insight, insightType } = generateInsight(r, errorStats, subjectStats);
+      const topicKnowledgeLevel = knowledgeMap.get(r.topicId) ?? null;
+
+      // Tutarsızlık kontrolü: öğrenci 4/5 demiş ama veriler 2/5 gösteriyorsa
+      let inconsistencyInsight: string | null = null;
+      if (topicKnowledgeLevel !== null) {
+        const inc = detectInconsistency(topicKnowledgeLevel, r.belief.alpha, r.belief.beta, r.topicName);
+        if (inc.isInconsistent) {
+          inconsistencyInsight = inc.message;
+        }
+      }
+
+      const { insight, insightType } = inconsistencyInsight
+        ? { insight: inconsistencyInsight, insightType: 'inconsistency' }
+        : generateInsight(r, errorStats, subjectStats);
 
       return {
         topicId: r.topicId,

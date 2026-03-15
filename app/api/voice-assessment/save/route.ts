@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { setAbsoluteMasteryForTopic } from "@/lib/cognitive-engine";
 import { logApiError } from "@/lib/logger";
+import { selfRatingToBelief } from "@/lib/bayesian-engine";
 
 interface TopicAssessment {
   topicId: string;
@@ -55,6 +56,24 @@ export async function POST(request: NextRequest) {
         setAbsoluteMasteryForTopic(userId, topic.topicId, mastery).catch((err) =>
           logApiError("voice-assessment-save-mastery", err)
         );
+
+        // 3. Set TopicBelief prior from self-rating
+        // Mevcut belief varsa ve yeterli kanıta sahipse (evidence > 5) dokunma
+        const existingBelief = await prisma.topicBelief.findUnique({
+          where: { userId_topicId: { userId, topicId: topic.topicId } },
+        });
+        const prior = selfRatingToBelief(
+          clampedLevel,
+          existingBelief?.alpha,
+          existingBelief?.beta
+        );
+        if (prior) {
+          await prisma.topicBelief.upsert({
+            where: { userId_topicId: { userId, topicId: topic.topicId } },
+            update: { alpha: prior.alpha, beta: prior.beta },
+            create: { userId, topicId: topic.topicId, alpha: prior.alpha, beta: prior.beta },
+          });
+        }
 
         // 3. Upsert KazanimProgress if provided
         if (topic.kazanimlar && topic.kazanimlar.length > 0) {

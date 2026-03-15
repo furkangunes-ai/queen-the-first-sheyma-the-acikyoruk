@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { setAbsoluteMasteryForTopic } from "@/lib/cognitive-engine";
 import { logApiError } from "@/lib/logger";
+import { selfRatingToBelief } from "@/lib/bayesian-engine";
 
 export async function GET(request: NextRequest) {
   try {
@@ -76,6 +77,27 @@ export async function POST(request: NextRequest) {
     setAbsoluteMasteryForTopic(userId, topicId, mastery).catch((err) =>
       logApiError("topic-knowledge", err)
     );
+
+    // TopicBelief prior sinyali: müfredat puanını Bayesyen motora besle
+    try {
+      const existingBelief = await prisma.topicBelief.findUnique({
+        where: { userId_topicId: { userId, topicId } },
+      });
+      const prior = selfRatingToBelief(
+        clampedLevel,
+        existingBelief?.alpha,
+        existingBelief?.beta
+      );
+      if (prior) {
+        await prisma.topicBelief.upsert({
+          where: { userId_topicId: { userId, topicId } },
+          update: { alpha: prior.alpha, beta: prior.beta },
+          create: { userId, topicId, alpha: prior.alpha, beta: prior.beta },
+        });
+      }
+    } catch (err) {
+      logApiError("topic-knowledge-belief-sync", err);
+    }
 
     return NextResponse.json(knowledge);
   } catch (error) {

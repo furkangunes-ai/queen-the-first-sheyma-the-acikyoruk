@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { logApiError } from "@/lib/logger";
 import {
-  updateFromExamError,
-  updateFromImplicitPositive,
+  updateFromExamErrorWeighted,
+  updateFromImplicitPositiveWithCoverage,
   calculateSpeedWeight,
   estimateDiscrimination,
 } from "@/lib/bayesian-engine";
@@ -289,7 +289,7 @@ async function processPostExamBeliefUpdates(
     }),
     prisma.cognitiveVoid.findMany({
       where: { examId, topicId: { not: null } },
-      select: { topicId: true, severity: true, source: true },
+      select: { topicId: true, severity: true, source: true, errorReason: true },
     }),
     prisma.topicBelief.findMany({
       where: { userId, topic: { subjectId: { in: subjectIds } } },
@@ -305,11 +305,13 @@ async function processPostExamBeliefUpdates(
     topicsBySubject.set(topic.subjectId, existing);
   }
 
-  // Void'ları topic bazlı grupla
-  const voidsByTopic = new Map<string, number>(); // topicId → total severity
+  // Void'ları topic bazlı grupla (severity + errorReason)
+  const voidsByTopic = new Map<string, Array<{ severity: number; errorReason: string | null }>>();
   for (const v of voids) {
     if (v.topicId) {
-      voidsByTopic.set(v.topicId, (voidsByTopic.get(v.topicId) ?? 0) + v.severity);
+      const existing = voidsByTopic.get(v.topicId) ?? [];
+      existing.push({ severity: v.severity, errorReason: v.errorReason });
+      voidsByTopic.set(v.topicId, existing);
     }
   }
 
@@ -343,23 +345,27 @@ async function processPostExamBeliefUpdates(
         topic.difficulty
       );
 
-      const totalSeverity = voidsByTopic.get(topic.id);
+      const topicVoids = voidsByTopic.get(topic.id);
 
-      if (totalSeverity != null && totalSeverity > 0) {
-        // Bu konuda yanlış/boş var → negatif sinyal
-        const updated = updateFromExamError(alpha, beta, totalSeverity, speedWeight);
-        alpha = updated.alpha;
-        beta = updated.beta;
+      if (topicVoids && topicVoids.length > 0) {
+        // Bu konuda yanlış/boş var → hata türüne göre ağırlıklı negatif sinyal
+        for (const v of topicVoids) {
+          const updated = updateFromExamErrorWeighted(alpha, beta, v.severity, v.errorReason, speedWeight);
+          alpha = updated.alpha;
+          beta = updated.beta;
+        }
       } else {
-        // Bu konuda yanlış yok → gürültülü pozitif sinyal
+        // Bu konuda yanlış yok → kapsam faktörlü gürültülü pozitif sinyal
         // VARSAYIM YIKIMI: yanlış yapmamak ≠ biliyor
-        // Discrimination factor'e göre ağırlıklandır
+        // 40 soruluk sınavda 50 konu → hepsine artı vermek yanlış
         const discrimination = estimateDiscrimination(
           successRate,
           topic.difficulty,
           subjectTopics.length
         );
-        const updated = updateFromImplicitPositive(alpha, beta, discrimination, speedWeight);
+        const updated = updateFromImplicitPositiveWithCoverage(
+          alpha, beta, discrimination, speedWeight, attempted, subjectTopics.length
+        );
         alpha = updated.alpha;
         beta = updated.beta;
       }
