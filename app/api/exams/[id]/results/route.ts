@@ -350,7 +350,7 @@ async function processPostExamBeliefUpdates(
       if (topicVoids && topicVoids.length > 0) {
         // Bu konuda yanlış/boş var → hata türüne göre ağırlıklı negatif sinyal
         for (const v of topicVoids) {
-          const updated = updateFromExamErrorWeighted(alpha, beta, v.severity, v.errorReason, speedWeight);
+          const updated = updateFromExamErrorWeighted(alpha, beta, v.severity, v.errorReason, speedWeight, topic.difficulty);
           alpha = updated.alpha;
           beta = updated.beta;
         }

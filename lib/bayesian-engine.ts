@@ -344,22 +344,39 @@ export const ERROR_TYPE_COEFFICIENTS: Record<string, number> = {
 export const RAW_ERROR_COEFFICIENT = 0.5;
 
 /**
- * Hata türüne göre ağırlıklı exam error güncellemesi.
- * errorType null ise RAW katsayısı kullanılır.
+ * Hata türüne göre ağırlıklı + zorluk duyarlı exam error güncellemesi.
+ *
+ * 4 faktör:
+ * 1. severity: CognitiveVoid'dan gelen baz ağırlık
+ * 2. errorType: hata türü katsayısı (kavram yanılgısı=1.0, dikkatsizlik=0.2)
+ * 3. topicDifficulty: kolay konuda yanlış → ağır ceza, zor konuda → hafif
+ * 4. speedWeight: yavaş yanlış → düşünüp yapamamış → ağır
+ *
+ * Minimum 0.03 (eskiden 0.1 idi — farkların hissedilmesini sağlar)
  */
 export function updateFromExamErrorWeighted(
   alpha: number,
   beta: number,
   severity: number,
   errorType: string | null,
-  speedWeight: number = 1.0
+  speedWeight: number = 1.0,
+  topicDifficulty: number = 3 // 1-5
 ): BeliefUpdate {
-  const coeff = errorType
+  const errorCoeff = errorType
     ? (ERROR_TYPE_COEFFICIENTS[errorType] ?? RAW_ERROR_COEFFICIENT)
     : RAW_ERROR_COEFFICIENT;
 
-  const adjustedSeverity = severity * coeff;
-  return updateFromExamError(alpha, beta, adjustedSeverity, speedWeight);
+  // Zorluk çarpanı: kolay (1) → 1.4, orta (3) → 0.9, zor (5) → 0.4
+  // Kolay soruda yanlış yapmak daha kötü sinyal
+  const difficultyModifier = Math.max(0.3, 1.5 - (topicDifficulty * 0.22));
+
+  const negativeSpeedWeight = Math.max(0.3, 2.0 - speedWeight);
+  const delta = severity * errorCoeff * difficultyModifier * negativeSpeedWeight;
+
+  return {
+    alpha,
+    beta: beta + Math.max(0.03, delta),
+  };
 }
 
 /**
