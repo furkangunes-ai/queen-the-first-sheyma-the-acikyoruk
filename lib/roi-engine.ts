@@ -108,12 +108,79 @@ export interface BeliefInput {
   beta: number;
 }
 
+export type StudyGoal = 'new' | 'improve' | 'review' | 'auto';
+
+// ==================== Knowledge Modifier ====================
+
+/**
+ * TopicKnowledge level (öğrenci beyanı) + TopicBelief (Bayesyen veri) →
+ * ROI çarpanı.
+ *
+ * studyGoal'a göre farklı ağırlıklandırma:
+ * - 'new': düşük level konulara bonus, yükseklere ceza
+ * - 'improve': orta level konulara bonus
+ * - 'review': yüksek level + retention düşen konulara bonus
+ * - 'auto': tutarsızlık + genel ağırlıklama
+ */
+export function calculateKnowledgeModifier(
+  topicKnowledgeLevel: number | null, // 0-5 veya null
+  beliefMean: number,                  // 0-1
+  evidenceCount: number,
+  studyGoal: StudyGoal = 'auto'
+): number {
+  // Hiç bilgi yoksa nötr
+  if (topicKnowledgeLevel === null || topicKnowledgeLevel === undefined) {
+    return 1.0;
+  }
+
+  const level = topicKnowledgeLevel;
+  const selfRating = level / 5; // 0-1 skalası
+
+  // Temel modifier (auto mode)
+  let baseModifier: number;
+
+  // Tutarsızlık tespiti: öğrenci yüksek puanlamış ama veriler düşük → DİKKAT
+  const isOverrated = level >= 4 && beliefMean < 0.4 && evidenceCount >= 3;
+  if (isOverrated) {
+    baseModifier = 1.5; // Tutarsız! Yüksek öncelik ver
+  } else if (level <= 1 && beliefMean < 0.3) {
+    baseModifier = 1.4; // Bilmiyor ve veri de teyit ediyor
+  } else if (level <= 1 && beliefMean > 0.5) {
+    baseModifier = 0.8; // Bilmiyor diyor ama veri iyi (underrated)
+  } else if (level >= 4 && beliefMean > 0.6) {
+    baseModifier = 0.4; // Biliyor ve veri teyit ediyor — düşük öncelik
+  } else {
+    baseModifier = 1.0; // Orta — standart ROI
+  }
+
+  // studyGoal'a göre ek ayarlama
+  switch (studyGoal) {
+    case 'new':
+      if (selfRating <= 0.3) baseModifier *= 1.5;        // Bilmediği konulara bonus
+      else if (selfRating >= 0.7) baseModifier *= 0.3;   // Bildiği konulara ağır ceza
+      break;
+    case 'improve':
+      if (selfRating >= 0.3 && selfRating <= 0.7) baseModifier *= 1.4; // Orta seviye bonus
+      else if (selfRating < 0.2) baseModifier *= 0.5;     // Bilmiyor → geliştirmek değil
+      break;
+    case 'review':
+      if (selfRating >= 0.6) baseModifier *= 1.5;         // Biliyor + tekrar
+      else if (selfRating < 0.3) baseModifier *= 0.3;     // Bilmiyor → tekrar değil
+      break;
+    case 'auto':
+    default:
+      break;
+  }
+
+  return Math.max(0.1, Math.min(3.0, baseModifier));
+}
+
 // ==================== ROI Hesaplama ====================
 
 /**
  * Tek bir konu için ROI hesapla.
  *
- * ROI = examWeight × gainPotential × dagLeverage × urgencyMultiplier
+ * ROI = examWeight × gainPotential × dagLeverage × urgencyMultiplier × knowledgeModifier
  */
 export function calculateTopicROI(
   topic: TopicInput,
@@ -121,7 +188,8 @@ export function calculateTopicROI(
   dagContext: DAGContext,
   cognitiveState: CognitiveStateData | null,
   hasSpacedRepItems: boolean,
-  totalQuestions: number
+  totalQuestions: number,
+  knowledgeModifier: number = 1.0
 ): TopicROI {
   const mean = betaMean(belief.alpha, belief.beta);
   const ci = betaCI95(belief.alpha, belief.beta);
@@ -184,8 +252,8 @@ export function calculateTopicROI(
     reason = 'new_topic';
   }
 
-  // ROI
-  const roi = examWeight * gainPotential * dagLeverage * urgencyMultiplier;
+  // ROI (knowledgeModifier: müfredat bilgi seviyesinden gelen ağırlık)
+  const roi = examWeight * gainPotential * dagLeverage * urgencyMultiplier * knowledgeModifier;
 
   // Aksiyon tipi
   const actionType = determineAction(mean, evidence, reason);

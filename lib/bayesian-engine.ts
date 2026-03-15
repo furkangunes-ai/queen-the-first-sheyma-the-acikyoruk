@@ -161,7 +161,8 @@ export function updateFromImplicitPositive(
   discriminationFactor: number,
   speedWeight: number = 1.0
 ): BeliefUpdate {
-  const positiveDelta = Math.max(0.05, discriminationFactor * speedWeight);
+  // Minimum 0.1 (eskiden 0.05 idi — 5 hatasız deneme anlamlı birikim yapmalı)
+  const positiveDelta = Math.max(0.1, discriminationFactor * speedWeight);
 
   return {
     alpha: alpha + positiveDelta,
@@ -281,6 +282,205 @@ export function estimateDiscrimination(
   const coverageFactor = Math.min(1.0, 3 / Math.max(1, totalTopicsInSubject));
 
   return Math.max(0.1, Math.min(1.0, examDifficultyFactor * topicDifficultyFactor * coverageFactor));
+}
+
+// ==================== Self-Rating → TopicBelief Prior ====================
+
+/**
+ * Öğrencinin müfredattaki bilgi seviyesi (0-5) → TopicBelief (alpha, beta) dönüşümü.
+ *
+ * Moderate confidence (α+β ≈ 6-7.5) → deneme verileri bunu hızlıca override edebilir
+ * ama başlangıç değeri makul.
+ */
+const SELF_RATING_PRIORS: Record<number, { alpha: number; beta: number }> = {
+  0: { alpha: 1.0, beta: 5.0 },   // mean ≈ 0.17
+  1: { alpha: 1.5, beta: 4.0 },   // mean ≈ 0.27
+  2: { alpha: 3.0, beta: 3.0 },   // mean ≈ 0.50
+  3: { alpha: 4.0, beta: 2.5 },   // mean ≈ 0.62
+  4: { alpha: 5.0, beta: 2.0 },   // mean ≈ 0.71
+  5: { alpha: 6.0, beta: 1.5 },   // mean ≈ 0.80
+};
+
+/**
+ * TopicKnowledge level (0-5) → TopicBelief prior (alpha, beta).
+ *
+ * Eğer TopicBelief zaten mevcutsa ve evidence > maxExistingEvidence ise dokunmaz.
+ * Yani deneme verisi her zaman self-rating'i override eder.
+ */
+export function selfRatingToBelief(
+  level: number,
+  existingAlpha?: number,
+  existingBeta?: number,
+  maxExistingEvidence: number = 5
+): BeliefUpdate | null {
+  const clamped = Math.max(0, Math.min(5, Math.round(level)));
+
+  // Mevcut belief yeterli kanıta sahipse dokunma
+  if (existingAlpha !== undefined && existingBeta !== undefined) {
+    const existing = evidenceCount(existingAlpha, existingBeta);
+    if (existing > maxExistingEvidence) return null;
+  }
+
+  return SELF_RATING_PRIORS[clamped] ?? SELF_RATING_PRIORS[0];
+}
+
+// ==================== Hata Türü Katsayıları ====================
+
+/**
+ * CognitiveVoid hata türüne göre ceza katsayısı.
+ *
+ * KAVRAM_YANILGISI en ağır (temel anlayış yanlış),
+ * DIKKATSIZLIK en hafif (bilgi yok değil, dikkat sorunu).
+ */
+export const ERROR_TYPE_COEFFICIENTS: Record<string, number> = {
+  KAVRAM_YANILGISI: 1.0,
+  BILGI_EKSIKLIGI: 0.8,
+  SURE_YETISMEDI: 0.4,
+  ISLEM_HATASI: 0.3,
+  DIKKATSIZLIK: 0.2,
+  SORU_KOKUNU_YANLIS_OKUMA: 0.3,
+};
+
+/** RAW (sınıflandırılmamış) void'lar için varsayılan katsayı */
+export const RAW_ERROR_COEFFICIENT = 0.5;
+
+/**
+ * Hata türüne göre ağırlıklı + zorluk duyarlı exam error güncellemesi.
+ *
+ * 5 faktör:
+ * 1. severity: CognitiveVoid'dan gelen baz ağırlık (RAW = 0.1)
+ * 2. BASE_ERROR_WEIGHT: severity amplifikatörü (RAW 0.1 → etkili 0.25)
+ * 3. errorType: hata türü katsayısı (kavram yanılgısı=1.0, dikkatsizlik=0.2)
+ * 4. topicDifficulty: kolay konuda yanlış → ağır ceza, zor konuda → hafif
+ * 5. speedWeight: yavaş yanlış → düşünüp yapamamış → ağır
+ *
+ * Hedef: 10 RAW hata → ~1.1 beta artışı (4/5 → ~3.3/5 düşüş)
+ * Hedef: 10 kavram yanılgısı → ~2.3 beta (ciddi düşüş)
+ * Hedef: 10 dikkatsizlik → ~0.45 beta (hafif etki)
+ */
+const BASE_ERROR_WEIGHT = 2.5;
+
+export function updateFromExamErrorWeighted(
+  alpha: number,
+  beta: number,
+  severity: number,
+  errorType: string | null,
+  speedWeight: number = 1.0,
+  topicDifficulty: number = 3 // 1-5
+): BeliefUpdate {
+  const errorCoeff = errorType
+    ? (ERROR_TYPE_COEFFICIENTS[errorType] ?? RAW_ERROR_COEFFICIENT)
+    : RAW_ERROR_COEFFICIENT;
+
+  // Zorluk çarpanı: kolay (1) → 1.4, orta (3) → 0.9, zor (5) → 0.4
+  // Kolay soruda yanlış yapmak daha kötü sinyal
+  const difficultyModifier = Math.max(0.3, 1.5 - (topicDifficulty * 0.22));
+
+  const negativeSpeedWeight = Math.max(0.3, 2.0 - speedWeight);
+  const delta = severity * BASE_ERROR_WEIGHT * errorCoeff * difficultyModifier * negativeSpeedWeight;
+
+  return {
+    alpha,
+    beta: beta + Math.max(0.03, delta),
+  };
+}
+
+/**
+ * Kapsam + performans faktörlü implicit positive.
+ *
+ * 3 katmanlı filtreleme:
+ * 1. coverageFactor: 40 soruluk sınavda 50 konu → hata yapmamak ≠ biliyor
+ * 2. performanceScaler: 35/40 yapan → güçlü artı, 10/40 yapan → neredeyse sıfır
+ * 3. discriminationFactor: konu zorluğu + sınav zorluğu
+ *
+ * Performans çarpanı (successRate^1.5):
+ *   0.90 → 0.85 (güçlü artı)
+ *   0.70 → 0.59 (orta artı)
+ *   0.50 → 0.35 (zayıf artı)
+ *   0.25 → 0.13 (çok zayıf)
+ *   0.10 → 0.03 (neredeyse sıfır)
+ */
+export function updateFromImplicitPositiveWithCoverage(
+  alpha: number,
+  beta: number,
+  discriminationFactor: number,
+  speedWeight: number,
+  attemptedQuestions: number,
+  topicsInSubject: number,
+  subjectSuccessRate: number = 0.5
+): BeliefUpdate {
+  // Kapsam faktörü
+  const coverageFactor = Math.min(1.0, attemptedQuestions / (topicsInSubject * 1.2));
+
+  // Performans çarpanı: düşük net yapan öğrenciye artı vermemeli
+  // successRate^1.5 → düşük performansta hızla sıfıra yaklaşır
+  const clampedRate = Math.max(0, Math.min(1, subjectSuccessRate));
+  const performanceScaler = Math.pow(clampedRate, 1.5);
+
+  const adjustedDiscrimination = discriminationFactor * coverageFactor * performanceScaler;
+  return updateFromImplicitPositive(alpha, beta, adjustedDiscrimination, speedWeight);
+}
+
+// ==================== Tutarsızlık Tespiti ====================
+
+export interface InconsistencyResult {
+  isInconsistent: boolean;
+  direction: 'overrated' | 'underrated' | 'none';
+  score: number;
+  message: string | null;
+}
+
+/**
+ * TopicKnowledge level ile TopicBelief arasındaki tutarsızlığı tespit et.
+ *
+ * selfRating (0-5) → 0-1 skalasına çevrilir.
+ * inconsistency = |selfRating - beliefMean| × sqrt(evidenceCount)
+ * evidenceCount ile çarpma: az veri varsa tutarsızlık önemsiz.
+ */
+export function detectInconsistency(
+  topicKnowledgeLevel: number,
+  beliefAlpha: number,
+  beliefBeta: number,
+  topicName?: string
+): InconsistencyResult {
+  const selfRating = topicKnowledgeLevel / 5;
+  const mean = betaMean(beliefAlpha, beliefBeta);
+  const evidence = evidenceCount(beliefAlpha, beliefBeta);
+
+  if (evidence < 3) {
+    return { isInconsistent: false, direction: 'none', score: 0, message: null };
+  }
+
+  const diff = selfRating - mean;
+  const score = Math.abs(diff) * Math.sqrt(evidence);
+
+  if (score < 0.5) {
+    return { isInconsistent: false, direction: 'none', score, message: null };
+  }
+
+  const displaySelf = topicKnowledgeLevel;
+  const displaySystem = Math.round(mean * 50) / 10; // 0-5 skalası
+
+  if (diff > 0) {
+    // Öğrenci kendini yüksek puanlamış ama veriler düşük
+    return {
+      isInconsistent: true,
+      direction: 'overrated',
+      score,
+      message: topicName
+        ? `${topicName} konusunu ${displaySelf}/5 olarak işaretledin ama veriler ${displaySystem}/5 seviyesine işaret ediyor. Tekrar gözden geçirmeni öneririz.`
+        : `Bu konuyu ${displaySelf}/5 olarak işaretledin ama veriler ${displaySystem}/5 seviyesine işaret ediyor.`,
+    };
+  } else {
+    return {
+      isInconsistent: true,
+      direction: 'underrated',
+      score,
+      message: topicName
+        ? `${topicName} konusunu ${displaySelf}/5 olarak işaretledin ama denemelerinde ${displaySystem}/5 seviyesinde performans gösteriyorsun. Bilgi seviyeni güncellemek isteyebilirsin.`
+        : `Bu konuyu ${displaySelf}/5 olarak işaretledin ama veriler daha yüksek seviye gösteriyor.`,
+    };
+  }
 }
 
 // ==================== Toplu Sinyal İşleme ====================

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Loader2, Clock, Zap, Play, ChevronRight, TrendingUp, AlertTriangle, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, Clock, Zap, Play, ChevronRight, TrendingUp, AlertTriangle, HelpCircle, Lightbulb, RefreshCw, BookOpen } from 'lucide-react';
 import { clsx } from 'clsx';
 import MasteryBadge from './mastery-badge';
 import StudySessionOverlay from './study-session-overlay';
@@ -47,11 +47,13 @@ interface GuidedResult {
   };
 }
 
-type WizardStep = 'mode' | 'exam-type' | 'subject-count' | 'subjects' | 'duration' | 'recent-study' | 'loading' | 'result';
+type StudyGoal = 'new' | 'improve' | 'review' | 'auto';
+type WizardStep = 'mode' | 'exam-type' | 'study-goal' | 'subject-count' | 'subjects' | 'duration' | 'recent-study' | 'loading' | 'result';
 
 interface WizardState {
   mode: 'quick' | 'detailed' | null;
   examType: 'tyt' | 'ayt' | 'both' | null;
+  studyGoal: StudyGoal | null;
   subjectCount: number | null;
   selectedSubjects: string[];
   totalDuration: number | null;
@@ -77,6 +79,7 @@ export default function GuidedActionWizard({ onBack }: GuidedActionWizardProps) 
   const [step, setStep] = useState<WizardStep>('mode');
   const [state, setState] = useState<WizardState>({
     mode: null,
+    studyGoal: null,
     examType: null,
     subjectCount: null,
     selectedSubjects: [],
@@ -100,9 +103,9 @@ export default function GuidedActionWizard({ onBack }: GuidedActionWizardProps) 
   // Step flow
   const getSteps = useCallback((): WizardStep[] => {
     if (state.mode === 'quick') {
-      return ['mode', 'exam-type', 'subjects', 'duration', 'loading', 'result'];
+      return ['mode', 'exam-type', 'study-goal', 'subjects', 'duration', 'loading', 'result'];
     }
-    return ['mode', 'exam-type', 'subject-count', 'subjects', 'duration', 'recent-study', 'loading', 'result'];
+    return ['mode', 'exam-type', 'study-goal', 'subject-count', 'subjects', 'duration', 'recent-study', 'loading', 'result'];
   }, [state.mode]);
 
   const getCurrentStepIndex = useCallback(() => {
@@ -137,6 +140,7 @@ export default function GuidedActionWizard({ onBack }: GuidedActionWizardProps) 
       if (state.examType) params.set('examType', state.examType);
       params.set('subjects', state.selectedSubjects.join(','));
       if (state.totalDuration) params.set('duration', state.totalDuration.toString());
+      if (state.studyGoal) params.set('studyGoal', state.studyGoal);
       if (state.recentStudySubjects.length > 0) {
         params.set('recentSubjects', state.recentStudySubjects.join(','));
       }
@@ -254,11 +258,60 @@ export default function GuidedActionWizard({ onBack }: GuidedActionWizardProps) 
                       selected={state.examType === type}
                       onClick={() => {
                         setState(s => ({ ...s, examType: type, selectedSubjects: [] }));
-                        goNext(state.mode === 'detailed' ? 'subject-count' : 'subjects');
+                        goNext('study-goal');
                       }}
                       label={type === 'tyt' ? 'TYT' : type === 'ayt' ? 'AYT' : 'İkisi de'}
                     />
                   ))}
+                </div>
+              </StepContainer>
+            )}
+
+            {/* Step: Study Goal */}
+            {step === 'study-goal' && (
+              <StepContainer key="study-goal">
+                <StepQuestion>Bugün ne tür çalışma yapmak istiyorsun?</StepQuestion>
+                <div className="space-y-2.5">
+                  <OptionCard
+                    selected={false}
+                    onClick={() => {
+                      setState(s => ({ ...s, studyGoal: 'new' as StudyGoal }));
+                      goNext(state.mode === 'detailed' ? 'subject-count' : 'subjects');
+                    }}
+                    icon={<Lightbulb size={16} className="text-amber-400" />}
+                    label="Yeni Konu Öğren"
+                    description="Bilmediğin konulara odaklan"
+                  />
+                  <OptionCard
+                    selected={false}
+                    onClick={() => {
+                      setState(s => ({ ...s, studyGoal: 'improve' as StudyGoal }));
+                      goNext(state.mode === 'detailed' ? 'subject-count' : 'subjects');
+                    }}
+                    icon={<TrendingUp size={16} className="text-emerald-400" />}
+                    label="Bildiğini Geliştir"
+                    description="Orta seviye konuları güçlendir"
+                  />
+                  <OptionCard
+                    selected={false}
+                    onClick={() => {
+                      setState(s => ({ ...s, studyGoal: 'review' as StudyGoal }));
+                      goNext(state.mode === 'detailed' ? 'subject-count' : 'subjects');
+                    }}
+                    icon={<RefreshCw size={16} className="text-cyan-400" />}
+                    label="Konu Tekrarı"
+                    description="Unuttuklarını hatırla"
+                  />
+                  <OptionCard
+                    selected={false}
+                    onClick={() => {
+                      setState(s => ({ ...s, studyGoal: 'auto' as StudyGoal }));
+                      goNext(state.mode === 'detailed' ? 'subject-count' : 'subjects');
+                    }}
+                    icon={<Zap size={16} className="text-pink-400" />}
+                    label="Sistem Karar Versin"
+                    description="En verimli ne ise onu öner"
+                  />
                 </div>
               </StepContainer>
             )}
