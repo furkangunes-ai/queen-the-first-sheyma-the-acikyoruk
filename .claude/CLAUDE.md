@@ -52,7 +52,7 @@ model ConceptNode {
 Turkish chars → ASCII: ğ→g, ü→u, ş→s, ı→i, ö→o, ç→c, then kebab-case
 
 ## Current Branch
-`claude/document-trial-analysis-FBigJ`
+`claude/student-progress-schedule-nbZ6s`
 
 ## Active Reform: Deneme Sistemi Yeniden Tasarımı
 **Plan Dokümanı:** `docs/DENEME-REFORM-PLAN.md`
@@ -60,6 +60,21 @@ Turkish chars → ASCII: ğ→g, ü→u, ş→s, ı→i, ö→o, ç→c, then ke
 - Her faz ayrı PR ile merge edilir
 - Temel felsefe: Kuantum Veri Girişi (Lazy Evaluation), Çift Fazlı Metrik (Clarity+Repair), Fog of War analitik, Recidivism ceza sistemi
 - Kademeli Pill Segmentasyonu (dropdown yerine), Odak Merceği (Lens Effect), Triage Flashcard modu
+
+## Active Work: Öğrenci İlerleme & Akıllı Öneri Sistemi
+**Plan Dokümanı:** `docs/STUDENT-PROGRESS-PLAN.md`
+**Branch:** `claude/student-progress-schedule-nbZ6s`
+- 4 fazlı geliştirme planı
+- **Faz 1**: Deterministik Konu Hakimiyet Motoru (Topic Mastery Engine) — CMS skoru (0-100)
+  - 5 bileşen: selfRating(%20), examPerformance(%35), implicitPositive(%20), studyEffort(%15), recency(%10)
+  - `lib/topic-mastery-engine.ts` + `app/api/student/mastery-scores/route.ts`
+- **Faz 2**: Akıllı İçgörü & Öneri Motoru — 6 insight tipi (FUTILITY, NEGLECT, OVER_STUDY, MASTERY_CONFIRMED, DECLINING, QUICK_WIN)
+  - `lib/recommendation-engine.ts` + `app/api/student/recommendations/route.ts`
+- **Faz 3**: Deneme Sonrası Otomatik Mastery Güncellemesi — örtük pozitif sinyal + TopicKnowledge ayarı
+  - Mevcut `app/api/exams/[id]/results/route.ts` düzenlenir
+- **Faz 4**: Dashboard Öneri Widget'ı — `components/home/study-recommendations.tsx`
+  - Dashboard'da "Bugünün Planı" altına eklenir
+- **Durum**: Planlama tamamlandı, Faz 1'den başlanacak
 
 ## Pending Work (as of last session)
 1. Curriculum manager UI improvements: bigger fonts, multi-select delete, bigger delete buttons
