@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Loader2, Clock, Zap, Play, ChevronRight, TrendingUp, AlertTriangle, HelpCircle, Lightbulb, RefreshCw, BookOpen } from 'lucide-react';
+import { ArrowLeft, Loader2, Clock, Zap, Play, ChevronRight, TrendingUp, AlertTriangle, HelpCircle, Lightbulb, RefreshCw, CalendarPlus, Home, Check } from 'lucide-react';
 import { clsx } from 'clsx';
+import { toast } from 'sonner';
 import MasteryBadge from './mastery-badge';
 import StudySessionOverlay from './study-session-overlay';
 
@@ -73,9 +74,10 @@ const DURATION_OPTIONS = [
 
 interface GuidedActionWizardProps {
   onBack: () => void;
+  onReturnHome?: () => void;
 }
 
-export default function GuidedActionWizard({ onBack }: GuidedActionWizardProps) {
+export default function GuidedActionWizard({ onBack, onReturnHome }: GuidedActionWizardProps) {
   const [step, setStep] = useState<WizardStep>('mode');
   const [state, setState] = useState<WizardState>({
     mode: null,
@@ -90,6 +92,8 @@ export default function GuidedActionWizard({ onBack }: GuidedActionWizardProps) 
   const [result, setResult] = useState<GuidedResult | null>(null);
   const [sessionOpen, setSessionOpen] = useState(false);
   const [selectedForSession, setSelectedForSession] = useState<GuidedRecommendation | null>(null);
+  const [addingToPlan, setAddingToPlan] = useState<string | null>(null);
+  const [addedToPlan, setAddedToPlan] = useState<Set<string>>(new Set());
 
   // Fetch subjects when exam type is selected
   useEffect(() => {
@@ -114,7 +118,6 @@ export default function GuidedActionWizard({ onBack }: GuidedActionWizardProps) 
   }, [step, getSteps]);
 
   const getTotalVisibleSteps = useCallback(() => {
-    // Exclude 'loading' and 'result' from count
     return getSteps().filter(s => s !== 'loading' && s !== 'result').length;
   }, [getSteps]);
 
@@ -164,9 +167,38 @@ export default function GuidedActionWizard({ onBack }: GuidedActionWizardProps) 
   const handleSessionComplete = useCallback(() => {
     setSessionOpen(false);
     setSelectedForSession(null);
-    // Re-fetch recommendations
-    fetchRecommendations();
-  }, [fetchRecommendations]);
+    if (onReturnHome) onReturnHome();
+  }, [onReturnHome]);
+
+  const handleAddToPlan = useCallback(async (rec: GuidedRecommendation) => {
+    setAddingToPlan(rec.topicId);
+    try {
+      const res = await fetch('/api/weekly-plans/add-item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subjectId: rec.subjectId,
+          topicId: rec.topicId,
+          duration: rec.suggestedDuration,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setAddedToPlan(prev => new Set(prev).add(rec.topicId));
+      toast.success(`${rec.topicName} bugünün planına eklendi`);
+    } catch {
+      toast.error('Plana eklenirken hata oluştu');
+    } finally {
+      setAddingToPlan(null);
+    }
+  }, []);
+
+  const handleAddAllToPlan = useCallback(async () => {
+    if (!result) return;
+    const toAdd = result.recommendations.filter(r => !addedToPlan.has(r.topicId));
+    for (const rec of toAdd) {
+      await handleAddToPlan(rec);
+    }
+  }, [result, addedToPlan, handleAddToPlan]);
 
   // Current visible step number (for progress)
   const visibleStepIndex = getCurrentStepIndex();
@@ -402,10 +434,6 @@ export default function GuidedActionWizard({ onBack }: GuidedActionWizardProps) 
                         setState(s => ({ ...s, totalDuration: opt.value }));
                         if (state.mode === 'detailed') {
                           goNext('recent-study');
-                        } else {
-                          // Quick mode — go to results
-                          setState(s => ({ ...s, totalDuration: opt.value }));
-                          // Need to trigger fetch after state update
                         }
                       }}
                       label={opt.label}
@@ -524,53 +552,103 @@ export default function GuidedActionWizard({ onBack }: GuidedActionWizardProps) 
                       </div>
                     )}
 
+                    {/* Hepsini Plana Ekle */}
+                    {result.recommendations.some(r => !addedToPlan.has(r.topicId)) && (
+                      <button
+                        onClick={handleAddAllToPlan}
+                        disabled={addingToPlan !== null}
+                        className="w-full mb-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm font-bold hover:bg-amber-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        <CalendarPlus size={16} />
+                        Hepsini Bugünün Planına Ekle
+                      </button>
+                    )}
+
                     {/* Recommendations */}
                     <div className="space-y-2.5">
-                      {result.recommendations.map((rec, idx) => (
-                        <motion.div
-                          key={rec.topicId}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: idx * 0.08 }}
-                          className="p-3.5 glass rounded-xl border border-white/5 hover:border-pink-500/20 transition-all"
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[13px] font-bold text-white truncate">
-                                {rec.topicName}
-                              </p>
-                              <p className="text-[10px] text-white/40 mt-0.5">
-                                {rec.subjectName} · {rec.examTypeName} · {rec.actionLabel}
+                      {result.recommendations.map((rec, idx) => {
+                        const isAdded = addedToPlan.has(rec.topicId);
+                        return (
+                          <motion.div
+                            key={rec.topicId}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.08 }}
+                            className="p-3.5 glass rounded-xl border border-white/5 hover:border-pink-500/20 transition-all"
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[13px] font-bold text-white truncate">
+                                  {rec.topicName}
+                                </p>
+                                <p className="text-[10px] text-white/40 mt-0.5">
+                                  {rec.subjectName} · {rec.examTypeName} · {rec.actionLabel}
+                                </p>
+                              </div>
+                              <MasteryBadge
+                                category={rec.belief.category as any}
+                                categoryLabel={rec.belief.categoryLabel}
+                                mean={rec.belief.mean}
+                                ci95Lower={rec.belief.ci95Lower}
+                                ci95Upper={rec.belief.ci95Upper}
+                                evidenceCount={rec.belief.evidenceCount}
+                              />
+                            </div>
+
+                            {/* Insight */}
+                            <div className="flex items-start gap-2 mb-3 p-2 rounded-lg bg-white/[0.02] border border-white/[0.03]">
+                              <InsightIcon type={rec.insightType} />
+                              <p className="text-[11px] text-white/50 leading-relaxed flex-1">
+                                {rec.insight}
                               </p>
                             </div>
-                            <MasteryBadge
-                              category={rec.belief.category as any}
-                              categoryLabel={rec.belief.categoryLabel}
-                              mean={rec.belief.mean}
-                              ci95Lower={rec.belief.ci95Lower}
-                              ci95Upper={rec.belief.ci95Upper}
-                              evidenceCount={rec.belief.evidenceCount}
-                            />
-                          </div>
 
-                          {/* Insight */}
-                          <div className="flex items-start gap-2 mb-3 p-2 rounded-lg bg-white/[0.02] border border-white/[0.03]">
-                            <InsightIcon type={rec.insightType} />
-                            <p className="text-[11px] text-white/50 leading-relaxed flex-1">
-                              {rec.insight}
-                            </p>
-                          </div>
+                            {/* Action buttons */}
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleAddToPlan(rec)}
+                                disabled={addingToPlan === rec.topicId || isAdded}
+                                className={clsx(
+                                  "flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50",
+                                  isAdded
+                                    ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-300"
+                                    : "bg-amber-500/10 border border-amber-500/20 text-amber-300 hover:bg-amber-500/20"
+                                )}
+                              >
+                                {isAdded ? (
+                                  <>
+                                    <Check size={12} />
+                                    Eklendi
+                                  </>
+                                ) : (
+                                  <>
+                                    <CalendarPlus size={12} />
+                                    Plana Ekle
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleStartSession(rec)}
+                                className="flex-1 py-2 rounded-lg bg-gradient-to-r from-pink-500/60 to-amber-500/60 text-white text-xs font-bold hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+                              >
+                                <Play size={12} />
+                                Hemen Başla
+                              </button>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
 
-                          <button
-                            onClick={() => handleStartSession(rec)}
-                            className="w-full py-2 rounded-lg bg-gradient-to-r from-pink-500/60 to-amber-500/60 text-white text-xs font-bold hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
-                          >
-                            <Play size={12} />
-                            Başla
-                            <span className="text-white/50">({rec.suggestedDuration}dk)</span>
-                          </button>
-                        </motion.div>
-                      ))}
+                    {/* Ana Sayfaya Dön */}
+                    <div className="mt-4 pt-3 border-t border-white/5 flex justify-center">
+                      <button
+                        onClick={onReturnHome || onBack}
+                        className="text-[11px] text-white/30 hover:text-white/50 transition-colors flex items-center gap-1.5"
+                      >
+                        <Home size={12} />
+                        Ana Sayfaya Dön
+                      </button>
                     </div>
                   </>
                 )}
@@ -593,7 +671,6 @@ export default function GuidedActionWizard({ onBack }: GuidedActionWizardProps) 
           subjectName={selectedForSession.subjectName}
           actionType={selectedForSession.actionType as any}
           actionLabel={selectedForSession.actionLabel}
-          sessionDuration={selectedForSession.suggestedDuration}
           onSessionComplete={handleSessionComplete}
         />
       )}

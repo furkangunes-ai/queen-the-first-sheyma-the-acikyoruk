@@ -55,6 +55,7 @@ export const REASON_LABELS: Record<ROIReason, string> = {
 export interface TopicROI {
   topicId: string;
   topicName: string;
+  subjectId: string;
   subjectName: string;
   examTypeName: string;
   roi: number;
@@ -261,6 +262,7 @@ export function calculateTopicROI(
   return {
     topicId: topic.id,
     topicName: topic.name,
+    subjectId: topic.subjectId,
     subjectName: topic.subjectName,
     examTypeName: topic.examTypeName,
     roi: Math.round(roi * 1000) / 1000,
