@@ -1,4 +1,4 @@
-# Öğrenci İlerleme & Akıllı Öneri Sistemi — Detaylı Plan
+# Öğrenci İlerleme & Akıllı Öneri Sistemi — v2 Aksiyomatik Plan
 
 > **Tarih:** 2026-03-15
 > **Branch:** `claude/student-progress-schedule-nbZ6s`
@@ -6,712 +6,997 @@
 
 ---
 
-## Mevcut Durum Analizi
+## Aksiyomatik Temeller
 
-### Var Olanlar
-1. **CognitiveVoid**: Yanlış/boş sorular kaydediliyor (deneme bazlı, konu bazlı)
-2. **TopicKnowledge**: Öğrenci kendisi 0-5 arası bilgi seviyesi giriyor
-3. **UserCognitiveState + DAG**: ConceptNode seviyesinde mastery + Ebbinghaus retention
-4. **KnapsackPlanner**: ConceptNode seviyesinde haftalık plan oluşturma (ancak UI'da kullanılmıyor)
-5. **Recommendations API** (`/api/strategy/recommendations`): Basit bir priority formülü var ama dashboard'da gösterilmiyor
-6. **DailyStudy + TopicReview**: Çalışma oturumları kaydediliyor
+Bu plan, endüstri standardı varsayımları yıkarak üç tartışmasız gerçek üzerine inşa edilmiştir:
 
-### Kritik Eksiklikler
-1. **Örtük Pozitif Sinyal Yok**: Öğrenci denemede bir konuda yanlış yapmadığında bu bilgi hiçbir yere yansımıyor
-2. **Deneme Sonrası Otomatik Mastery Güncellemesi Yok**: Exam → CognitiveVoid oluşuyor ama TopicKnowledge/mastery otomatik güncellenmiyor
-3. **Dashboard'da Öneri Widget'ı Yok**: Sadece haftalık plan gösteriliyor, sistem önerisi yok
-4. **Analitik İçgörüler Yok**: "Yanlış çalışıyorsun", "Bu konuyu ihmal ediyorsun" gibi deterministik uyarılar
-5. **Konu Bazlı Bütünleşik Skor Yok**: selfRating, examPerformance, studyHistory ayrı ayrı yaşıyor
+### Aksiyom 1: Sinyal ve Gürültü (Bilgi Kuramı)
+Deneme sonucu mutlak gerçek (ground truth) değil, **gürültülü bir sinyaldir** (noisy signal).
+Doğru cevap, öğrencinin konuyu bilme olasılığını artırır ama kesinlemez.
+Model: **Bayes Teoremi** ile posterior güncelleme.
+
+```
+P(Bilgi | DoğruCevap) = P(DoğruCevap | Bilgi) · P(Bilgi) / P(DoğruCevap)
+```
+
+### Aksiyom 2: Hız = Nöral Miyelinasyon (Fizik)
+Bir soruyu hızlı çözmek ile yavaş çözmek, farklı ustalık seviyelerini gösterir.
+Model: `V_subject = T_total / N_attempted` ortalama hız, topic complexity ile ağırlıklandırılır.
+
+### Aksiyom 3: Minimum Direnç Yolu (Psikoloji)
+Sistem diktatör değil, **çevre mimarı**. Öğrenci farkında olmadan doğru yola girer.
+Navigasyon sürtünmedir. Karar verme yorgunluğu düşmandır. Tek buton = tek aksiyon.
 
 ---
 
-## Faz 1: Deterministik Konu Hakimiyet Motoru (Topic Mastery Engine)
+## Yıkılan Varsayımlar
 
-**PR Adı:** `feat: deterministic topic mastery engine`
+| Eski Varsayım | Gerçek |
+|---|---|
+| "Yanlış yapmamak = biliyor" | Şans, eleme, düşük zorluk → illüzyon. Sadece Bayesyen olasılık artışı. |
+| "0-100 deterministik skor" | İnsan bilişi olasılıksal ağ. Nokta tahmin yerine **güven aralığı**. |
+| "Öğrenciye 'yanlış çalışıyorsun' de" | Savunma mekanizması tetikler. Veri sunmak davranış değiştirmez. |
 
-Bu faz, tüm sistemin temeli. Bir öğrencinin her konudaki gerçek hakimiyet seviyesini deterministik olarak hesaplayan motor.
+---
 
-### 1.1 Composite Mastery Score (CMS) Algoritması
+## Faz 1: Olasılıksal Biliş Motoru (Probabilistic Cognition Engine)
 
-Her konu için 0-100 arası tek bir bütünleşik skor hesaplanır.
+**PR Adı:** `feat: bayesian topic mastery engine with beta distributions`
 
-**Girdi Sinyalleri:**
+### 1.1 Temel Model: Beta Dağılımı
 
-| Sinyal | Kaynak | Ağırlık | Açıklama |
-|--------|--------|---------|----------|
-| `selfRating` | TopicKnowledge (0-5) | %20 | Öğrencinin kendi değerlendirmesi |
-| `examPerformance` | CognitiveVoid | %35 | Denemelerdeki yanlış/boş geçmişi |
-| `implicitPositive` | Exam + ExamSubjectResult | %20 | Denemede yanlış yapmamış = iyi sinyali |
-| `studyEffort` | DailyStudy + TopicReview | %15 | Ne kadar çalışılmış, doğru oranı |
-| `recency` | Tüm kaynaklar | %10 | Ne kadar taze bilgi |
+Her (userId, topicId) çifti için bir **Beta(α, β)** dağılımı tutulur.
 
-**Formül Detayı:**
+```
+Beta(α, β):
+  - α: "Bilgi var" yönünde biriken kanıt gücü
+  - β: "Bilgi yok" yönünde biriken kanıt gücü
+  - Prior (sıfır veri): Beta(1, 1) = uniform (hiçbir şey bilmiyoruz)
+  - Ortalama (mean): μ = α / (α + β)
+  - Varyans: σ² = αβ / ((α+β)²(α+β+1))
+  - %95 CI: [μ - 1.96σ, μ + 1.96σ] (clamp 0-1)
+```
+
+**Neden Beta?**
+- Conjugate prior: Bernoulli gözlemlerle (başarı/başarısızlık) güncellendiğinde posterior yine Beta.
+- α ve β doğrudan "kaç tane pozitif/negatif kanıt birikmiş" anlamına gelir.
+- Veri arttıkça CI daralır → belirsizlik azalır.
+
+### 1.2 Bayesyen Güncelleme Kuralları
+
+#### Sinyal 1: Denemede Yanlış Yapma (Negatif Kanıt)
 
 ```typescript
-// 1. Self-Rating Bileşeni (0-20 puan)
-selfScore = (topicKnowledge.level / 5) * 20
+// CognitiveVoid tespit edildiğinde (topic ile eşleşmiş)
+function updateFromError(
+  alpha: number, beta: number,
+  voidSeverity: number,
+  speedWeight: number  // Aksiyom 2
+): { alpha: number; beta: number } {
+  // Severity katsayıları (severity.ts'den):
+  // KAVRAM_YANILGISI: 1.0, BILGI_EKSIKLIGI: 0.8, SURE_YETISMEDI: 0.4, ...
+  //
+  // Hız ağırlığı: hızlı yanlış = daha az negatif (acele etmiş olabilir)
+  //               yavaş yanlış = daha fazla negatif (düşünüp de yapamamış)
+  //
+  // speedWeight: 0.5 (hızlı) - 1.5 (yavaş)
+  const negativeDelta = voidSeverity * speedWeight;
 
-// 2. Deneme Performans Bileşeni (0-35 puan, ceza bazlı)
-// Başlangıç: 35 puan (hiç veri yoksa nötr)
-// Her yanlış deneme konusu: ceza uygula
-examBaseScore = 35
-for each exam where this topic's subject was tested:
-  voidsForTopic = cognitiveVoids.filter(topicId == topic.id)
-  if voidsForTopic.length > 0:
-    // Yanlış var → ceza
-    totalSeverity = sum(void.severity for void in voidsForTopic)
-    penalty = min(totalSeverity * 2, 5)  // tek sınav max 5 puan ceza
-    examBaseScore -= penalty
-  // (Pozitif ayarlama Sinyal 3'te)
-examScore = clamp(0, 35, examBaseScore)
-
-// 3. Örtük Pozitif Sinyal Bileşeni (0-20 puan)
-// Öğrenci X denemede bir konunun dersini çözmüş ama o konuda hata yapmamışsa
-// → o konu hakkında pasif pozitif sinyal
-implicitPositiveCount = 0
-for each exam where subject was tested:
-  if NO cognitiveVoid exists for this topic in this exam:
-    implicitPositiveCount += 1
-
-// Logaritmik büyüme (diminishing returns)
-// 1 deneme = 2 puan, 5 deneme = 8 puan, 10 deneme = 12 puan, 20 deneme = 16 puan
-implicitScore = min(20, log2(implicitPositiveCount + 1) * 4.6)
-
-// 4. Çalışma Efor Bileşeni (0-15 puan)
-totalSessions = dailyStudy.count + topicReview.count
-if totalSessions == 0:
-  studyScore = 0
-else:
-  avgAccuracy = totalCorrect / max(totalCorrect + totalWrong, 1)
-  volumeFactor = min(1.0, log(totalSessions + 1) / log(15))  // 15 oturum = max
-  studyScore = volumeFactor * avgAccuracy * 15
-
-// 5. Tazelik Bileşeni (0-10 puan)
-daysSinceAnyActivity = min(daysSinceStudy, daysSinceExamWithTopic)
-if daysSinceAnyActivity == null:  // hiç aktivite yok
-  recencyScore = 0
-elif daysSinceAnyActivity <= 3:
-  recencyScore = 10
-elif daysSinceAnyActivity <= 7:
-  recencyScore = 8
-elif daysSinceAnyActivity <= 14:
-  recencyScore = 6
-elif daysSinceAnyActivity <= 30:
-  recencyScore = 4
-elif daysSinceAnyActivity <= 60:
-  recencyScore = 2
-else:
-  recencyScore = 0
-
-// SON SKOR
-CMS = selfScore + examScore + implicitScore + studyScore + recencyScore
-// 0-100 arası, doğal olarak clamp'li (her bileşen kendi max'inde)
+  return {
+    alpha,
+    beta: beta + negativeDelta
+  };
+}
 ```
 
-### 1.2 "Denemede Sınanmış mı?" Tespiti
-
-Kritik soru: Bir konunun sınavda çıkıp çıkmadığını nasıl biliyoruz?
-
-**Yaklaşım**: `ExamSubjectResult` varsa, o dersin tüm konuları "sınandı" sayılır. Çünkü YKS'de tüm konular her denemede çıkar. Eğer konuya ait CognitiveVoid yoksa → o konuda yanlış yapılmamış demektir.
+#### Sinyal 2: Denemede Yanlış Yapmama (Gürültülü Pozitif Kanıt)
 
 ```typescript
-// Bir konunun belirli sınavda "sınandı" sayılma koşulu:
-topicWasTested = ExamSubjectResult EXISTS for (examId, topic.subjectId)
-  AND (exam.examCategory != 'brans' OR topic.subject matches branch category)
+// Konu sınanmış ama CognitiveVoid yok
+function updateFromImplicitPositive(
+  alpha: number, beta: number,
+  discriminationFactor: number,  // Sorunun ayırt ediciliği (0.1 - 1.0)
+  speedWeight: number            // Aksiyom 2
+): { alpha: number; beta: number } {
+  // Varsayım Yıkımı: "Yanlış yapmamak = biliyor" DEĞİL.
+  //
+  // Pozitif sinyalin gücü discriminationFactor'e bağlı:
+  // - Kolay soru (disc=0.2): yanlış yapmamak çok az şey kanıtlar
+  // - Zor soru (disc=0.8): yanlış yapmamak güçlü kanıt
+  //
+  // Hız ağırlığı: hızlı doğru = daha fazla pozitif (gerçekten biliyor)
+  //               yavaş doğru = daha az pozitif (eleme/şans olabilir)
+  //
+  // speedWeight: 1.5 (hızlı) - 0.5 (yavaş)
+  const positiveDelta = discriminationFactor * speedWeight;
 
-// Sınandı ama yanlış yok = örtük pozitif
-topicPassedImplicitly = topicWasTested AND NOT EXISTS CognitiveVoid(examId, topicId)
+  return {
+    alpha: alpha + positiveDelta,
+    beta
+  };
+}
 ```
 
-**Ama bir nüans**: Boş bırakma (EMPTY) konuyu bilmediği anlamına da gelebilir. Bu yüzden:
-- `source: WRONG` olan void'lar → kesinlikle bilmiyor (yanlış yapılmış)
-- `source: EMPTY` olan void'lar → iki durum:
-  - Süre yetişmedi (eğer errorReason = SURE_YETISMEDI) → nötr etki
-  - Bilmiyor → negatif etki
-- Hiç void yok → büyük ihtimalle biliyor (örtük pozitif)
+#### Sinyal 3: Self-Rating (Informative Prior Shift)
 
-### 1.3 Yeni Dosyalar
+```typescript
+// Öğrenci kendine 0-5 arası puan verdiğinde
+function updateFromSelfRating(
+  alpha: number, beta: number,
+  level: number  // 0-5
+): { alpha: number; beta: number } {
+  // Self-rating, zayıf bir sinyal (öğrenci kendini yanıltabilir)
+  // Ama hiç veri yokken çok değerli (warm start)
+  //
+  // Ağırlık: 2 (sınav verisinin ~1/3'ü kadar güçlü)
+  const selfWeight = 2.0;
+  const selfMastery = level / 5;  // 0-1 normalize
+
+  return {
+    alpha: alpha + selfMastery * selfWeight,
+    beta: beta + (1 - selfMastery) * selfWeight
+  };
+}
+```
+
+#### Sinyal 4: Çalışma Oturumu (DailyStudy + TopicReview)
+
+```typescript
+// Öğrenci konuya çalışıp soru çözdüğünde
+function updateFromStudy(
+  alpha: number, beta: number,
+  correctRatio: number,   // 0-1 (doğru/toplam)
+  questionCount: number   // çözülen soru sayısı
+): { alpha: number; beta: number } {
+  // Her doğru soru zayıf bir pozitif sinyal (sınav kadar güçlü değil)
+  // Her yanlış soru zayıf bir negatif sinyal
+  const studyWeight = 0.3;  // Çalışma sinyali, sınav sinyalinin ~1/3'ü
+  const positives = correctRatio * questionCount * studyWeight;
+  const negatives = (1 - correctRatio) * questionCount * studyWeight;
+
+  return {
+    alpha: alpha + positives,
+    beta: beta + negatives
+  };
+}
+```
+
+### 1.3 Discrimination Factor (Ayırt Edicilik Katsayısı)
+
+Her konu için sabit bir discrimination factor yok (sınav soruları dışarıdan geliyor).
+**Proxy hesaplama:**
+
+```typescript
+// Bir konunun o sınavdaki "ayırt edicilik" tahmini:
+function estimateDiscrimination(
+  subjectResult: ExamSubjectResult,
+  topic: Topic,
+  totalTopicsInSubject: number
+): number {
+  // 1. Sınav zorluğu proxy'si: o dersteki genel net oranı
+  const totalQuestions = subjectResult.correctCount + subjectResult.wrongCount + subjectResult.emptyCount;
+  const successRate = subjectResult.correctCount / Math.max(totalQuestions, 1);
+
+  // Düşük genel başarı → zor sınav → doğru yapmak daha anlamlı
+  // Yüksek genel başarı → kolay sınav → doğru yapmak daha az anlamlı
+  const examDifficultyFactor = 1.0 - successRate * 0.5;  // 0.5 - 1.0 arası
+
+  // 2. Konu zorluğu (Topic.difficulty: 1-5)
+  const topicDifficultyFactor = topic.difficulty / 5;  // 0.2 - 1.0
+
+  // 3. Konu "oransal ağırlık" — derste kaç konudan biri?
+  // Çok konulu derstte tek konuda yanlış yapmamak daha az şey söyler
+  const coverageFactor = Math.min(1.0, 3 / totalTopicsInSubject);  // 3 konu = max
+
+  // Final discrimination: 0.1 - 1.0 arası
+  return Math.max(0.1, examDifficultyFactor * topicDifficultyFactor * coverageFactor);
+}
+```
+
+### 1.4 Hız Ağırlığı (Speed Weight) — Aksiyom 2
+
+ExamSubjectResult'a `durationMinutes` alanı eklenir (ders bazında toplam süre).
+
+```typescript
+// Ders bazında ortalama hız hesapla
+function calculateSpeedWeight(
+  durationMinutes: number | null,
+  attemptedQuestions: number,  // correct + wrong (empty hariç, zaman harcamamış)
+  topic: Topic
+): number {
+  if (!durationMinutes || attemptedQuestions === 0) {
+    return 1.0;  // Süre verisi yoksa nötr ağırlık
+  }
+
+  // Ortalama soru başına dakika
+  const avgMinutesPerQuestion = durationMinutes / attemptedQuestions;
+
+  // Beklenen soru başına dakika (konu zorluğuna göre)
+  // TYT: ~1.5dk/soru, AYT: ~2.5dk/soru (genel ortalama)
+  // Complexity 1-2: beklenen sürenin %70'i, Complexity 4-5: beklenen sürenin %130'u
+  const baseExpected = topic.difficulty <= 3 ? 1.5 : 2.5;
+  const complexityFactor = 0.7 + (topic.difficulty / 5) * 0.6;
+  const expectedMinutes = baseExpected * complexityFactor;
+
+  // Hız oranı: <1 = hızlı, >1 = yavaş
+  const speedRatio = avgMinutesPerQuestion / expectedMinutes;
+
+  // Hız ağırlığı dönüşümü:
+  // Hızlı (ratio 0.5) → pozitif için 1.5, negatif için 0.5
+  // Normal (ratio 1.0) → 1.0
+  // Yavaş (ratio 2.0) → pozitif için 0.5, negatif için 1.5
+  return Math.max(0.3, Math.min(2.0, 1.0 / speedRatio));
+  // NOT: Bu değer pozitif güncelleme için direkt kullanılır.
+  // Negatif güncelleme için 2.0 - speedWeight kullanılır (ters orantı).
+}
+```
+
+### 1.5 Fuzzy Kategori Eşlemesi (UI Katmanı)
+
+Beta posteriorundan CI hesapla, CI alt sınırına göre kategori ata:
+
+```typescript
+interface MasteryEstimate {
+  mean: number;           // μ = α/(α+β)
+  ci95Lower: number;      // %95 CI alt sınır
+  ci95Upper: number;      // %95 CI üst sınır
+  confidence: number;     // 1/varyans normalize — veri miktarının proxy'si
+  category: MasteryCategory;
+  categoryLabel: string;
+  evidenceCount: number;  // α + β - 2 (prior çıkarılmış toplam kanıt)
+}
+
+type MasteryCategory = 'unknown' | 'weak' | 'developing' | 'strong' | 'mastered';
+
+function categorize(ci95Lower: number, evidenceCount: number): MasteryCategory {
+  // Yetersiz veri → "Belirsiz" (henüz yargı veremiyor)
+  if (evidenceCount < 3) return 'unknown';
+
+  // CI ALT SINIRI baz alınır (kötümser tahmin — gerçekçi)
+  if (ci95Lower < 0.25) return 'weak';        // Zayıf
+  if (ci95Lower < 0.50) return 'developing';   // Gelişiyor
+  if (ci95Lower < 0.75) return 'strong';       // Güçlü
+  return 'mastered';                            // Uzman
+}
+
+const CATEGORY_LABELS: Record<MasteryCategory, string> = {
+  unknown:    'Belirsiz',
+  weak:       'Zayıf',
+  developing: 'Gelişiyor',
+  strong:     'Güçlü',
+  mastered:   'Uzman',
+};
+```
+
+### 1.6 Schema Değişikliği
+
+**Yeni model: `TopicBelief`** (Beta dağılım parametreleri)
+
+```prisma
+model TopicBelief {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  topicId   String
+  topic     Topic    @relation(fields: [topicId], references: [id])
+  alpha     Float    @default(1.0)   // Pozitif kanıt gücü
+  beta      Float    @default(1.0)   // Negatif kanıt gücü
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([userId, topicId])
+  @@index([userId])
+}
+```
+
+**ExamSubjectResult'a eklenen alan:**
+
+```prisma
+model ExamSubjectResult {
+  // ... mevcut alanlar
+  durationMinutes  Int?    // Ders bazında toplam harcanan süre (dakika)
+}
+```
+
+### 1.7 Yeni Dosyalar
 
 ```
-lib/topic-mastery-engine.ts          # Ana hesaplama motoru
-lib/topic-mastery-engine.test.ts     # Unit test (saf fonksiyonlar, mock DB)
-app/api/student/mastery-scores/route.ts  # GET: tüm konuların CMS değerlerini döndür
+lib/bayesian-engine.ts              # Beta dağılım hesaplamaları (saf fonksiyonlar)
+lib/bayesian-engine.test.ts         # Unit test
+app/api/student/mastery/route.ts    # GET: tüm konuların posterior + CI + kategori
+prisma/migrations/xxx_topic_belief/ # Schema migration
 ```
 
-### 1.4 API Tasarımı
+### 1.8 API Tasarımı
 
-**GET `/api/student/mastery-scores`**
+**GET `/api/student/mastery`**
 
-Query params:
-- `examTypeId?` (TYT/AYT filtresi)
-- `subjectId?` (tek ders filtresi)
+Query params: `examTypeId?`, `subjectId?`
 
-Response:
 ```json
 {
-  "scores": [
+  "beliefs": [
     {
       "topicId": "...",
       "topicName": "Türev",
-      "subjectId": "...",
       "subjectName": "Matematik",
       "examTypeName": "AYT",
-      "cms": 67.4,
-      "breakdown": {
-        "selfRating": 12,      // max 20
-        "examPerformance": 28, // max 35
-        "implicitPositive": 14,// max 20
-        "studyEffort": 8,      // max 15
-        "recency": 6           // max 10
-      },
-      "examsTested": 12,
-      "examsWithErrors": 3,
-      "totalVoidSeverity": 4.5,
-      "lastActivity": "2026-03-10"
+      "alpha": 8.4,
+      "beta": 3.2,
+      "mean": 0.724,
+      "ci95Lower": 0.52,
+      "ci95Upper": 0.88,
+      "category": "strong",
+      "categoryLabel": "Güçlü",
+      "evidenceCount": 9.6,
+      "speedAvg": 1.2
     }
   ],
   "meta": {
     "totalTopics": 150,
-    "scoredTopics": 87,
-    "avgCMS": 54.2
+    "unknownCount": 63,
+    "weakCount": 12,
+    "developingCount": 28,
+    "strongCount": 35,
+    "masteredCount": 12
   }
 }
 ```
 
----
-
-## Faz 2: Akıllı İçgörü & Öneri Motoru (Recommendation Engine)
-
-**PR Adı:** `feat: intelligent recommendation engine with insights`
-
-Faz 1'deki CMS değerlerini kullanarak öğrenciye somut, eyleme dönüştürülebilir öneriler üreten motor.
-
-### 2.1 İçgörü Türleri (Insight Types)
-
-6 deterministik içgörü türü:
-
-#### 1. FUTILITY (Nafile Çalışma)
-```
-Koşul:
-  studySessions >= 5 (son 30 gün)
-  AND recentErrorRate > 0.4 (son 3 denemede hata oranı)
-  AND trendDirection == 'stable' OR 'declining'
-
-Mesaj: "Bu konuya {studySessions} kez çalıştın ama yanlış yapma oranın düşmüyor.
-Çalışma yöntemini değiştirmeyi dene: video yerine soru çöz, ya da daha temel
-konulara dön."
-
-Seviye: HIGH
-Aksiyon: Kök neden analizine yönlendir
-```
-
-#### 2. NEGLECT (İhmal Edilen Konu)
-```
-Koşul:
-  daysSinceLastStudy > 30
-  AND CMS < 50
-  AND subjectQuestionCount >= 5 (sınavda önemli ağırlığı var)
-
-Mesaj: "{topicName} konusunu {daysSinceLastStudy} gündür çalışmadın ve hakimiyet
-seviyeni %{CMS} olarak hesaplıyorum. Bu konu sınavda {questionWeight} soruya denk
-geliyor."
-
-Seviye: MEDIUM-HIGH
-Aksiyon: Çalışma planına ekle
-```
-
-#### 3. OVER_STUDY (Aşırı Çalışma / Zaman Kaybı)
-```
-Koşul:
-  studySessions >= 8 (son 30 gün)
-  AND CMS >= 80
-  AND examsWithoutErrorStreak >= 5 (son 5 denemede hata yok)
-
-Mesaj: "Bu konuya çok çalışıyorsun ama zaten iyi durumdasın (%{CMS}).
-Son {streak} denemede hata yapmadın. Zamanını daha zayıf konulara ayır."
-
-Seviye: MEDIUM
-Aksiyon: Zayıf konulara yönlendir
-```
-
-#### 4. MASTERY_CONFIRMED (Hakimiyet Onayı)
-```
-Koşul:
-  implicitPositiveCount >= 15
-  AND CMS >= 75
-  AND relapseCount == 0 (hiç nüksetme yok)
-
-Mesaj: "Bu konuda {implicitPositiveCount} denemede hata yapmadın.
-Bu konuyu biliyorsun! Artık sadece aralıklı tekrar yeterli."
-
-Seviye: LOW (bilgi amaçlı)
-Aksiyon: Spaced repetition'a taşı (uzun aralıklı)
-```
-
-#### 5. DECLINING (Gerileme)
-```
-Koşul:
-  recentErrorRate > oldErrorRate * 1.5  (son 5 vs önceki 5 deneme)
-  AND recentErrorCount >= 2
-
-Mesaj: "Bu konuda son zamanlarda daha fazla hata yapıyorsun.
-Önceki {period}'da %{oldRate} yanlış, şimdi %{recentRate}.
-Konuyu yeniden gözden geçir."
-
-Seviye: HIGH
-Aksiyon: Acil tekrar öner
-```
-
-#### 6. QUICK_WIN (Hızlı Kazanım)
-```
-Koşul:
-  CMS between 55-75
-  AND topic.difficulty <= 3
-  AND recentErrorCount <= 1
-
-Mesaj: "Bu konuda biraz daha çalışmayla tam hakimiyet sağlayabilirsin.
-Şu an %{CMS} seviyesindesin, 2-3 saat çalışma ile %80+ olabilirsin."
-
-Seviye: MEDIUM
-Aksiyon: Çalışma planına öncelikli ekle
-```
-
-### 2.2 Öneri Önceliklendirme Algoritması
+### 1.9 `lib/bayesian-engine.ts` — Fonksiyon İmzaları
 
 ```typescript
-interface Recommendation {
+// Temel Beta hesaplamaları
+export function betaMean(alpha: number, beta: number): number;
+export function betaVariance(alpha: number, beta: number): number;
+export function betaCI95(alpha: number, beta: number): { lower: number; upper: number };
+export function betaCategory(ci95Lower: number, evidenceCount: number): MasteryCategory;
+
+// Bayesyen güncelleme fonksiyonları (saf, side-effect yok)
+export function updateFromExamError(
+  alpha: number, beta: number,
+  severity: number, speedWeight: number
+): { alpha: number; beta: number };
+
+export function updateFromImplicitPositive(
+  alpha: number, beta: number,
+  discriminationFactor: number, speedWeight: number
+): { alpha: number; beta: number };
+
+export function updateFromSelfRating(
+  alpha: number, beta: number,
+  level: number // 0-5
+): { alpha: number; beta: number };
+
+export function updateFromStudySession(
+  alpha: number, beta: number,
+  correctRatio: number, questionCount: number
+): { alpha: number; beta: number };
+
+// Hız ve ayırt edicilik hesaplamaları
+export function calculateSpeedWeight(
+  durationMinutes: number | null,
+  attemptedQuestions: number,
+  topicDifficulty: number
+): number;
+
+export function estimateDiscrimination(
+  successRate: number,
+  topicDifficulty: number,
+  totalTopicsInSubject: number
+): number;
+
+// Tam posterior hesaplama (tüm sinyalleri birleştir)
+export function computeTopicBelief(
+  currentAlpha: number, currentBeta: number,
+  signals: BeliefSignal[]
+): { alpha: number; beta: number };
+
+// Sinyal tipleri
+export type BeliefSignal =
+  | { type: 'exam_error'; severity: number; speedWeight: number }
+  | { type: 'implicit_positive'; discrimination: number; speedWeight: number }
+  | { type: 'self_rating'; level: number }
+  | { type: 'study_session'; correctRatio: number; questionCount: number };
+```
+
+---
+
+## Faz 2: Çevre Mimarisi Motoru (Environment Architecture Engine)
+
+**PR Adı:** `feat: frictionless guidance engine with ROI-based action selection`
+
+### 2.1 Temel Felsefe
+
+Sistem "ne yapman gerektiğini söylemiyor", **en verimli aksiyonu doğrudan önüne koyuyor**.
+
+Newton'un Eylemsizlik Prensibi: Duran cisim durmaya devam eder. Her ekstra tıklama = vazgeçme olasılığı.
+
+### 2.2 ROI (Yatırım Getirisi) Hesaplama
+
+Her konu için "şu an çalışırsam, toplam sınav performansıma olan marjinal katkısı" hesaplanır:
+
+```typescript
+interface TopicROI {
   topicId: string;
   topicName: string;
   subjectName: string;
-  examTypeName: string;
-  cms: number;
-  priorityScore: number;       // 0-100, sıralama için
-  priorityLabel: string;       // "Acil" | "Yüksek" | "Orta" | "Düşük"
-  recommendedAction: string;   // "Tekrar et" | "Soru çöz" | "Video izle" | "Konu anlatımı oku"
-  estimatedDuration: number;   // dakika
-  insights: Insight[];         // Bu konuyla ilgili tüm aktif içgörüler
-  reasoning: string;           // Neden bu öneri (1 cümle)
+  roi: number;              // Ana sıralama metriği
+  reason: ROIReason;        // Neden bu konu? (UI'da mesaj olarak kullanılmaz)
+  estimatedDuration: number; // Tahmini çalışma süresi (dk)
+  actionType: ActionType;    // Ne yapmalı?
 }
+
+type ROIReason =
+  | 'retention_critical'    // Ebbinghaus eşiği: R < 0.85 (unutmak üzere)
+  | 'dag_bottleneck'        // DAG darboğazı: parent zayıf, child'ları kilitleniyor
+  | 'high_weight_weak'      // Yüksek sınav ağırlığı + zayıf belief
+  | 'quick_win'             // CI %50-75, az çabayla güçlü'ye çıkar
+  | 'new_topic'             // Hiç veri yok (unknown), keşfedilmeli
+  | 'spaced_review'         // Spaced repetition zamanlama geldi
+
+type ActionType =
+  | 'focused_practice'      // Soru çöz (CMS yeterli, pratik gerek)
+  | 'concept_study'         // Konu anlatımı (temel eksik)
+  | 'spaced_review'         // Aralıklı tekrar (iyi ama unutuluyor)
+  | 'explore'               // Keşfet (hiç veri yok)
 ```
 
-**Priority Score Formülü:**
-```
-// Ana bileşenler
-gapScore = (100 - CMS) * 0.4           // Düşük CMS = yüksek öncelik
-urgencyScore = hasActiveInsight(HIGH) ? 25 : hasActiveInsight(MEDIUM) ? 15 : 0
-examWeightScore = (subject.questionCount / totalQuestions) * 20  // Sınav ağırlığı
-trendScore = isDeclining ? 15 : isImproving ? -5 : 0
-
-priorityScore = gapScore + urgencyScore + examWeightScore + trendScore
-
-// Clamped: 0-100
-priorityScore = clamp(0, 100, priorityScore)
-```
-
-**Aksiyon Önerisi (determinstik kurallar):**
-```
-if CMS < 20:
-  action = "Konu anlatımı oku/izle"  // Temelden başla
-elif CMS < 50 AND hasInsight(FUTILITY):
-  action = "Farklı kaynak dene"  // Mevcut yöntem çalışmıyor
-elif CMS < 50:
-  action = "Konu anlatımı + soru çöz"
-elif CMS < 75:
-  action = "Soru çöz"  // Kavramlar var, pratik gerek
-else:
-  action = "Aralıklı tekrar"  // İyi durumda, sadece unut ma
-```
-
-### 2.3 Günlük Çalışma Önerisi
-
-Dashboard'da gösterilecek "Bugün ne çalışmalısın?" listesi.
+**ROI Formülü:**
 
 ```typescript
-interface DailyRecommendation {
-  recommendations: Recommendation[];  // Max 5, priority sıralı
-  totalEstimatedMinutes: number;
-  summary: string;  // "Bugün 3 kritik konu var. Toplam ~2 saat çalışma öneriyorum."
-  motivationalNote: string;  // "Son 7 günde 3 konuda ilerleme kaydettin!"
+function calculateTopicROI(
+  belief: { alpha: number; beta: number },
+  topic: Topic,
+  subject: Subject,
+  dagContext: DAGContext,       // Ceiling penalty, child count
+  retentionInfo: RetentionInfo | null,
+  spacedRepItems: SpacedRepetitionItem[],
+  totalSubjectQuestions: number // Tüm dersler toplam soru
+): TopicROI {
+  const mean = betaMean(belief.alpha, belief.beta);
+  const ci = betaCI95(belief.alpha, belief.beta);
+  const evidenceCount = belief.alpha + belief.beta - 2;
+
+  // 1. Sınav Ağırlığı: Bu dersin sınavdaki soru oranı
+  const examWeight = subject.questionCount / totalSubjectQuestions;
+
+  // 2. Kazanım Potansiyeli: Düşük mastery = yüksek kazanım potansiyeli
+  // Ama çok düşükse (mean < 0.2) kazanım da yavaş olur (temel eksik)
+  const gainPotential = mean < 0.2
+    ? 0.6                           // Temelden başlamak yavaştır
+    : (1.0 - mean);                 // Normal: ne kadar düşükse o kadar kazanç
+
+  // 3. DAG Kaldıracı: Bu konuya çalışmak kaç child konunun kilidini açar?
+  // dagContext.childCount: bu node'un kaç child'ı var
+  // dagContext.ceilingPenalty: bu node yüzünden child'lar ne kadar ceza alıyor
+  const dagLeverage = 1.0 + dagContext.ceilingPenalty * dagContext.childCount * 0.3;
+
+  // 4. Aciliyet Çarpanı
+  let urgencyMultiplier = 1.0;
+  let reason: ROIReason = 'high_weight_weak';
+
+  // Retention kritiği (Ebbinghaus eşiği aşılmak üzere)
+  if (retentionInfo && retentionInfo.isCritical && mean > 0.3) {
+    urgencyMultiplier = 2.0;
+    reason = 'retention_critical';
+  }
+  // DAG darboğazı (parent zayıf, child'lar kilitleniyor)
+  else if (dagContext.ceilingPenalty > 0.3 && dagContext.childCount >= 2) {
+    urgencyMultiplier = 1.8;
+    reason = 'dag_bottleneck';
+  }
+  // Spaced repetition zamanı gelmiş
+  else if (spacedRepItems.length > 0) {
+    urgencyMultiplier = 1.5;
+    reason = 'spaced_review';
+  }
+  // Quick win (biraz çabayla büyük ilerleme)
+  else if (ci.lower >= 0.4 && ci.lower < 0.65 && evidenceCount >= 5) {
+    urgencyMultiplier = 1.3;
+    reason = 'quick_win';
+  }
+  // Keşfedilmemiş konu (belirsiz)
+  else if (evidenceCount < 3) {
+    urgencyMultiplier = 0.8; // Düşük — önce bilinen konulardaki açıkları kapat
+    reason = 'new_topic';
+  }
+
+  // ROI = examWeight × gainPotential × dagLeverage × urgency
+  const roi = examWeight * gainPotential * dagLeverage * urgencyMultiplier;
+
+  // Aksiyon tipi belirleme
+  const actionType = determineAction(mean, evidenceCount, reason);
+
+  return {
+    topicId: topic.id,
+    topicName: topic.name,
+    subjectName: subject.name,
+    roi: Math.round(roi * 1000) / 1000,
+    reason,
+    estimatedDuration: estimateStudyDuration(mean, topic.difficulty),
+    actionType,
+  };
+}
+
+function determineAction(mean: number, evidenceCount: number, reason: ROIReason): ActionType {
+  if (reason === 'spaced_review') return 'spaced_review';
+  if (evidenceCount < 3) return 'explore';
+  if (mean < 0.3) return 'concept_study';       // Temelden çalışmalı
+  if (mean < 0.6) return 'focused_practice';     // Pratik gerek
+  return 'spaced_review';                        // İyi, sadece tekrar
+}
+
+function estimateStudyDuration(mean: number, difficulty: number): number {
+  // Düşük mastery + yüksek zorluk = daha uzun süre
+  const base = 20; // dakika
+  const masteryFactor = 1 + (1 - mean) * 0.5;  // 1.0 - 1.5
+  const difficultyFactor = 0.8 + difficulty * 0.1; // 0.9 - 1.3
+  return Math.round(base * masteryFactor * difficultyFactor);
 }
 ```
 
-**Günlük liste oluşturma:**
-```
-1. Tüm konuları CMS ile hesapla
-2. İçgörüleri üret
-3. Priority score'a göre sırala
-4. Öğrencinin günlük çalışma saatine göre kes (StudentProfile.dailyStudyHours)
-5. Çeşitlilik kısıtı: max 2 konu aynı dersten
-6. Eğer spaced repetition item'ları varsa (nextReviewDate <= today), bunları da ekle
+### 2.3 "Sıradaki Hamle" Seçici
+
+KnapsackPlanner'ın rafine edilmiş hali. Tek bir en optimal aksiyonu seçer:
+
+```typescript
+interface NextAction {
+  primary: TopicROI;              // En yüksek ROI'li konu
+  alternatives: TopicROI[];       // Sonraki 2 alternatif (seçenek sunmak için)
+  sessionDuration: number;        // Önerilen oturum süresi (dk)
+  dailyBudgetRemaining: number;   // Bugün kalan çalışma bütçesi (dk)
+}
+
+function selectNextAction(
+  allROIs: TopicROI[],
+  studentProfile: StudentProfile,
+  todayCompletedMinutes: number
+): NextAction {
+  // ROI'ye göre azalan sırala
+  const sorted = [...allROIs].sort((a, b) => b.roi - a.roi);
+
+  // Çeşitlilik kısıtı: art arda aynı dersten 2 konu önerme
+  // (cognitive interleaving — farklı dersler arası geçiş öğrenmeyi güçlendirir)
+  const diversified = applyDiversityConstraint(sorted);
+
+  const dailyBudget = (studentProfile.dailyStudyHours ?? 3) * 60;
+  const remaining = dailyBudget - todayCompletedMinutes;
+
+  return {
+    primary: diversified[0],
+    alternatives: diversified.slice(1, 3),
+    sessionDuration: Math.min(diversified[0].estimatedDuration, remaining),
+    dailyBudgetRemaining: Math.max(0, remaining),
+  };
+}
 ```
 
 ### 2.4 Yeni Dosyalar
 
 ```
-lib/recommendation-engine.ts          # Öneri motoru
-lib/recommendation-engine.test.ts     # Unit test
-app/api/student/recommendations/route.ts  # GET: günlük öneriler + içgörüler
+lib/roi-engine.ts                       # ROI hesaplama + next action seçici
+lib/roi-engine.test.ts                  # Unit test
+app/api/student/next-action/route.ts    # GET: sıradaki en optimal aksiyon
 ```
 
 ### 2.5 API Tasarımı
 
-**GET `/api/student/recommendations`**
+**GET `/api/student/next-action`**
 
-Response:
 ```json
 {
-  "daily": {
-    "recommendations": [
-      {
-        "topicId": "...",
-        "topicName": "Türev",
-        "subjectName": "Matematik",
-        "examTypeName": "AYT",
-        "cms": 32,
-        "priorityScore": 87,
-        "priorityLabel": "Acil",
-        "recommendedAction": "Konu anlatımı + soru çöz",
-        "estimatedDuration": 45,
-        "insights": [
-          {
-            "type": "DECLINING",
-            "severity": "HIGH",
-            "message": "Son 3 denemede hata oranın arttı...",
-            "data": { "oldRate": 0.1, "recentRate": 0.4 }
-          }
-        ],
-        "reasoning": "Yüksek sınav ağırlığı ve artan hata oranı nedeniyle acil tekrar gerekli"
-      }
-    ],
-    "totalEstimatedMinutes": 135,
-    "summary": "Bugün 3 acil, 2 önemli konun var.",
-    "motivationalNote": "Son hafta 5 konuda ilerleme kaydettin!"
+  "primary": {
+    "topicId": "...",
+    "topicName": "Üslü Sayılar",
+    "subjectName": "Matematik",
+    "roi": 0.847,
+    "reason": "retention_critical",
+    "estimatedDuration": 25,
+    "actionType": "spaced_review",
+    "belief": {
+      "mean": 0.68,
+      "category": "strong",
+      "categoryLabel": "Güçlü",
+      "ci95Lower": 0.52,
+      "ci95Upper": 0.84
+    }
   },
-  "allInsights": [
-    { "type": "MASTERY_CONFIRMED", "topicName": "Paragraf", "count": 18, "message": "..." },
-    { "type": "FUTILITY", "topicName": "Limit", "studySessions": 8, "message": "..." }
+  "alternatives": [
+    {
+      "topicId": "...",
+      "topicName": "Türev",
+      "subjectName": "Matematik",
+      "roi": 0.723,
+      "reason": "dag_bottleneck",
+      "estimatedDuration": 30,
+      "actionType": "focused_practice",
+      "belief": { "mean": 0.41, "category": "developing", ... }
+    }
   ],
-  "stats": {
-    "strongTopics": 12,
-    "weakTopics": 8,
-    "neglectedTopics": 15,
-    "improvingTopics": 5
+  "sessionDuration": 25,
+  "dailyBudgetRemaining": 155,
+  "todayCompleted": {
+    "sessions": 2,
+    "totalMinutes": 45,
+    "topicsCovered": ["Paragraf", "Fonksiyonlar"]
   }
 }
 ```
 
 ---
 
-## Faz 3: Deneme Sonrası Otomatik Mastery Güncellemesi
+## Faz 3: Deneme Sonrası Bayesyen Güncelleme (Post-Exam Signal Processing)
 
-**PR Adı:** `feat: auto-update mastery scores after exam results`
-
-Deneme sonuçları girildiğinde CMS bileşenlerini otomatik olarak güncelleyen tetikleyici sistem.
+**PR Adı:** `feat: post-exam bayesian belief updates with speed weighting`
 
 ### 3.1 Tetikleme Noktası
 
-`POST /api/exams/[id]/results` endpoint'inin sonuna eklenen post-processing adımı.
+`POST /api/exams/[id]/results` endpoint'i çalıştıktan sonra (mevcut CognitiveVoid oluşturma sonrası) Bayesyen güncelleme tetiklenir.
 
-### 3.2 Örtük Pozitif Sinyal Mekanizması
+### 3.2 Akış
+
+```
+1. Exam results submitted (mevcut akış: ExamSubjectResult + CognitiveVoid oluşturma)
+                ↓
+2. Post-processing tetiklenir
+                ↓
+3. Her subject result için:
+   a. O dersteki tüm topic'leri getir
+   b. O sınavdaki CognitiveVoid'ları getir (topic ile eşleşmiş olanlar)
+   c. Speed weight hesapla (durationMinutes / attemptedQuestions)
+   d. Her topic için:
+      - CognitiveVoid VARSA → updateFromExamError(severity, speedWeight)
+      - CognitiveVoid YOKSA → updateFromImplicitPositive(discrimination, speedWeight)
+   e. TopicBelief güncelle (upsert)
+```
+
+### 3.3 "Sınanmış mı?" Tespiti (Deneme vs Branş Filtresi)
 
 ```typescript
-async function processImplicitPositiveSignals(
-  examId: string,
-  userId: string,
-  subjectResults: ExamSubjectResult[]
-) {
-  for (const result of subjectResults) {
-    // Bu dersteki tüm konuları getir
-    const topics = await prisma.topic.findMany({
-      where: { subjectId: result.subjectId }
-    });
+function wasTopicTested(
+  topic: Topic,
+  exam: Exam,
+  subjectResult: ExamSubjectResult | null
+): boolean {
+  // 1. Bu dersin sonucu yoksa → sınanmamış
+  if (!subjectResult) return false;
 
-    // Bu sınavda bu derse ait CognitiveVoid'ları getir
-    const voids = await prisma.cognitiveVoid.findMany({
-      where: { examId, subjectId: result.subjectId }
-    });
-    const errorTopicIds = new Set(voids.filter(v => v.topicId).map(v => v.topicId));
+  // 2. Genel deneme → tüm konular sınanmış
+  if (!exam.examCategory || exam.examCategory === 'genel') return true;
 
-    for (const topic of topics) {
-      if (!errorTopicIds.has(topic.id)) {
-        // Bu konuda yanlış/boş yok → örtük pozitif sinyal
-        await recordImplicitPositive(userId, topic.id, examId);
-      }
-    }
-  }
+  // 3. Branş denemesi → sadece branşa ait dersler
+  // Bu filtreleme zaten subject result oluşturulurken yapılıyor
+  return true;
 }
 ```
 
-### 3.3 TopicKnowledge Otomatik Ayarlaması
+### 3.4 Örtük Pozitif Sinyalin Ağırlıklandırılması
 
-Öğrenci kendine 3/5 vermiş ama denemede yanlış yapmışsa:
-
-```typescript
-async function adjustKnowledgeFromExam(
-  userId: string,
-  topicId: string,
-  voidSeverity: number,
-  currentKnowledge: number
-) {
-  // Yüksek severity = daha fazla düşüş
-  // Severity 1.0 → 0.3 puan düşüş, Severity 3.0 → 0.7 puan düşüş
-  const decrease = Math.min(1.0, voidSeverity * 0.2);
-  const newLevel = Math.max(0, currentKnowledge - decrease);
-
-  // Sadece düşür, artırma (artırma örtük pozitif ile olur)
-  if (newLevel < currentKnowledge) {
-    await prisma.topicKnowledge.upsert({
-      where: { userId_topicId: { userId, topicId } },
-      update: { level: Math.round(newLevel) },
-      create: { userId, topicId, level: Math.round(newLevel) }
-    });
-  }
-}
-```
-
-Örtük pozitif ile artırma (çok yavaş, 20 deneme = +1 puan):
+**Varsayım Yıkımı Uygulaması:** Yanlış yapmamak ≠ biliyor.
 
 ```typescript
-async function recordImplicitPositive(
+// Her sınanmış ama hatasız konu için:
+async function processImplicitPositive(
   userId: string,
   topicId: string,
-  examId: string
+  topic: Topic,
+  subjectResult: ExamSubjectResult,
+  totalTopicsInSubject: number
 ) {
-  // Bu konunun geçmiş denemelerindeki örtük pozitif sayısını hesapla
-  // (artık CMS hesabında doğrudan kullanılacak, ayrı tablo gerek yok)
-  // Ama TopicKnowledge'ı da yavaşça artır:
-  const currentKnowledge = await prisma.topicKnowledge.findUnique({
-    where: { userId_topicId: { userId, topicId } }
-  });
+  // 1. Discrimination factor hesapla
+  const totalQ = subjectResult.correctCount + subjectResult.wrongCount + subjectResult.emptyCount;
+  const successRate = subjectResult.correctCount / Math.max(totalQ, 1);
+  const discrimination = estimateDiscrimination(successRate, topic.difficulty, totalTopicsInSubject);
 
-  const currentLevel = currentKnowledge?.level ?? 0;
-  if (currentLevel >= 5) return;  // Zaten max
+  // 2. Speed weight hesapla
+  const attempted = subjectResult.correctCount + subjectResult.wrongCount;
+  const speedWeight = calculateSpeedWeight(
+    subjectResult.durationMinutes,
+    attempted,
+    topic.difficulty
+  );
 
-  // Her örtük pozitif +0.05 (20 deneme = +1.0 tam puan artış)
-  const INCREMENT = 0.05;
+  // 3. Mevcut belief'i getir veya oluştur
+  const belief = await getOrCreateBelief(userId, topicId);
 
-  // Ama tam sayı tutulduğu için, birikimli mantık:
-  // Her 20 denemede bir seviye artır
-  // Bunu exam sayısı üzerinden hesapla
-  const implicitCount = await countImplicitPositivesForTopic(userId, topicId);
-  const shouldBeLevel = Math.min(5, Math.floor(implicitCount / 20) + currentLevel);
+  // 4. Bayesyen güncelleme
+  const updated = updateFromImplicitPositive(
+    belief.alpha, belief.beta,
+    discrimination,
+    speedWeight
+  );
 
-  if (shouldBeLevel > currentLevel) {
-    await prisma.topicKnowledge.upsert({
-      where: { userId_topicId: { userId, topicId } },
-      update: { level: shouldBeLevel },
-      create: { userId, topicId, level: shouldBeLevel }
-    });
-  }
+  // 5. Kaydet
+  await upsertBelief(userId, topicId, updated.alpha, updated.beta);
 }
 ```
 
-### 3.4 Trend Verisi Saklama
+### 3.5 Cold Phase Enrichment Sonrası Re-Update
 
-CMS zaten DB'den hesaplanıyor (live computation), ayrı trend tablosuna gerek yok. Ama trend hesabı için geçmiş deneme performanslarına bakmak yeterli — CognitiveVoid zaten exam bazlı kayıtlı.
+Cold phase'de öğrenci bir void'a topicId eklediğinde:
+- O topic'in belief'ine negatif sinyal eklenir (errorReason + severity bazlı)
+- Eğer daha önce o topic "implicit positive" almışsa, bu doğal olarak dengelenir
+  (çünkü Bayesyen güncelleme hem α hem β'ya kümülatif olarak ekleniyor)
 
-### 3.5 Değişecek Dosyalar
+### 3.6 Değişecek Dosyalar
 
 ```
-app/api/exams/[id]/results/route.ts  # Post-processing eklenir
-lib/topic-mastery-engine.ts          # countImplicitPositives helper
+app/api/exams/[id]/results/route.ts           # Post-processing eklenir
+app/api/exams/[id]/cognitive-voids/route.ts    # Cold phase enrichment → belief re-update
+lib/bayesian-engine.ts                         # Zaten Faz 1'de oluşturulmuş
+components/exams/exam-entry-form.tsx           # durationMinutes input eklenir (ders bazı)
+prisma/schema.prisma                           # durationMinutes + TopicBelief modeli
 ```
 
-**NOT**: Bu fazda yeni tablo oluşturMUYORUZ. Tüm veri zaten mevcut tablolardan hesaplanabilir. `ExamSubjectResult` + `CognitiveVoid` verisi yeterli.
+### 3.7 UX Değişikliği: Ders Süresi Girişi
+
+Exam entry form'un Step 2'sine (Sayısal Veriler) her ders satırına opsiyonel bir "Süre" alanı eklenir:
+
+```
+┌─ Matematik ───────────────────────────┐
+│ Doğru: [12]  Yanlış: [8]  Boş: [5]  │
+│ Süre:  [__] dk  (opsiyonel)          │
+└───────────────────────────────────────┘
+```
+
+Bu alan zorunlu değil. Girilmezse `speedWeight = 1.0` (nötr) kullanılır.
 
 ---
 
-## Faz 4: Dashboard Öneri Widget'ı & UI
+## Faz 4: Dashboard — Çevre Mimarisi UI
 
-**PR Adı:** `feat: study recommendation widget on dashboard`
+**PR Adı:** `feat: frictionless study session launcher on dashboard`
 
-### 4.1 Yeni Bileşen: `StudyRecommendations`
+### 4.1 Temel Prensip
 
-```
-components/home/study-recommendations.tsx
-```
+- **Navigasyon sürtünmedir** → sayfa değiştirmek yok
+- **Karar yorgunluğu düşmandır** → tek buton, tek aksiyon
+- **Negatif yargı savunma tetikler** → "yanlış çalışıyorsun" yerine "sıradaki hamlen"
 
-Dashboard'da "Bugünün Planı"nın hemen altında gözükecek.
-
-**Tasarım:**
+### 4.2 Dashboard Düzeni (Revize)
 
 ```
-┌─────────────────────────────────────────────┐
-│ 🎯 Sistem Önerisi                           │
-│                                             │
-│ 3 acil konu, 2 önemli konu tespit edildi    │
-│ Tahmini süre: ~2 saat 15 dk                 │
-│                                             │
-│ ┌─ ACİL ──────────────────────────────────┐ │
-│ │ 🔴 Türev (Matematik · AYT)             │ │
-│ │ Hakimiyet: ██░░░ %32                    │ │
-│ │ ⚠️ Son 3 denemede hata oranın arttı     │ │
-│ │ → Konu anlatımı + soru çöz (~45dk)      │ │
-│ └─────────────────────────────────────────┘ │
-│                                             │
-│ ┌─ ACİL ──────────────────────────────────┐ │
-│ │ 🔴 Limit (Matematik · AYT)             │ │
-│ │ Hakimiyet: ████░ %42                    │ │
-│ │ ⚠️ 8 kez çalıştın ama gelişme yok      │ │
-│ │ → Farklı kaynak dene (~30dk)            │ │
-│ └─────────────────────────────────────────┘ │
-│                                             │
-│ ┌─ ÖNEMLİ ───────────────────────────────┐ │
-│ │ 🟡 Olasılık (Matematik · TYT)          │ │
-│ │ Hakimiyet: ███░░ %55                    │ │
-│ │ 💡 Biraz daha çalışmayla %80+ olursun   │ │
-│ │ → Soru çöz (~30dk)                      │ │
-│ └─────────────────────────────────────────┘ │
-│                                             │
-│ ─── İyi Durumda ────────────────────────── │
-│ ✅ Paragraf — 18 denemede hatasız          │
-│ ✅ Temel Matematik — %92 hakimiyet         │
-│                                             │
-│ 📊 Son 7 gün: 5 konuda ilerleme            │
-└─────────────────────────────────────────────┘
+1. Merhaba, {userName}!                    (mevcut)
+2. 🆕 Sıradaki Hamlen                      (yeni — tek butonluk aksiyon)
+3. Bugünün Planı                           (mevcut — haftalık plan öğeleri)
+4. Ne yapmak istiyorsun?                   (mevcut — ActionHub)
 ```
 
-### 4.2 Bileşen Yapısı
+**"Sıradaki Hamlen" Bugünün Planı'nın ÜSTÜNDE** çünkü:
+- İlk gördüğü şey = ilk harekete geçtiği şey (Eylemsizlik Prensibi)
+- Manuel plan sonra gelir (opsiyonel detay)
 
-```typescript
-// components/home/study-recommendations.tsx
+### 4.3 "Sıradaki Hamlen" Widget Tasarımı
 
-// State: loading → loaded → error
-// Data: GET /api/student/recommendations
-
-// Alt bileşenler:
-// - RecommendationCard: Tek bir öneri kartı (konu, CMS bar, insight, aksiyon)
-// - InsightBadge: İçgörü rozeti (FUTILITY, DECLINING, etc.)
-// - MasteryBar: CMS progress bar (renk kodlu)
-// - QuickStats: Güçlü/zayıf/ihmal edilen konu sayıları
-```
-
-### 4.3 Dashboard Entegrasyonu
-
-`app/(app)/page.tsx` düzeni:
+**Varsayılan durum (collapsed):**
 
 ```
-1. Merhaba, {userName}! (mevcut)
-2. Bugünün Planı (mevcut — haftalık plan öğeleri)
-3. 🆕 Sistem Önerisi (yeni — StudyRecommendations widget)
-4. Ne yapmak istiyorsun? (mevcut — ActionHub)
+┌─────────────────────────────────────────────────┐
+│ ┌─ gradient border (reason'a göre renk) ──────┐ │
+│ │                                             │ │
+│ │  Üslü Sayılar · Matematik                  │ │
+│ │  ████████░░ Güçlü                           │ │
+│ │                                             │ │
+│ │  ┌────────────────────────────────────────┐ │ │
+│ │  │        ▶  Hemen Başla  (25dk)          │ │ │
+│ │  └────────────────────────────────────────┘ │ │
+│ │                                             │ │
+│ │  · · ·  2 alternatif daha                   │ │
+│ └─────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────┘
 ```
 
-### 4.4 Boş Durum (Empty State)
+**Hover/tıklama ile CI detay (Aksiyomatik Şeffaflık):**
 
-Yeterli veri yoksa:
 ```
-"Henüz yeterli verin yok. En az 1 deneme çöz ve konu bilgi seviyelerini gir
-ki sana önerilerde bulunabileyim."
-
-Hızlı aksiyonlar:
-[Deneme Gir] [Bilgi Seviyesi Gir]
+┌─────────────────────────────────────────────────┐
+│  Üslü Sayılar · Matematik                      │
+│                                                 │
+│  ░░░░[████████████]░░░░░                        │
+│      52%        84%                             │
+│    %95 güven aralığı                            │
+│                                                 │
+│  12 sınavdan 2 hata · Ort. hız: normal          │
+│  Bu konuyu unutma eşiğine yaklaşıyor (R=83%)    │
+└─────────────────────────────────────────────────┘
 ```
 
-### 4.5 Glass-morphism Tasarım Detayları
+**"Hemen Başla" tıklandığında — Overlay Aksiyon Katmanı:**
 
-- Mevcut `glass-panel` sınıfı kullanılacak
-- Gradient: amber/pink (mevcut tema ile uyumlu)
-- Animasyon: motion/react ile staggered entry
-- Responsive: mobilde tek sütun, desktop'ta aynı max-w-4xl
-- Priority renkler: ACİL=red, ÖNEMLİ=amber, ORTA=blue, DÜŞÜK=green
-- CMS bar renkleri: 0-30=red, 31-50=orange, 51-70=amber, 71-85=green, 86+=emerald
+```
+┌─────────────────────────────────────────────────┐
+│                                                 │
+│              Üslü Sayılar                       │
+│              Odaklanmış Pratik                   │
+│                                                 │
+│           ┌──────────────┐                      │
+│           │    24:32     │                      │
+│           │   ◉ Timer    │                      │
+│           └──────────────┘                      │
+│                                                 │
+│  ┌─────────────────────────────────────────┐    │
+│  │  Tamamlandı! Nasıl geçti?              │    │
+│  │                                         │    │
+│  │  Çözülen soru: [__]  Doğru: [__]       │    │
+│  │                                         │    │
+│  │  [Oturumu Bitir]                        │    │
+│  └─────────────────────────────────────────┘    │
+│                                                 │
+└─────────────────────────────────────────────────┘
+```
+
+Oturum bittiğinde:
+1. `DailyStudy` kaydı oluşturulur
+2. `TopicBelief` Bayesyen güncelleme yapılır (correctRatio'ya göre)
+3. Sonraki hamle otomatik yenilenir
+4. Motivasyon: "Bugün 3. oturumun! 75 dakika çalıştın." (pozitif)
+
+### 4.4 Alternatifleri Gösterme
+
+"2 alternatif daha" tıklandığında aşağı açılır (accordion):
+
+```
+┌─ Alternatif 1 ─────────────────────────────────┐
+│ Türev · Matematik · Gelişiyor                   │
+│ Odaklanmış Pratik · ~30dk                       │
+│                            [Bunu Seç]           │
+└─────────────────────────────────────────────────┘
+┌─ Alternatif 2 ─────────────────────────────────┐
+│ Olasılık · Matematik · Zayıf                    │
+│ Konu Anlatımı · ~35dk                           │
+│                            [Bunu Seç]           │
+└─────────────────────────────────────────────────┘
+```
+
+### 4.5 Boş Durum (Yetersiz Veri)
+
+```
+┌─────────────────────────────────────────────────┐
+│                                                 │
+│  Seni tanımak için veriye ihtiyacım var.        │
+│                                                 │
+│  [Deneme Gir]     [Bilgi Seviyeni Belirle]      │
+│                                                 │
+└─────────────────────────────────────────────────┘
+```
+
+### 4.6 Bileşen Yapısı
+
+```
+components/home/next-action-widget.tsx     # Ana widget
+components/home/study-session-overlay.tsx   # Pomodoro timer + oturum yönetimi
+components/home/mastery-badge.tsx           # Fuzzy kategori rozeti + CI hover
+components/home/belief-detail-popover.tsx   # CI detay popover
+```
+
+### 4.7 Dashboard Entegrasyonu
+
+`app/(app)/page.tsx` değişikliği:
+- `NextActionWidget` import ve yerleşimi
+- `fetchData`'ya `/api/student/next-action` çağrısı eklenir
+- `StudySessionOverlay` portal olarak render edilir (modal)
 
 ---
 
-## Algoritmik Detaylar — Kenar Durumları
+## Kenar Durumları & Matematiksel Garantiler
+
+### Beta Dağılımı Stabilitesi
+
+```
+Prior: Beta(1, 1) — uniform
+- Mean: 0.5
+- CI95: [0.025, 0.975] — çok geniş (hiçbir şey bilmiyoruz)
+- Kategori: "unknown" (evidenceCount < 3)
+
+5 pozitif sinyal sonrası: Beta(6, 1)
+- Mean: 0.857
+- CI95: [0.572, 0.993]
+- Kategori: "strong" (ciLower=0.572 > 0.50)
+
+5 pozitif + 3 negatif sonrası: Beta(6, 4)
+- Mean: 0.600
+- CI95: [0.313, 0.853]
+- Kategori: "developing" (ciLower=0.313 > 0.25)
+
+20 pozitif + 2 negatif sonrası: Beta(21, 3)
+- Mean: 0.875
+- CI95: [0.712, 0.968]
+- Kategori: "mastered" (ciLower=0.712 < 0.75 → "strong" aslında)
+// 0.75 eşiği geçmesi için daha fazla kanıt lazım — bu DOĞRU davranış.
+// Varsayım yıkımı: 20 denemede hata yapmamak bile
+// otomatik "uzman" yapmıyor. CI alt sınırı hâlâ eşiğin altında olabilir.
+```
+
+### Hız Verisi Olmadığında
+
+`durationMinutes = null` → `speedWeight = 1.0` (nötr). Sistem çalışmaya devam eder.
+Hız verisi opsiyoneldir. Girildiğinde Bayesyen güncellemeyi ağırlıklandırır, girilmediğinde atlanır.
 
 ### Yeni Öğrenci (Sıfır Veri)
-- CMS = 0 (hiç veri yok)
-- Öneri: "Bilgi seviyelerini gir ve deneme çöz"
-- İçgörü üretilmez (minimum veri eşiği karşılanmamış)
 
-### Sadece Self-Rating Var (Deneme Yok)
-- CMS = selfScore (max 20) + 0 + 0 + 0 + 0
-- Öneri sistemi çalışır ama "Deneme verisi olmadan öneriler kısıtlıdır" notu gösterilir
+- Tüm konular Beta(1,1) → "Belirsiz"
+- ROI engine unknown konulara düşük öncelik verir (önce bilinen açıkları kapat)
+- Dashboard: "Seni tanımak için veriye ihtiyacım var" boş durumu
+- İlk self-rating: Beta(1+level*0.4, 1+(5-level)*0.4) → hemen bir posterior oluşur
 
-### Sadece Deneme Var (Self-Rating Yok)
-- CMS = 0 + examScore + implicitScore + 0 + recencyScore
-- Sistem çalışır, selfRating bileşeni 0 olarak hesaplanır
+### DAG Bağlantısı Olmayan Konular
 
-### 20+ Deneme Hatası Olmayan Konu
-- implicitScore = min(20, log2(21) * 4.6) ≈ 20 (max)
-- Bu konu MASTERY_CONFIRMED insight'ı alır
-- TopicKnowledge otomatik olarak +1 artmış olur (20'de bir)
+Bazı Topic'lerin henüz ConceptNode bağlantısı olmayabilir.
+- ROI engine Topic seviyesinde çalışır (ConceptNode bağımsız)
+- DAG leverage = 1.0 (nötr) — penalty/bonus yok
+- Ebbinghaus retention = kullanılamaz (sadece ConceptNode'da) → nötr
 
-### Aynı Konuda Sürekli Yanlış + Çok Çalışma
-- examScore düşük (cezalar birikmis)
-- studyScore yüksek (çok çalışılmış, ama accuracy düşük olabilir)
-- FUTILITY insight'ı tetiklenir
-- System message: "Çalışma yöntemini değiştir"
+### Recidivism (Nüksetme)
 
-### Branş Sınavı Filtresi
-- `examCategory = 'brans'` olan sınavlarda sadece ilgili dersler test edilmiş sayılır
-- Genel deneme → tüm dersler test edilmiş sayılır
+Mevcut CognitiveVoid recidivism sistemi korunur. Bayesyen motora etkisi:
+- `relapseCount > 0` → severity çarpanı (1.5^n) → daha büyük β artışı
+- Doğal sonuç: relapse eden konunun CI'ı hızla genişler ve kategori düşer
 
 ---
 
 ## Performans Düşünceleri
 
-### CMS Hesaplama Maliyeti
-- Her topic için: 3-4 DB query (knowledge, voids, studies, reviews)
-- 150 konu için bu çok pahalı olur → **batch query kullanılacak**
-- Tüm veriler tek seferde çekilip memory'de hesaplanır
+### Faz 1 — Batch Query Stratejisi
 
-### Caching Stratejisi
-- CMS hesabı her request'te yapılır (stateless, deterministik)
-- Veriler değişmediği sürece HTTP cache header ile cache'lenebilir
-- İlk fazda cache yok, gerekirse ekleriz
-
-### Query Optimizasyonu
 ```typescript
-// Tek seferde tüm verileri çek:
-const [allTopics, allKnowledge, allVoids, allStudies, allReviews, allExamResults] =
-  await Promise.all([
-    prisma.topic.findMany({ where: subjectFilter, include: { subject: true } }),
-    prisma.topicKnowledge.findMany({ where: { userId } }),
-    prisma.cognitiveVoid.findMany({ where: { exam: { userId } } }),
-    prisma.dailyStudy.findMany({ where: { userId } }),
-    prisma.topicReview.findMany({ where: { userId } }),
-    prisma.examSubjectResult.findMany({ where: { exam: { userId } }, include: { exam: true } }),
-  ]);
-
-// Memory'de map'le ve hesapla
+// Tek seferde tüm verileri çek (N+1 query problemi yok):
+const [topics, beliefs, voids, studies, reviews, examResults] = await Promise.all([
+  prisma.topic.findMany({ include: { subject: { include: { examType: true } } } }),
+  prisma.topicBelief.findMany({ where: { userId } }),
+  prisma.cognitiveVoid.findMany({ where: { exam: { userId } } }),
+  prisma.dailyStudy.findMany({ where: { userId } }),
+  prisma.topicReview.findMany({ where: { userId } }),
+  prisma.examSubjectResult.findMany({ where: { exam: { userId } }, include: { exam: true } }),
+]);
+// Memory'de map'le ve hesapla — saf fonksiyonlar, side-effect yok
 ```
 
----
+### Faz 3 — Incremental Update
 
-## Test Stratejisi
+Deneme sonrası tüm belief'leri yeniden hesaplama YOK.
+Sadece o sınavda sınanan konuların belief'leri güncellenir (incremental).
 
-### Unit Test (Faz 1 & 2)
-- Saf fonksiyonları mock veriyle test et
-- CMS hesabının tüm kenar durumlarını kapsa
-- İçgörü tetikleme koşullarını test et
+### Faz 4 — Client-Side Cache
 
-### Senaryo Testleri
-1. **Taze öğrenci**: Hiç veri yok → boş durum
-2. **Sadece self-rating**: 10 konu rated → sınırlı CMS
-3. **5 deneme çözmüş**: Mix of errors → insights start appearing
-4. **20+ deneme veteran**: Full data → comprehensive recommendations
-5. **FUTILITY senaryosu**: 8 çalışma, 5 denemede hata → doğru insight
-6. **MASTERY senaryosu**: 15 denemede hatasız → onay insight'ı
+Next action widget sonucu 5 dakika client-side cache'lenir (SWR/stale-while-revalidate).
+Oturum bittiğinde cache invalidate → yeni next action fetch.
 
 ---
 
 ## Faz Sıralaması & Bağımlılıklar
 
 ```
-Faz 1 (Mastery Engine) → bağımsız, temel
-     ↓
-Faz 2 (Recommendation Engine) → Faz 1'e bağımlı
-     ↓
-Faz 3 (Auto-Update) → Faz 1'e bağımlı (Faz 2'den bağımsız aslında, ama sırayla daha temiz)
-     ↓
-Faz 4 (Dashboard UI) → Faz 2'ye bağımlı
+Faz 1 (Bayesian Engine + Schema)
+     ↓ TopicBelief modeli + bayesian-engine.ts
+Faz 2 (ROI Engine + Next Action API)
+     ↓ Faz 1'in belief verilerine bağımlı
+Faz 3 (Post-Exam Auto-Update)
+     ↓ Faz 1'in güncelleme fonksiyonlarına bağımlı
+Faz 4 (Dashboard UI)
+     ↓ Faz 2'nin next-action API'sine bağımlı
 ```
 
-Tahmini dosya değişiklikleri:
-- **Faz 1**: 2 yeni dosya + 1 yeni API
-- **Faz 2**: 2 yeni dosya + 1 yeni API
-- **Faz 3**: 2 mevcut dosya düzenleme
-- **Faz 4**: 1 yeni bileşen + 1 mevcut sayfa düzenleme
+| Faz | Yeni Dosyalar | Değişen Dosyalar | Schema |
+|-----|---------------|------------------|--------|
+| 1 | `lib/bayesian-engine.ts`, `app/api/student/mastery/route.ts` | — | `TopicBelief` model + `durationMinutes` alan |
+| 2 | `lib/roi-engine.ts`, `app/api/student/next-action/route.ts` | — | — |
+| 3 | — | `app/api/exams/[id]/results/route.ts`, `components/exams/exam-entry-form.tsx` | — |
+| 4 | `components/home/next-action-widget.tsx`, `components/home/study-session-overlay.tsx`, `components/home/mastery-badge.tsx` | `app/(app)/page.tsx` | — |
+
+---
+
+## Test Stratejisi
+
+### Unit Test (Faz 1)
+- `betaMean`, `betaVariance`, `betaCI95` — matematiksel doğruluk
+- `updateFromExamError` — severity arttıkça β artışı doğrulanır
+- `updateFromImplicitPositive` — discrimination düşükken α artışı az
+- `calculateSpeedWeight` — hızlı çözüm = yüksek speedWeight
+
+### Senaryo Testleri
+1. **20 denemede hatasız konu**: Beta(1+20*disc, 1) → CI kontrol et, otomatik "uzman" olmamalı
+2. **Sürekli yanlış + çok çalışma**: Yüksek β, orta α → CI geniş, kategori "zayıf"
+3. **Hızlı doğru vs yavaş doğru**: Aynı discrimination, farklı speedWeight → farklı α artışı
+4. **Relapse**: RESOLVED → tekrar yanlış → severity 1.5x → β sıçraması
+5. **Boş veri**: Beta(1,1) → "Belirsiz" + boş durum UI

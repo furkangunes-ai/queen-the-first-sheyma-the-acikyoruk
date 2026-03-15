@@ -61,20 +61,28 @@ Turkish chars → ASCII: ğ→g, ü→u, ş→s, ı→i, ö→o, ç→c, then ke
 - Temel felsefe: Kuantum Veri Girişi (Lazy Evaluation), Çift Fazlı Metrik (Clarity+Repair), Fog of War analitik, Recidivism ceza sistemi
 - Kademeli Pill Segmentasyonu (dropdown yerine), Odak Merceği (Lens Effect), Triage Flashcard modu
 
-## Active Work: Öğrenci İlerleme & Akıllı Öneri Sistemi
+## Active Work: Öğrenci İlerleme & Akıllı Öneri Sistemi (v2 Aksiyomatik)
 **Plan Dokümanı:** `docs/STUDENT-PROGRESS-PLAN.md`
 **Branch:** `claude/student-progress-schedule-nbZ6s`
+**Aksiyomlar:** (1) Bayes Teoremi sinyal/gürültü, (2) Hız=Ustalık, (3) Çevre Mimarisi (sürtünmesiz)
 - 4 fazlı geliştirme planı
-- **Faz 1**: Deterministik Konu Hakimiyet Motoru (Topic Mastery Engine) — CMS skoru (0-100)
-  - 5 bileşen: selfRating(%20), examPerformance(%35), implicitPositive(%20), studyEffort(%15), recency(%10)
-  - `lib/topic-mastery-engine.ts` + `app/api/student/mastery-scores/route.ts`
-- **Faz 2**: Akıllı İçgörü & Öneri Motoru — 6 insight tipi (FUTILITY, NEGLECT, OVER_STUDY, MASTERY_CONFIRMED, DECLINING, QUICK_WIN)
-  - `lib/recommendation-engine.ts` + `app/api/student/recommendations/route.ts`
-- **Faz 3**: Deneme Sonrası Otomatik Mastery Güncellemesi — örtük pozitif sinyal + TopicKnowledge ayarı
-  - Mevcut `app/api/exams/[id]/results/route.ts` düzenlenir
-- **Faz 4**: Dashboard Öneri Widget'ı — `components/home/study-recommendations.tsx`
-  - Dashboard'da "Bugünün Planı" altına eklenir
-- **Durum**: Planlama tamamlandı, Faz 1'den başlanacak
+- **Faz 1**: Olasılıksal Biliş Motoru — Beta(α,β) dağılımı per topic, güven aralığı + fuzzy kategori
+  - `TopicBelief` Prisma model + `durationMinutes` ExamSubjectResult'a eklenir
+  - `lib/bayesian-engine.ts` + `app/api/student/mastery/route.ts`
+  - Sinyaller: examError, implicitPositive (discrimination-weighted), selfRating, studySession
+  - Speed weight: V = T_subject / N_attempted × complexity → Bayesyen ağırlık
+- **Faz 2**: Çevre Mimarisi Motoru — ROI bazlı tek aksiyon seçici (frictionless guidance)
+  - `lib/roi-engine.ts` + `app/api/student/next-action/route.ts`
+  - ROI = examWeight × gainPotential × dagLeverage × urgencyMultiplier
+  - Negatif yargı yok → "sıradaki en verimli hamle" olarak sunulur
+- **Faz 3**: Deneme Sonrası Bayesyen Güncelleme — post-exam signal processing
+  - Exam results → incremental TopicBelief güncelleme (error + implicit positive)
+  - Exam entry form'a durationMinutes input eklenir (opsiyonel, ders bazı)
+- **Faz 4**: Dashboard Çevre Mimarisi UI — overlay session launcher + pomodoro timer
+  - `components/home/next-action-widget.tsx` + `study-session-overlay.tsx` + `mastery-badge.tsx`
+  - Tek buton "Hemen Başla" → timer başlar → oturum bitince DailyStudy + belief güncellenir
+  - Fuzzy kategori (Belirsiz/Zayıf/Gelişiyor/Güçlü/Uzman) + hover'da CI detay
+- **Durum**: v2 plan tamamlandı (aksiyomatik temeller), Faz 1'den başlanacak
 
 ## Pending Work (as of last session)
 1. Curriculum manager UI improvements: bigger fonts, multi-select delete, bigger delete buttons
