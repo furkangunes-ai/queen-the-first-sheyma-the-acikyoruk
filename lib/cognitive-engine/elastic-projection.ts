@@ -16,6 +16,8 @@
 
 import { prisma } from '@/lib/prisma';
 import { betaMean } from '@/lib/bayesian-engine';
+import { logProjection, logProjectionSummary } from '@/lib/telemetry';
+import { detectMasteryJump } from '@/lib/anomaly-detector';
 
 /** Elastic Projection gamma katsayisi */
 const GAMMA = 0.3;
@@ -76,22 +78,54 @@ export async function applyElasticProjection(
       // Anlamli degisiklik yoksa atla (floating point noise)
       if (Math.abs(mNew - mOld) < 0.001) return null;
 
+      const mNewRounded = Math.round(mNew * 1000) / 1000;
+
+      // Kara Kutu: her donusumu logla
+      logProjection({
+        userId,
+        nodeId: node.id,
+        topicId: node.parentTopicId!,
+        bNew,
+        mOld,
+        mNew: mNewRounded,
+        delta: mNewRounded - mOld,
+        gamma: GAMMA,
+        isNew: false,
+      });
+
+      // Sibernetik: mastery sıçrama anomali tespiti (fire-and-forget)
+      detectMasteryJump(userId, node.id, node.parentTopicId!, mOld, mNewRounded, bNew).catch(() => {});
+
       updated++;
       return prisma.userCognitiveState.update({
         where: { id: existing.id },
         data: {
-          masteryLevel: Math.round(mNew * 1000) / 1000,
+          masteryLevel: mNewRounded,
           lastTestedAt: new Date(),
         },
       });
     } else {
       // Ilk kez — B_new'u dogrudan ata (gamma uygulanmaz, baslangic)
+      const mNewRounded = Math.round(Math.max(0, Math.min(1, bNew)) * 1000) / 1000;
+
+      logProjection({
+        userId,
+        nodeId: node.id,
+        topicId: node.parentTopicId!,
+        bNew,
+        mOld: 0,
+        mNew: mNewRounded,
+        delta: mNewRounded,
+        gamma: GAMMA,
+        isNew: true,
+      });
+
       created++;
       return prisma.userCognitiveState.create({
         data: {
           userId,
           nodeId: node.id,
-          masteryLevel: Math.round(Math.max(0, Math.min(1, bNew)) * 1000) / 1000,
+          masteryLevel: mNewRounded,
           strength: 2.0,
           successCount: 0,
           lastTestedAt: new Date(),
@@ -103,6 +137,9 @@ export async function applyElasticProjection(
   if (operations.length > 0) {
     await prisma.$transaction(operations as any);
   }
+
+  // Ozet log
+  logProjectionSummary(userId, topicBeliefs.length, updated, created, 'exam');
 
   return { updated, created };
 }

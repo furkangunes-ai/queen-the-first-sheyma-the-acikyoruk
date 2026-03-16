@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
     const testedNodes = subjects.reduce((s, sub) => s + sub.testedNodes, 0);
     const untestedNodes = totalNodes - testedNodes;
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       subjects,
       meta: {
         totalNodes,
@@ -150,6 +150,9 @@ export async function GET(request: NextRequest) {
         coverageScore: totalNodes > 0 ? testedNodes / totalNodes : 0,
       },
     });
+    // 60s cache — DAG coverage değişimi yavaş, her request'te DB'ye gitmeye gerek yok
+    response.headers.set('Cache-Control', 'private, max-age=60, stale-while-revalidate=120');
+    return response;
   } catch (error) {
     logApiError("analytics/dag-coverage", error);
     return NextResponse.json({ error: "Sunucu hatasi" }, { status: 500 });

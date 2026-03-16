@@ -9,6 +9,8 @@ import {
   estimateDiscrimination,
 } from "@/lib/bayesian-engine";
 import { applyElasticProjection } from "@/lib/cognitive-engine";
+import { logBeliefUpdate } from "@/lib/telemetry";
+import { betaMean } from "@/lib/bayesian-engine";
 
 export async function POST(
   request: NextRequest,
@@ -376,6 +378,22 @@ async function processPostExamBeliefUpdates(
         alpha = updated.alpha;
         beta = updated.beta;
       }
+
+      // Kara Kutu: her topic belief değişimini logla
+      const oldAlpha = existing?.alpha ?? 1.0;
+      const oldBeta = existing?.beta ?? 1.0;
+      const topicHasVoids = !!(topicVoids && topicVoids.length > 0);
+      logBeliefUpdate({
+        userId,
+        topicId: topic.id,
+        alphaOld: oldAlpha,
+        betaOld: oldBeta,
+        alphaNew: alpha,
+        betaNew: beta,
+        meanOld: betaMean(oldAlpha, oldBeta),
+        meanNew: betaMean(alpha, beta),
+        source: topicHasVoids ? 'exam_error' : 'exam_implicit_positive',
+      });
 
       upserts.push({ userId, topicId: topic.id, alpha, beta });
     }
