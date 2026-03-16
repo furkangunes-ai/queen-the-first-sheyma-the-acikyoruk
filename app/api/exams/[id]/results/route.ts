@@ -8,6 +8,7 @@ import {
   calculateSpeedWeight,
   estimateDiscrimination,
 } from "@/lib/bayesian-engine";
+import { applyElasticProjection } from "@/lib/cognitive-engine";
 
 export async function POST(
   request: NextRequest,
@@ -221,14 +222,20 @@ export async function POST(
     // ── Bayesyen Biliş Güncellemesi (Post-Exam Signal Processing) ──
     // Aksiyom 1: Her deneme gürültülü sinyal → Bayesyen posterior güncelleme
     // Aksiyom 2: Hız ağırlığı → durationMinutes kullanılarak speed weight hesaplanır
+    // + Elastic Projection: Bayes → DAG sync (Bilişsel Tekillik)
     try {
-      await processPostExamBeliefUpdates(userId, id, results as Array<{
+      const updatedBeliefs = await processPostExamBeliefUpdates(userId, id, results as Array<{
         subjectId: string;
         correctCount: number;
         wrongCount: number;
         emptyCount: number;
         durationMinutes?: number;
       }>);
+
+      // Elastic Projection: Bayesyen güncellemeleri DAG'a yansıt
+      if (updatedBeliefs.length > 0) {
+        await applyElasticProjection(userId, updatedBeliefs);
+      }
     } catch (beliefError) {
       // Belief güncellemesi başarısız olursa sınav sonuçlarını etkilememeli
       console.error("Belief update error (non-critical):", beliefError);
@@ -278,7 +285,7 @@ async function processPostExamBeliefUpdates(
     emptyCount: number;
     durationMinutes?: number;
   }>
-) {
+): Promise<Array<{ topicId: string; alpha: number; beta: number }>> {
   // Batch: tüm topic'leri ve mevcut void'ları çek
   const subjectIds = results.map((r) => r.subjectId);
 
@@ -386,4 +393,7 @@ async function processPostExamBeliefUpdates(
       )
     );
   }
+
+  // Elastic Projection icin guncellenmis belief'leri don
+  return upserts.map(u => ({ topicId: u.topicId, alpha: u.alpha, beta: u.beta }));
 }
