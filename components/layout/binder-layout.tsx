@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import NotificationBell from '@/components/notifications/notification-bell';
+import CompactStreak from '@/components/gamification/compact-streak';
 import FeatureTour from '@/components/onboarding/feature-tour';
 import { Beaker, BookText, Scale } from 'lucide-react';
 import { getExamTrackLabel, type ExamTrack } from '@/lib/exam-track-filter';
@@ -460,6 +461,7 @@ export function BinderLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-3">
+            <CompactStreak />
             <div className="glass rounded-full p-1 border-white/10 shadow-lg shadow-pink-500/10">
               <NotificationBell />
             </div>
