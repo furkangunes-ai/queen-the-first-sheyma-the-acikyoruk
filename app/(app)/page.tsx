@@ -9,17 +9,18 @@ import {
   Circle,
   Loader2,
   CheckCircle,
-  Sparkles,
   CalendarDays,
   Clock,
   ArrowRight,
-  Target,
+  Flame,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import ActionHub from '@/components/home/action-hub';
+import NextActionWidget from '@/components/home/next-action-widget';
+import StreakBadgeWidget from '@/components/gamification/streak-badge-widget';
 
 interface WeeklyPlanItem {
   id: string;
@@ -51,20 +52,27 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const [weeklyPlan, setWeeklyPlan] = useState<WeeklyPlan | null>(null);
+  const [streak, setStreak] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
-  const userName = session?.user?.name || 'Kullanıcı';
+  const userName = session?.user?.name || 'Kullanici';
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const planRes = await fetch('/api/weekly-plans?current=true');
+      const [planRes, gamRes] = await Promise.all([
+        fetch('/api/weekly-plans?current=true'),
+        fetch('/api/gamification'),
+      ]);
       if (planRes.ok) {
-        const planData = await planRes.json();
-        setWeeklyPlan(planData);
+        setWeeklyPlan(await planRes.json());
+      }
+      if (gamRes.ok) {
+        const gamData = await gamRes.json();
+        setStreak(gamData.streak?.currentStreak ?? 0);
       }
     } catch (err) {
-      console.error('Dashboard verileri yüklenirken hata:', err);
+      console.error('Dashboard verileri yuklenirken hata:', err);
     } finally {
       setLoading(false);
     }
@@ -74,7 +82,7 @@ export default function DashboardPage() {
     fetchData();
   }, [fetchData]);
 
-  // Türkiye saatine göre bugünün gününü hesapla (0=Pazartesi..6=Pazar)
+  // Turkiye saatine gore bugunun gununu hesapla (0=Pazartesi..6=Pazar)
   const turkeyNow = new Date(getTurkeyDateString() + 'T12:00:00+03:00');
   const todayDayOfWeek = (turkeyNow.getDay() + 6) % 7;
   const todayPlanItems = weeklyPlan?.items?.filter(i => i.dayOfWeek === todayDayOfWeek) || [];
@@ -102,14 +110,14 @@ export default function DashboardPage() {
           if (!prev) return prev;
           return { ...prev, items: prev.items.map(item => item.id === itemId ? { ...item, completed: currentCompleted } : item) };
         });
-        toast.error('Plan öğesi güncellenirken hata oluştu');
+        toast.error('Plan ogesi guncellenirken hata olustu');
       }
     } catch {
       setWeeklyPlan(prev => {
         if (!prev) return prev;
         return { ...prev, items: prev.items.map(item => item.id === itemId ? { ...item, completed: currentCompleted } : item) };
       });
-      toast.error('Plan öğesi güncellenirken hata oluştu');
+      toast.error('Plan ogesi guncellenirken hata olustu');
     }
   };
 
@@ -123,7 +131,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6 lg:gap-8 max-w-4xl mx-auto">
-      {/* Welcome */}
+      {/* Welcome + Streak */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -137,37 +145,48 @@ export default function DashboardPage() {
             {format(new Date(), 'd MMMM EEEE', { locale: tr })}
           </p>
         </div>
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500/20 to-cyan-500/20 border border-white/10 flex items-center justify-center">
-          <Sparkles size={18} className="text-pink-400" />
-        </div>
+        {/* Compact Streak Counter */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
+          className={clsx(
+            "flex items-center gap-2 px-4 py-2.5 rounded-2xl border transition-all",
+            streak > 0
+              ? "bg-orange-500/10 border-orange-500/20 shadow-lg shadow-orange-500/10"
+              : "bg-white/[0.03] border-white/10"
+          )}
+        >
+          <motion.div
+            animate={streak > 0 ? { scale: [1, 1.2, 1] } : {}}
+            transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 4 }}
+          >
+            <Flame size={20} className={streak > 0 ? "text-orange-400" : "text-white/20"} />
+          </motion.div>
+          <span className={clsx(
+            "text-xl font-bold tracking-tighter",
+            streak > 0 ? "text-orange-400" : "text-white/30"
+          )}>
+            {streak}
+          </span>
+          <span className="text-[9px] text-white/30 uppercase tracking-widest font-bold hidden sm:block">
+            gun
+          </span>
+        </motion.div>
       </motion.div>
 
-      {/* Üst satır: Sıradaki Hamlen + Bugünün Planı */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
-        {/* Sıradaki Hamlen — Kart olarak, tıklayınca /plan sayfasına */}
-        <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.03 }}
-          onClick={() => router.push('/plan')}
-          className="glass-panel p-6 lg:p-8 text-left group cursor-pointer relative overflow-hidden"
-        >
-          <div className="absolute top-0 left-0 w-40 h-40 bg-pink-500/10 rounded-full blur-[60px] pointer-events-none group-hover:bg-pink-500/20 transition-colors duration-500" />
-          <div className="relative z-10">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500 to-amber-500 flex items-center justify-center mb-5 shadow-lg shadow-pink-500/30 group-hover:shadow-pink-500/50 transition-shadow duration-300">
-              <Target className="w-7 h-7 text-white" />
-            </div>
-            <h2 className="text-xl lg:text-2xl font-bold text-white mb-2 group-hover:text-gradient-pink transition-colors">
-              Sıradaki Hamlen
-            </h2>
-            <p className="text-sm text-white/50 group-hover:text-white/60 transition-colors">
-              Çalışma planla veya sistem önerisi al
-            </p>
-          </div>
-          <ArrowRight size={20} className="absolute top-6 right-6 text-white/10 group-hover:text-white/30 transition-colors" />
-        </motion.button>
+      {/* Siradaki Hamlen — Canli Widget */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.03 }}
+      >
+        <NextActionWidget />
+      </motion.div>
 
-        {/* Bugünün Planı */}
+      {/* Orta satir: Bugunun Plani + Streak/Rozet */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
+        {/* Bugunun Plani */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -179,7 +198,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-4 relative z-10">
               <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
                 <CalendarDays size={20} className="text-amber-400" />
-                Bugünün Planı
+                Bugunun Plani
               </h2>
               {todayPlanItems.length > 0 && (
                 <div className="glass bg-white/[0.05] border-white/10 px-3 py-1 rounded-xl flex items-center gap-1.5">
@@ -208,12 +227,12 @@ export default function DashboardPage() {
               {todayPlanItems.length === 0 ? (
                 <div className="text-center py-6 flex flex-col items-center">
                   <CalendarDays size={32} className="text-amber-400/20 mb-2" />
-                  <p className="text-white/40 font-medium text-sm">Bugün için plan yok</p>
+                  <p className="text-white/40 font-medium text-sm">Bugun icin plan yok</p>
                   <button
                     onClick={() => router.push('/plan')}
                     className="mt-3 flex items-center gap-1.5 text-xs text-amber-300/70 hover:text-amber-300 transition-colors"
                   >
-                    <span>Plan oluştur</span>
+                    <span>Plan olustur</span>
                     <ArrowRight size={12} />
                   </button>
                 </div>
@@ -277,13 +296,22 @@ export default function DashboardPage() {
             </div>
           </div>
         </motion.div>
+
+        {/* Streak & Rozet Vitrini */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.09 }}
+        >
+          <StreakBadgeWidget />
+        </motion.div>
       </div>
 
-      {/* Alt satır: Çalışma Bilgisi Gir + Verilerimi Analiz Et */}
+      {/* Alt satir: Calisma Bilgisi Gir + Verilerimi Analiz Et */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
+        transition={{ delay: 0.12 }}
       >
         <ActionHub onNavigate={(path) => router.push(path)} />
       </motion.div>
