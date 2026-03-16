@@ -964,7 +964,7 @@ export default function StudyPage() {
                       <motion.button
                         whileHover={!saving ? { scale: 1.02 } : {}}
                         whileTap={!saving ? { scale: 0.97 } : {}}
-                        onClick={handleSave}
+                        onClick={() => handleSave()}
                         disabled={saving || !subjectId || (!didReview && !didQuestions)}
                         className={clsx(
                           "px-8 py-3 font-bold text-sm rounded-xl disabled:opacity-40 flex items-center gap-2 transition-all",
