@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
-import { Brain, CheckCircle2, Loader2, MessageSquare, ChevronDown, ChevronUp, Save } from 'lucide-react';
+import { Brain, CheckCircle2, Loader2, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   ERROR_REASONS_ORDERED,
   ERROR_REASON_LABELS,
@@ -46,6 +46,8 @@ interface VoidEdit {
   notes: string;
   expanded: boolean;
   dirty: boolean;
+  saving: boolean;
+  saved: boolean;
 }
 
 /**
@@ -60,7 +62,7 @@ export default function ColdPhaseForm({ examId, examDate, onComplete }: ColdPhas
   const [edits, setEdits] = useState<Map<string, VoidEdit>>(new Map());
   const [topics, setTopics] = useState<Record<string, Topic[]>>({});
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const saveTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   // Friction gate
   const [frictionMessage, setFrictionMessage] = useState<string | null>(null);
@@ -91,6 +93,8 @@ export default function ColdPhaseForm({ examId, examDate, onComplete }: ColdPhas
             notes: v.notes || '',
             expanded: false,
             dirty: false,
+            saving: false,
+            saved: v.status !== 'RAW',
           });
         }
         setEdits(editMap);
@@ -144,16 +148,74 @@ export default function ColdPhaseForm({ examId, examDate, onComplete }: ColdPhas
     }));
   }, [voids, edits]);
 
+  // Auto-save: tek bir void'u debounce ile kaydet
+  const autoSaveVoid = useCallback(async (voidId: string, edit: VoidEdit) => {
+    // saving state güncelle
+    setEdits(prev => {
+      const next = new Map(prev);
+      const current = next.get(voidId);
+      if (current) next.set(voidId, { ...current, saving: true });
+      return next;
+    });
+
+    try {
+      const res = await fetch(`/api/exams/${examId}/cognitive-voids/${voidId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...(edit.topicId && { topicId: edit.topicId }),
+          ...(edit.errorReason && { errorReason: edit.errorReason }),
+          ...(edit.notes !== undefined && { notes: edit.notes || null }),
+        }),
+      });
+
+      if (!res.ok) throw new Error();
+
+      setEdits(prev => {
+        const next = new Map(prev);
+        const current = next.get(voidId);
+        if (current) next.set(voidId, { ...current, saving: false, saved: true, dirty: false });
+        return next;
+      });
+    } catch {
+      setEdits(prev => {
+        const next = new Map(prev);
+        const current = next.get(voidId);
+        if (current) next.set(voidId, { ...current, saving: false });
+        return next;
+      });
+      toast.error('Kaydetme hatası');
+    }
+  }, [examId]);
+
   function updateEdit(voidId: string, updates: Partial<VoidEdit>) {
     setEdits(prev => {
       const next = new Map(prev);
       const current = next.get(voidId);
       if (current) {
-        next.set(voidId, { ...current, ...updates, dirty: true });
+        const updated = { ...current, ...updates, dirty: true, saved: false };
+        next.set(voidId, updated);
+
+        // Debounced auto-save
+        const existingTimeout = saveTimeoutsRef.current.get(voidId);
+        if (existingTimeout) clearTimeout(existingTimeout);
+
+        const timeout = setTimeout(() => {
+          autoSaveVoid(voidId, updated);
+          saveTimeoutsRef.current.delete(voidId);
+        }, 800);
+        saveTimeoutsRef.current.set(voidId, timeout);
       }
       return next;
     });
   }
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      saveTimeoutsRef.current.forEach(t => clearTimeout(t));
+    };
+  }, []);
 
   function toggleExpand(voidId: string) {
     setEdits(prev => {
@@ -164,55 +226,6 @@ export default function ColdPhaseForm({ examId, examDate, onComplete }: ColdPhas
       }
       return next;
     });
-  }
-
-  const dirtyCount = useMemo(() => {
-    let count = 0;
-    edits.forEach(e => { if (e.dirty) count++; });
-    return count;
-  }, [edits]);
-
-  async function handleSave() {
-    setSubmitting(true);
-    try {
-      const promises: Promise<Response>[] = [];
-
-      for (const [voidId, edit] of edits) {
-        if (!edit.dirty) continue;
-
-        const v = voids.find(v => v.id === voidId);
-        if (!v) continue;
-
-        // PATCH existing void with enrichment data
-        promises.push(
-          fetch(`/api/exams/${examId}/cognitive-voids/${voidId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ...(edit.topicId && { topicId: edit.topicId }),
-              ...(edit.errorReason && { errorReason: edit.errorReason }),
-              ...(edit.notes && { notes: edit.notes }),
-            }),
-          })
-        );
-      }
-
-      if (promises.length > 0) {
-        const results = await Promise.allSettled(promises);
-        const failed = results.filter(r => r.status === 'rejected').length;
-        if (failed > 0) {
-          toast.error(`${failed} zafiyet kaydedilemedi`);
-        } else {
-          toast.success(`${promises.length} zafiyet güncellendi!`);
-        }
-      }
-
-      onComplete();
-    } catch {
-      toast.error('Kaydetme sırasında hata oluştu');
-    } finally {
-      setSubmitting(false);
-    }
   }
 
   // Friction gate screen
@@ -337,8 +350,16 @@ export default function ColdPhaseForm({ examId, examDate, onComplete }: ColdPhas
                         {v.topic && (
                           <span className="text-[10px] text-white/30">{v.topic.name}</span>
                         )}
-                        {edit.dirty && !isClassified && (
+                        {edit.saving && (
+                          <span className="text-[10px] text-amber-400 flex items-center gap-1">
+                            <Loader2 size={8} className="animate-spin" /> kaydediliyor...
+                          </span>
+                        )}
+                        {edit.dirty && !edit.saving && !edit.saved && (
                           <span className="text-[10px] text-amber-400">düzenlendi</span>
+                        )}
+                        {edit.saved && !edit.saving && !edit.dirty && !isClassified && (
+                          <span className="text-[10px] text-emerald-400">kaydedildi</span>
                         )}
                       </div>
 
@@ -421,27 +442,19 @@ export default function ColdPhaseForm({ examId, examDate, onComplete }: ColdPhas
         ))}
       </div>
 
-      {/* Footer: Save + Close */}
+      {/* Footer */}
       <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5 relative z-10">
-        <button
-          onClick={onComplete}
-          className="text-white/40 hover:text-white/80 text-sm font-bold uppercase tracking-wider transition-colors"
-        >
-          Sonra Devam Et
-        </button>
+        <p className="text-[10px] text-white/25 font-medium">
+          Değişiklikler otomatik kaydedilir
+        </p>
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          onClick={handleSave}
-          disabled={submitting || dirtyCount === 0}
-          className="bg-gradient-to-r from-pink-500 to-pink-600 text-white px-6 py-2.5 rounded-xl shadow-[0_0_12px_rgba(255,42,133,0.3)] border border-pink-400/20 font-bold text-sm flex items-center gap-2 disabled:opacity-40"
+          onClick={onComplete}
+          className="bg-gradient-to-r from-pink-500 to-pink-600 text-white px-6 py-2.5 rounded-xl shadow-[0_0_12px_rgba(255,42,133,0.3)] border border-pink-400/20 font-bold text-sm flex items-center gap-2"
         >
-          {submitting ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : (
-            <Save size={14} />
-          )}
-          {submitting ? 'Kaydediliyor...' : `Kaydet${dirtyCount > 0 ? ` (${dirtyCount})` : ''}`}
+          <CheckCircle2 size={14} />
+          Tamamla
         </motion.button>
       </div>
     </div>

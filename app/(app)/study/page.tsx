@@ -141,6 +141,10 @@ export default function StudyPage() {
   // Split duration mode
   const [splitDuration, setSplitDuration] = useState(false);
 
+  // Source memory
+  const [pastSources, setPastSources] = useState<string[]>([]);
+  const [showCustomSource, setShowCustomSource] = useState(false);
+
   // New topic
   const [showNewTopic, setShowNewTopic] = useState(false);
   const [newTopicName, setNewTopicName] = useState("");
@@ -177,10 +181,11 @@ export default function StudyPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [subRes, studyRes, reviewRes] = await Promise.all([
+      const [subRes, studyRes, reviewRes, sourcesRes] = await Promise.all([
         fetch("/api/exam-types"),
         fetch(`/api/daily-study?date=${selectedDate}`),
         fetch(`/api/topic-reviews?date=${selectedDate}`),
+        fetch("/api/daily-study/sources"),
       ]);
 
       if (subRes.ok) {
@@ -210,6 +215,7 @@ export default function StudyPage() {
 
       if (studyRes.ok) setStudies(await studyRes.json());
       if (reviewRes.ok) setReviews(await reviewRes.json());
+      if (sourcesRes.ok) setPastSources(await sourcesRes.json());
     } catch (err) {
       console.error("Veri yüklenirken hata:", err);
     } finally {
@@ -257,17 +263,25 @@ export default function StudyPage() {
 
   // ---------- Save ----------
 
-  async function handleSave() {
+  function canSave() {
+    if (!subjectId) return false;
+    if (!didReview && !didQuestions) return false;
+    if (didQuestions && !questionCount) return false;
+    if (didReview && !topicId) return false;
+    return true;
+  }
+
+  async function handleSave(silent = false) {
     if (!subjectId) {
-      toast.error("Ders seçimi zorunlu");
+      if (!silent) toast.error("Ders seçimi zorunlu");
       return;
     }
     if (!didReview && !didQuestions) {
-      toast.error("En az bir aktivite seç");
+      if (!silent) toast.error("En az bir aktivite seç");
       return;
     }
     if (didQuestions && !questionCount) {
-      toast.error("Soru sayısını gir");
+      if (!silent) toast.error("Soru sayısını gir");
       return;
     }
 
@@ -323,7 +337,7 @@ export default function StudyPage() {
 
       if (didReview) {
         if (!topicId) {
-          toast.error("Konu tekrarı için konu seçimi zorunlu");
+          if (!silent) toast.error("Konu tekrarı için konu seçimi zorunlu");
           setSaving(false);
           return;
         }
@@ -349,10 +363,14 @@ export default function StudyPage() {
 
       if (!allOk) throw new Error("Kayıt başarısız");
 
-      const labels: string[] = [];
-      if (didReview) labels.push("Konu tekrarı");
-      if (didQuestions) labels.push("Soru çözümü");
-      toast.success(`${labels.join(" + ")} kaydedildi`);
+      if (!silent) {
+        const labels: string[] = [];
+        if (didReview) labels.push("Konu tekrarı");
+        if (didQuestions) labels.push("Soru çözümü");
+        toast.success(`${labels.join(" + ")} kaydedildi`);
+      } else {
+        toast.success("Otomatik kaydedildi");
+      }
 
       resetForm();
       fetchData();
@@ -380,6 +398,7 @@ export default function StudyPage() {
     setWrongCount("");
     setDifficulty("");
     setSource("");
+    setShowCustomSource(false);
     setQuestionDuration("");
     setSplitDuration(false);
   }
@@ -658,7 +677,13 @@ export default function StudyPage() {
                     <BookMarked size={16} className="text-pink-400" />
                     Çalışma Kaydı
                   </h3>
-                  <button onClick={resetForm} className="text-white/30 hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors">
+                  <button onClick={async () => {
+                    if (canSave()) {
+                      await handleSave(true);
+                    } else {
+                      resetForm();
+                    }
+                  }} className="text-white/30 hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors">
                     <X size={16} />
                   </button>
                 </div>
@@ -812,30 +837,66 @@ export default function StudyPage() {
                             <input type="number" min={0} value={wrongCount} onChange={(e) => setWrongCount(e.target.value)} className={inputClass} placeholder="0" />
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Zorluk</label>
-                            <div className="flex gap-1.5">
-                              {DIFFICULTY_OPTIONS.map((opt) => (
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Zorluk</label>
+                          <div className="flex gap-1.5">
+                            {DIFFICULTY_OPTIONS.map((opt) => (
+                              <button
+                                key={opt.value}
+                                onClick={() => setDifficulty(difficulty === opt.value ? "" : opt.value)}
+                                className={clsx(
+                                  "flex-1 py-1.5 rounded-lg text-[11px] font-bold border transition-all",
+                                  difficulty === opt.value
+                                    ? DIFFICULTY_MAP[opt.value].color
+                                    : "bg-white/[0.02] border-white/10 text-white/30 hover:text-white/50"
+                                )}
+                              >
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Kaynak</label>
+                          {pastSources.length > 0 && !showCustomSource ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {pastSources.map((s) => (
                                 <button
-                                  key={opt.value}
-                                  onClick={() => setDifficulty(difficulty === opt.value ? "" : opt.value)}
+                                  key={s}
+                                  type="button"
+                                  onClick={() => setSource(source === s ? "" : s)}
                                   className={clsx(
-                                    "flex-1 py-1.5 rounded-lg text-[11px] font-bold border transition-all",
-                                    difficulty === opt.value
-                                      ? DIFFICULTY_MAP[opt.value].color
+                                    "px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all",
+                                    source === s
+                                      ? "bg-cyan-500/15 border-cyan-400/40 text-cyan-300"
                                       : "bg-white/[0.02] border-white/10 text-white/30 hover:text-white/50"
                                   )}
                                 >
-                                  {opt.label}
+                                  {s}
                                 </button>
                               ))}
+                              <button
+                                type="button"
+                                onClick={() => { setShowCustomSource(true); setSource(""); }}
+                                className="px-3 py-1.5 rounded-lg text-[11px] font-bold border border-dashed border-white/15 text-white/30 hover:text-white/50 hover:border-white/25 transition-all"
+                              >
+                                + Yeni Kaynak
+                              </button>
                             </div>
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Kaynak</label>
-                            <input type="text" value={source} onChange={(e) => setSource(e.target.value)} className={inputClass} placeholder="Kitap, test adı..." />
-                          </div>
+                          ) : (
+                            <div className="flex gap-2">
+                              <input type="text" value={source} onChange={(e) => setSource(e.target.value)} className={clsx(inputClass, "flex-1")} placeholder="Kitap, test adı..." />
+                              {pastSources.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => { setShowCustomSource(false); setSource(""); }}
+                                  className="px-3 py-2 rounded-xl text-[10px] font-bold bg-white/[0.03] border border-white/10 text-white/30 hover:text-white/50 transition-all shrink-0"
+                                >
+                                  Listeden Seç
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </motion.div>
@@ -915,7 +976,7 @@ export default function StudyPage() {
                         )}
                       >
                         {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                        KAYDET
+                        EKLE
                         {didReview && didQuestions && (
                           <span className="text-[10px] opacity-70 ml-1">(2 kayıt)</span>
                         )}
