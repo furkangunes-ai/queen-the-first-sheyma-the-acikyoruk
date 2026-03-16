@@ -9,6 +9,7 @@ import { logApiError } from "@/lib/logger";
 import { logBeliefUpdate, logStudySessionStart } from "@/lib/telemetry";
 import { detectFrictionAnomaly } from "@/lib/anomaly-detector";
 import { betaMean } from "@/lib/bayesian-engine";
+import { recalculateEffectiveLevel } from "@/lib/knowledge-engine";
 
 export async function GET(request: NextRequest) {
   try {
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       date, subjectId, topicId, questionCount, correctCount, wrongCount,
-      emptyCount, difficulty, source, duration, notes,
+      emptyCount, difficulty, source, duration, notes, comprehension,
     } = body;
 
     if (!subjectId || !questionCount) {
@@ -84,6 +85,7 @@ export async function POST(request: NextRequest) {
         difficulty: difficulty || null,
         source: source || null,
         duration: duration || null,
+        comprehension: comprehension != null ? Math.max(0, Math.min(1, comprehension)) : null,
         notes: notes || null,
       },
       include: {
@@ -149,6 +151,14 @@ export async function POST(request: NextRequest) {
 
           // Elastic Projection: Bayes → DAG sync
           await applyElasticProjectionForTopic(userId, topicId, updated.alpha, updated.beta);
+
+          // effectiveLevel yeniden hesapla + KnowledgeLog kaydı
+          await recalculateEffectiveLevel(userId, topicId, 'study_session', {
+            correctRatio,
+            comprehension: comprehension ?? null,
+            questionCount,
+            duration: duration ?? null,
+          });
         } catch (err) {
           logApiError("daily-study/belief-sync", err);
         }

@@ -51,6 +51,7 @@ model User {
   kazanimProgress KazanimProgress[]
   cognitiveStates UserCognitiveState[]
   topicBeliefs   TopicBelief[]
+  knowledgeLogs  KnowledgeLog[]
   subscription    UserSubscription?
   passwordResetTokens PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
@@ -167,6 +168,7 @@ model Topic {
   dailyStudies    DailyStudy[]
   topicReviews    TopicReview[]
   topicKnowledge  TopicKnowledge[]
+  knowledgeLogs   KnowledgeLog[]
   weeklyPlanItems WeeklyPlanItem[]
   spacedRepetitionItems SpacedRepetitionItem[]
   prerequisites    TopicPrerequisite[] @relation("TopicPrereqs")
@@ -385,6 +387,7 @@ model DailyStudy {
   difficulty    String?         // "kolay" | "orta" | "zor"
   source        String?         // Kaynak kitap/test adı
   duration      Int?            // Dakika cinsinden süre
+  comprehension Float?          // Anlama seviyesi: 0.2=Anlamadım, 0.4=Kısmen, 0.7=Çoğunu, 1.0=Tam
   notes         String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -438,18 +441,41 @@ model UserFile {
 // ==================== STRATEJİ & AI ====================
 
 model TopicKnowledge {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  topicId   String
-  topic     Topic    @relation(fields: [topicId], references: [id])
-  level     Int      @default(0) // 0-5: 0=Hiç bilmiyorum, 1=Çok az, 2=Temel, 3=Orta, 4=İyi, 5=Çok iyi
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  topicId        String
+  topic          Topic    @relation(fields: [topicId], references: [id])
+  level          Int      @default(0) // 0-5: Manuel giriş (tam sayı)
+  effectiveLevel Float?   // Hesaplanmış bilgi seviyesi (1.0-5.0, virgüllü)
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
 
   @@unique([userId, topicId])
   @@index([userId])
   @@index([topicId])
+}
+
+// ==================== KNOWLEDGE LOG (Bilgi Değişim Geçmişi) ====================
+// Her TopicKnowledge değişikliğini tarihli olarak kaydeder.
+// Öğrenci ve admin bu logu görerek ilerlemeyi takip eder.
+
+model KnowledgeLog {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  topicId        String
+  topic          Topic    @relation(fields: [topicId], references: [id])
+  source         String   // "study_session" | "exam_error" | "exam_implicit_positive" | "manual" | "initial"
+  oldLevel       Float    // Değişim öncesi effectiveLevel
+  newLevel       Float    // Değişim sonrası effectiveLevel
+  delta          Float    // newLevel - oldLevel
+  detail         String?  // JSON: {correctRatio, comprehension, examId, ...}
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([topicId])
+  @@index([userId, createdAt])
 }
 
 model WeeklyPlan {
