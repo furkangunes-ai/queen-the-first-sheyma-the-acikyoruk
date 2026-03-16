@@ -58,3 +58,9 @@ export {
   recordStudyForTopic,
   setAbsoluteMasteryForTopic,
 } from './dag-updater';
+
+// Elastic Projection (Bayes → DAG Sync)
+export {
+  applyElasticProjection,
+  applyElasticProjectionForTopic,
+} from './elastic-projection';

@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { updateDailyStudyStreak } from "@/lib/streak-engine";
 import { recordStudyForTopic } from "@/lib/cognitive-engine";
+import { applyElasticProjectionForTopic } from "@/lib/cognitive-engine";
+import { updateFromStudySession } from "@/lib/bayesian-engine";
 import { logApiError } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
@@ -95,9 +97,38 @@ export async function POST(request: NextRequest) {
     // Bilişsel çizge güncelleme: çalışma başarı oranına göre mastery güncelle
     if (topicId && questionCount > 0) {
       const correctRatio = (correctCount || 0) / questionCount;
+
+      // 1. DAG güncelleme (UserCognitiveState)
       recordStudyForTopic(userId, topicId, correctRatio).catch((err) =>
-        logApiError("daily-study", err)
+        logApiError("daily-study/dag", err)
       );
+
+      // 2. Bayesyen güncelleme (TopicBelief) + Elastic Projection (Bayes → DAG sync)
+      (async () => {
+        try {
+          // Mevcut belief'i getir (yoksa prior: Beta(1,1))
+          const existing = await prisma.topicBelief.findUnique({
+            where: { userId_topicId: { userId, topicId } },
+          });
+          const oldAlpha = existing?.alpha ?? 1.0;
+          const oldBeta = existing?.beta ?? 1.0;
+
+          // Bayesyen güncelleme
+          const updated = updateFromStudySession(oldAlpha, oldBeta, correctRatio, questionCount);
+
+          // TopicBelief upsert
+          await prisma.topicBelief.upsert({
+            where: { userId_topicId: { userId, topicId } },
+            update: { alpha: updated.alpha, beta: updated.beta },
+            create: { userId, topicId, alpha: updated.alpha, beta: updated.beta },
+          });
+
+          // Elastic Projection: Bayes → DAG sync
+          await applyElasticProjectionForTopic(userId, topicId, updated.alpha, updated.beta);
+        } catch (err) {
+          logApiError("daily-study/belief-sync", err);
+        }
+      })();
     }
 
     return NextResponse.json(study, { status: 201 });
