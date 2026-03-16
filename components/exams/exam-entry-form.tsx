@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
-import { ChevronRight, Save, Loader2, FileText, CheckCircle2, Zap, Sun, Moon, Sunrise, Volume2, VolumeX, Battery, BatteryLow, BatteryFull } from 'lucide-react';
+import { ChevronRight, Loader2, FileText, CheckCircle2, Zap, Sun, Moon, Sunrise, Volume2, VolumeX, Battery, BatteryLow, BatteryFull } from 'lucide-react';
 import { BRANCH_GROUPS } from "@/lib/constants";
 import {
   TIME_OF_DAY_OPTIONS,
@@ -86,8 +86,10 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
   // Aksiyom 2: Ders bazı süre (dakika) — opsiyonel, hız ağırlığı için
   const [subjectDurations, setSubjectDurations] = useState<Map<string, number>>(new Map());
 
-  // Submission
+  // Submission & auto-save
   const [submitting, setSubmitting] = useState(false);
+  const [savedExamId, setSavedExamId] = useState<string | null>(null);
+  const contextSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     async function fetchExamTypes() {
@@ -233,10 +235,11 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
     setStep(2);
   }
 
-  async function handleSubmit() {
+  // Auto-save: Step 2 → Step 3 geçişinde sınavı oluştur ve sonuçları kaydet
+  async function autoSaveExam() {
+    if (savedExamId) return savedExamId; // Zaten kaydedilmiş
     setSubmitting(true);
     try {
-      // Create exam with context fields
       const examRes = await fetch('/api/exams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -248,11 +251,6 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
           examCategory: examCategory === 'brans'
             ? (branchMode === 'group' && selectedGroupKey ? `brans-${selectedGroupKey}` : 'brans')
             : undefined,
-          // Sıcak faz bağlam alanları
-          timeOfDay: timeOfDay || undefined,
-          environment: environment || undefined,
-          perceivedDifficulty: perceivedDifficulty || undefined,
-          biologicalState: biologicalState || undefined,
         }),
       });
 
@@ -294,7 +292,7 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   subjectId,
-                  source: state, // 'WRONG' veya 'EMPTY'
+                  source: state,
                   questionNumber,
                   magnitude: 1,
                 }),
@@ -305,7 +303,6 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
       }
 
       // Makro girişlerden de soru numarasız RAW void'lar oluştur
-      // (mikro girişlerde işaretlenmemiş yanlış/boş'lar için)
       for (const r of results) {
         const subjectMicro = microEntries.get(r.subjectId);
         const microWrong = subjectMicro
@@ -315,7 +312,6 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
           ? [...subjectMicro.values()].filter(s => s === 'EMPTY').length
           : 0;
 
-        // Makro > mikro ise fark kadarını null-questionNumber olarak kaydet
         const extraWrong = Math.max(0, r.wrongCount - microWrong);
         const extraEmpty = Math.max(0, r.emptyCount - microEmpty);
 
@@ -351,14 +347,61 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
         await Promise.allSettled(voidPromises);
       }
 
-      toast.success('Sınav kaydedildi! Dinlendikten sonra zafiyet analizini yapabilirsin.');
-      onExamCreated(exam.id);
+      setSavedExamId(exam.id);
+      toast.success('Sınav otomatik kaydedildi!');
+      return exam.id;
     } catch (err: any) {
-      toast.error(err.message || 'Bir hata oluştu');
+      toast.error(err.message || 'Kaydetme hatası');
+      return null;
     } finally {
       setSubmitting(false);
     }
   }
+
+  // Auto-save: Bağlam etiketleri değiştiğinde PATCH ile güncelle
+  const autoSaveContext = useCallback(async (
+    examId: string,
+    ctx: { timeOfDay?: string; environment?: string; perceivedDifficulty?: number; biologicalState?: string }
+  ) => {
+    try {
+      await fetch(`/api/exams/${examId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          timeOfDay: ctx.timeOfDay || null,
+          environment: ctx.environment || null,
+          perceivedDifficulty: ctx.perceivedDifficulty || null,
+          biologicalState: ctx.biologicalState || null,
+        }),
+      });
+    } catch {
+      // Silent — context tags are optional
+    }
+  }, []);
+
+  // Debounced context auto-save when tags change
+  useEffect(() => {
+    if (!savedExamId || step !== 3) return;
+
+    if (contextSaveTimeoutRef.current) {
+      clearTimeout(contextSaveTimeoutRef.current);
+    }
+
+    contextSaveTimeoutRef.current = setTimeout(() => {
+      autoSaveContext(savedExamId, { timeOfDay, environment, perceivedDifficulty, biologicalState });
+    }, 500);
+
+    return () => {
+      if (contextSaveTimeoutRef.current) clearTimeout(contextSaveTimeoutRef.current);
+    };
+  }, [savedExamId, step, timeOfDay, environment, perceivedDifficulty, biologicalState, autoSaveContext]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (contextSaveTimeoutRef.current) clearTimeout(contextSaveTimeoutRef.current);
+    };
+  }, []);
 
   const inputClassName = "w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-[15px] font-medium text-white placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-pink-400/50 focus:border-pink-400/30 transition-all hover:border-white/20";
   const buttonClassName = "bg-gradient-to-r from-pink-500 to-pink-600 text-white px-6 py-3 rounded-xl shadow-[0_0_15px_rgba(255,42,133,0.3)] hover:shadow-[0_0_25px_rgba(255,42,133,0.5)] border border-pink-400/20 transition-all font-bold tracking-wide text-sm flex items-center justify-center gap-2";
@@ -735,11 +778,24 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setStep(3)}
-                    className={`${buttonClassName} opacity-100`}
+                    onClick={async () => {
+                      const examId = await autoSaveExam();
+                      if (examId) setStep(3);
+                    }}
+                    disabled={submitting}
+                    className={`${buttonClassName} opacity-100 disabled:opacity-50`}
                   >
-                    BAĞLAM ETİKETLERİ
-                    <ChevronRight className="w-4 h-4 ml-1 relative top-[1px]" />
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        KAYDEDİLİYOR...
+                      </>
+                    ) : (
+                      <>
+                        BAĞLAM ETİKETLERİ
+                        <ChevronRight className="w-4 h-4 ml-1 relative top-[1px]" />
+                      </>
+                    )}
                   </motion.button>
                 </div>
               </>
@@ -866,26 +922,19 @@ export default function ExamEntryForm({ onClose, onExamCreated }: ExamEntryFormP
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={handleSubmit}
-                disabled={submitting}
+                onClick={() => {
+                  if (savedExamId) onExamCreated(savedExamId);
+                }}
+                disabled={!savedExamId}
                 className={`${buttonClassName} opacity-100 disabled:opacity-50`}
               >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    KAYDEDİLİYOR...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 ml-[-4px]" />
-                    KAYDET
-                  </>
-                )}
+                <CheckCircle2 className="w-4 h-4 ml-[-4px]" />
+                TAMAMLA
               </motion.button>
             </div>
 
             <p className="text-center text-xs text-white/30 mt-4">
-              Zafiyet analizi dinlendikten sonra yapılabilir
+              Sınav zaten kaydedildi — bağlam etiketleri otomatik güncellenir
             </p>
           </motion.div>
         )}
