@@ -7,6 +7,7 @@ import { applyElasticProjectionForTopic } from "@/lib/cognitive-engine";
 import { updateFromStudySession } from "@/lib/bayesian-engine";
 import { logApiError } from "@/lib/logger";
 import { logBeliefUpdate, logStudySessionStart } from "@/lib/telemetry";
+import { detectFrictionAnomaly } from "@/lib/anomaly-detector";
 import { betaMean } from "@/lib/bayesian-engine";
 
 export async function GET(request: NextRequest) {
@@ -98,6 +99,11 @@ export async function POST(request: NextRequest) {
     updateDailyStudyStreak(userId).catch((err) =>
       logApiError("daily-study", err)
     );
+
+    // Sibernetik: sürtünme anomali tespiti (ROI önerisi vs gerçek çalışma)
+    if (topicId) {
+      detectFrictionAnomaly(userId, topicId).catch(() => {});
+    }
 
     // Bilişsel çizge güncelleme: çalışma başarı oranına göre mastery güncelle
     if (topicId && questionCount > 0) {

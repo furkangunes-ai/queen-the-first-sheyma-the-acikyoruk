@@ -17,6 +17,7 @@
 import { prisma } from '@/lib/prisma';
 import { betaMean } from '@/lib/bayesian-engine';
 import { logProjection, logProjectionSummary } from '@/lib/telemetry';
+import { detectMasteryJump } from '@/lib/anomaly-detector';
 
 /** Elastic Projection gamma katsayisi */
 const GAMMA = 0.3;
@@ -91,6 +92,9 @@ export async function applyElasticProjection(
         gamma: GAMMA,
         isNew: false,
       });
+
+      // Sibernetik: mastery sıçrama anomali tespiti (fire-and-forget)
+      detectMasteryJump(userId, node.id, node.parentTopicId!, mOld, mNewRounded, bNew).catch(() => {});
 
       updated++;
       return prisma.userCognitiveState.update({
