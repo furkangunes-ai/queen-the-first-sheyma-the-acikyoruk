@@ -6,6 +6,8 @@ import { recordStudyForTopic } from "@/lib/cognitive-engine";
 import { applyElasticProjectionForTopic } from "@/lib/cognitive-engine";
 import { updateFromStudySession } from "@/lib/bayesian-engine";
 import { logApiError } from "@/lib/logger";
+import { logBeliefUpdate, logStudySessionStart } from "@/lib/telemetry";
+import { betaMean } from "@/lib/bayesian-engine";
 
 export async function GET(request: NextRequest) {
   try {
@@ -89,6 +91,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Kara Kutu: çalışma oturumu başlangıcını logla
+    logStudySessionStart(userId, topicId || subjectId, source === 'system_recommendation' ? 'system_recommendation' : source === 'self_planned' ? 'self_planned' : 'manual');
+
     // Update streak & check badges (fire and forget)
     updateDailyStudyStreak(userId).catch((err) =>
       logApiError("daily-study", err)
@@ -115,6 +120,19 @@ export async function POST(request: NextRequest) {
 
           // Bayesyen güncelleme
           const updated = updateFromStudySession(oldAlpha, oldBeta, correctRatio, questionCount);
+
+          // Kara Kutu: Belief değişimini logla
+          logBeliefUpdate({
+            userId,
+            topicId,
+            alphaOld: oldAlpha,
+            betaOld: oldBeta,
+            alphaNew: updated.alpha,
+            betaNew: updated.beta,
+            meanOld: betaMean(oldAlpha, oldBeta),
+            meanNew: betaMean(updated.alpha, updated.beta),
+            source: 'study_session',
+          });
 
           // TopicBelief upsert
           await prisma.topicBelief.upsert({

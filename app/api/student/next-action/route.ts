@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { logApiError } from "@/lib/logger";
+import { logNextActionFetch } from "@/lib/telemetry";
 import { getTurkeyDateString } from "@/lib/utils";
 import {
   calculateTopicROI,
@@ -30,6 +31,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Yetkilendirme hatası" }, { status: 401 });
     }
     const userId = (session.user as { id: string }).id;
+    const startTime = Date.now();
 
     // Kullanıcı profili
     const user = await prisma.user.findUnique({
@@ -232,6 +234,7 @@ export async function GET(request: NextRequest) {
     const activeROIs = roiList.filter((r) => r.roi > 0.001);
 
     if (activeROIs.length === 0) {
+      logNextActionFetch(userId, topics.length, null, 0, dailyStudyHours * 60 - todayCompletedMinutes, Date.now() - startTime);
       return NextResponse.json({
         primary: null,
         alternatives: [],
@@ -251,6 +254,16 @@ export async function GET(request: NextRequest) {
       dailyStudyHours,
       todayCompletedMinutes,
       todayCompletedSessions
+    );
+
+    // Kara Kutu: ROI motor sonucunu logla
+    logNextActionFetch(
+      userId,
+      topics.length,
+      nextAction.primary?.topicId ?? null,
+      nextAction.primary?.roi ?? 0,
+      nextAction.dailyBudgetRemaining ?? (dailyStudyHours * 60 - todayCompletedMinutes),
+      Date.now() - startTime
     );
 
     return NextResponse.json(nextAction);
