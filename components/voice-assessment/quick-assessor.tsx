@@ -9,6 +9,7 @@ interface TopicItem {
   name: string;
   subjectName: string;
   currentLevel?: number;
+  effectiveLevel?: number | null;
 }
 
 interface QuickAssessorProps {
@@ -154,13 +155,23 @@ export function QuickAssessor({ topics, onComplete, onCancel }: QuickAssessorPro
                   : "border-l-2 border-l-transparent hover:bg-zinc-800/30"
               }`}
             >
-              {/* Topic number + name */}
+              {/* Topic number + name + effectiveLevel */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] text-zinc-600 font-mono w-5 text-right shrink-0">
                     {index + 1}
                   </span>
                   <span className="text-sm text-zinc-200 truncate">{topic.name}</span>
+                  {topic.effectiveLevel != null && (
+                    <span className={`text-[10px] font-bold shrink-0 px-1.5 py-0.5 rounded ${
+                      topic.effectiveLevel >= 4 ? 'bg-emerald-500/15 text-emerald-400' :
+                      topic.effectiveLevel >= 3 ? 'bg-blue-500/15 text-blue-400' :
+                      topic.effectiveLevel >= 2 ? 'bg-amber-500/15 text-amber-400' :
+                      'bg-red-500/15 text-red-400'
+                    }`}>
+                      {topic.effectiveLevel.toFixed(1)}
+                    </span>
+                  )}
                 </div>
               </div>
 

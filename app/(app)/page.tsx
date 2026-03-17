@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import ActionHub from '@/components/home/action-hub';
 import NextActionWidget from '@/components/home/next-action-widget';
 import StreakBadgeWidget from '@/components/gamification/streak-badge-widget';
+import KnowledgeLogWidget from '@/components/home/knowledge-log-widget';
 
 interface WeeklyPlanItem {
   id: string;
@@ -314,6 +315,15 @@ export default function DashboardPage() {
         transition={{ delay: 0.12 }}
       >
         <ActionHub onNavigate={(path) => router.push(path)} />
+      </motion.div>
+
+      {/* Bilgi Değişim Geçmişi */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+      >
+        <KnowledgeLogWidget />
       </motion.div>
     </div>
   );

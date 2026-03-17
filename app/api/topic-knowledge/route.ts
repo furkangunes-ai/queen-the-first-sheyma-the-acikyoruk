@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { setAbsoluteMasteryForTopic } from "@/lib/cognitive-engine";
 import { logApiError } from "@/lib/logger";
 import { selfRatingToBelief } from "@/lib/bayesian-engine";
+import { recalculateEffectiveLevel } from "@/lib/knowledge-engine";
 
 export async function GET(request: NextRequest) {
   try {
@@ -98,6 +99,11 @@ export async function POST(request: NextRequest) {
     } catch (err) {
       logApiError("topic-knowledge-belief-sync", err);
     }
+
+    // effectiveLevel yeniden hesapla + KnowledgeLog
+    recalculateEffectiveLevel(userId, topicId, 'manual', {
+      manualLevel: clampedLevel,
+    }).catch((err) => logApiError("topic-knowledge/effective", err));
 
     return NextResponse.json(knowledge);
   } catch (error) {

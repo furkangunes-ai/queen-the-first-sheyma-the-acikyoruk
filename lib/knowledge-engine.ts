@@ -110,7 +110,7 @@ export async function recalculateEffectiveLevel(
   ]);
 
   const manualLevel = knowledge?.level ?? 0;
-  const oldEffective = knowledge?.effectiveLevel ?? manualLevel || 1;
+  const oldEffective = knowledge?.effectiveLevel ?? (manualLevel || 1);
   const alpha = belief?.alpha ?? 1.0;
   const beta = belief?.beta ?? 1.0;
 
@@ -184,7 +184,7 @@ export async function recalculateEffectiveLevelBatch(
     const belief = beliefMap.get(topicId);
 
     const manualLevel = knowledge?.level ?? 0;
-    const oldEffective = knowledge?.effectiveLevel ?? manualLevel || 1;
+    const oldEffective = knowledge?.effectiveLevel ?? (manualLevel || 1);
     const alpha = belief?.alpha ?? 1.0;
     const beta = belief?.beta ?? 1.0;
 

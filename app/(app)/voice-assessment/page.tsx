@@ -72,6 +72,7 @@ export default function VoiceAssessmentPage() {
   const [subjectOptions, setSubjectOptions] = useState<SubjectOption[]>([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
   const [knowledgeMap, setKnowledgeMap] = useState<Map<string, number>>(new Map());
+  const [effectiveLevelMap, setEffectiveLevelMap] = useState<Map<string, number>>(new Map());
   const [loadingSubjects, setLoadingSubjects] = useState(true);
   const [assessmentData, setAssessmentData] = useState<AssessmentData | null>(null);
   const [saving, setSaving] = useState(false);
@@ -139,10 +140,15 @@ export default function VoiceAssessmentPage() {
       if (!res.ok) return;
       const data = await res.json();
       const map = new Map<string, number>();
+      const effMap = new Map<string, number>();
       for (const k of data) {
         map.set(k.topicId, k.level);
+        if (k.effectiveLevel != null) {
+          effMap.set(k.topicId, k.effectiveLevel);
+        }
       }
       setKnowledgeMap(map);
+      setEffectiveLevelMap(effMap);
     } catch {
       // non-critical
     }
@@ -695,6 +701,7 @@ export default function VoiceAssessmentPage() {
                   name: t.name,
                   subjectName: s.name,
                   currentLevel: knowledgeMap.get(t.id),
+                  effectiveLevel: effectiveLevelMap.get(t.id) ?? null,
                 }))
               )}
               onComplete={handleQuickAssessComplete}
