@@ -16,6 +16,7 @@ import {
   Loader2,
   ChevronDown,
   ChevronRight,
+  RotateCcw,
 } from "lucide-react";
 
 interface BackupSummary {
@@ -95,6 +96,8 @@ export default function BackupManager() {
   const [previewData, setPreviewData] = useState<BackupPreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [expandedBackup, setExpandedBackup] = useState<string | null>(null);
+  const [restoring, setRestoring] = useState<string | null>(null);
+  const [restoreConfirm, setRestoreConfirm] = useState<{ backupId: string; userId: string; dataType: string } | null>(null);
 
   const fetchSummary = useCallback(async () => {
     try {
@@ -151,6 +154,29 @@ export default function BackupManager() {
       toast.error("Temizlik başarısız");
     } finally {
       setCleaning(false);
+    }
+  };
+
+  const restoreBackup = async (backupId: string, userId: string) => {
+    setRestoring(backupId);
+    try {
+      const res = await fetch("/api/admin/backups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "restore", backupId, userId }),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const r = data.result;
+      toast.success(
+        `Geri yükleme tamamlandı: ${r.restored} kayıt yüklendi, ${r.skipped} zaten vardı${r.errors.length > 0 ? `, ${r.errors.length} hata` : ""}`
+      );
+      setRestoreConfirm(null);
+      fetchSummary();
+    } catch {
+      toast.error("Geri yükleme başarısız");
+    } finally {
+      setRestoring(null);
     }
   };
 
@@ -374,9 +400,24 @@ export default function BackupManager() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      setRestoreConfirm({
+                        backupId: backup.id,
+                        userId: (backup.user as any)?.id || "",
+                        dataType: backup.dataType,
+                      });
+                    }}
+                    className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-white/30 hover:text-emerald-400 transition-all"
+                    title="Bu yedekten geri yükle"
+                  >
+                    <RotateCcw size={14} />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
                       downloadBackup(backup.id, (backup.user as any)?.id || "", backup.dataType);
                     }}
                     className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/30 hover:text-cyan-400 transition-all"
+                    title="JSON olarak indir"
                   >
                     <Download size={14} />
                   </button>
@@ -439,6 +480,56 @@ export default function BackupManager() {
           </div>
         </div>
       </div>
+
+      {/* Restore Confirm Dialog */}
+      {restoreConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-[#1a1a2e] border border-white/10 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 rounded-xl bg-emerald-500/20">
+                <RotateCcw size={20} className="text-emerald-400" />
+              </div>
+              <h3 className="text-lg font-black text-white">Geri Yükle</h3>
+            </div>
+
+            <p className="text-sm text-white/60 mb-2">
+              <strong className="text-white/80">{DATA_TYPE_LABELS[restoreConfirm.dataType] ?? restoreConfirm.dataType}</strong> verisi yedekten geri yüklenecek.
+            </p>
+
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 mb-4">
+              <p className="text-xs text-amber-300 font-medium">
+                Mevcut veriler silinmez — sadece yedekte olup şu an olmayan kayıtlar geri eklenir.
+                Güvenlik için işlemden önce otomatik yedek alınır.
+              </p>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setRestoreConfirm(null)}
+                className="px-4 py-2 rounded-xl bg-white/5 text-white/50 hover:bg-white/10 text-sm font-bold transition-all"
+              >
+                İptal
+              </button>
+              <button
+                onClick={() => restoreBackup(restoreConfirm.backupId, restoreConfirm.userId)}
+                disabled={restoring !== null}
+                className="px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/20 text-sm font-bold transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {restoring ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <RotateCcw size={14} />
+                )}
+                Geri Yükle
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
   cleanupExpiredBackups,
   getAvailableBackups,
   getBackupData,
+  restoreFromBackup,
 } from "@/lib/backup-engine";
 
 function adminGuard(session: any) {
@@ -164,6 +165,27 @@ export async function POST(request: NextRequest) {
         preview: Array.isArray(backup.data) ? (backup.data as any[]).slice(0, 5) : backup.data,
         totalRecords: Array.isArray(backup.data) ? (backup.data as any[]).length : 1,
       });
+    }
+
+    if (action === "restore") {
+      const { backupId, userId } = body;
+      if (!backupId || !userId) {
+        return NextResponse.json({ error: "backupId ve userId gerekli" }, { status: 400 });
+      }
+
+      // Güvenlik: Geri yükleme öncesi otomatik yedek al
+      await createUserBackup(userId, "daily");
+
+      const restoreResult = await restoreFromBackup(backupId, userId);
+      await logAdminAction(adminId, "restore_backup", "DataBackup", backupId, {
+        userId,
+        dataType: restoreResult.dataType,
+        restored: restoreResult.restored,
+        skipped: restoreResult.skipped,
+        errors: restoreResult.errors.length,
+      });
+
+      return NextResponse.json({ success: true, result: restoreResult });
     }
 
     if (action === "cleanup") {
