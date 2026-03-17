@@ -11,6 +11,7 @@ import {
 import { applyElasticProjection } from "@/lib/cognitive-engine";
 import { logBeliefUpdate } from "@/lib/telemetry";
 import { betaMean } from "@/lib/bayesian-engine";
+import { recalculateEffectiveLevelBatch } from "@/lib/knowledge-engine";
 
 export async function POST(
   request: NextRequest,
@@ -237,6 +238,29 @@ export async function POST(
       // Elastic Projection: Bayesyen güncellemeleri DAG'a yansıt
       if (updatedBeliefs.length > 0) {
         await applyElasticProjection(userId, updatedBeliefs);
+
+        // effectiveLevel batch recalculation + KnowledgeLog
+        const beliefMap = new Map(updatedBeliefs.map(b => [b.topicId, b]));
+        const topicVoidMap = new Map<string, number>();
+        const voidsForTopics = await prisma.cognitiveVoid.findMany({
+          where: { examId: id, topicId: { not: null } },
+          select: { topicId: true },
+        });
+        for (const v of voidsForTopics) {
+          if (v.topicId) topicVoidMap.set(v.topicId, (topicVoidMap.get(v.topicId) ?? 0) + 1);
+        }
+
+        await recalculateEffectiveLevelBatch(
+          userId,
+          updatedBeliefs.map(b => b.topicId),
+          // Her topic için source: yanlış varsa exam_error, yoksa exam_implicit_positive
+          'exam',
+          (topicId) => ({
+            examId: id,
+            source: topicVoidMap.has(topicId) ? 'exam_error' : 'exam_implicit_positive',
+            voidCount: topicVoidMap.get(topicId) ?? 0,
+          })
+        );
       }
     } catch (beliefError) {
       // Belief güncellemesi başarısız olursa sınav sonuçlarını etkilememeli

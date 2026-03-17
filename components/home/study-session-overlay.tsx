@@ -34,7 +34,15 @@ export default function StudySessionOverlay({
   const [questionCount, setQuestionCount] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [comprehension, setComprehension] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const comprehensionOptions = [
+    { value: 0.2, label: 'Anlamadım', color: 'border-red-400/60 text-red-300' },
+    { value: 0.4, label: 'Kısmen', color: 'border-amber-400/60 text-amber-300' },
+    { value: 0.7, label: 'Çoğunu', color: 'border-blue-400/60 text-blue-300' },
+    { value: 1.0, label: 'Tam', color: 'border-emerald-400/60 text-emerald-300' },
+  ];
 
   // Reset on open
   useEffect(() => {
@@ -42,6 +50,7 @@ export default function StudySessionOverlay({
       setQuestionCount(0);
       setCorrectCount(0);
       setDuration(0);
+      setComprehension(null);
       setSubmitting(false);
     }
   }, [isOpen]);
@@ -59,6 +68,7 @@ export default function StudySessionOverlay({
           wrongCount: Math.max(0, questionCount - correctCount),
           emptyCount: 0,
           duration: duration || null,
+          comprehension,
           difficulty: 'orta',
           source: 'Sistem Önerisi',
         }),
@@ -77,7 +87,7 @@ export default function StudySessionOverlay({
     } finally {
       setSubmitting(false);
     }
-  }, [topicId, topicName, questionCount, correctCount, duration, onSessionComplete, onClose]);
+  }, [topicId, topicName, questionCount, correctCount, duration, comprehension, onSessionComplete, onClose]);
 
   if (!isOpen) return null;
 
@@ -161,6 +171,29 @@ export default function StudySessionOverlay({
                   className="w-full py-2 px-3 rounded-lg text-sm font-bold text-white bg-white/[0.04] border border-white/10 focus:outline-none focus:ring-1 focus:ring-emerald-400/50"
                   placeholder="0"
                 />
+              </div>
+
+              {/* Anlama Seviyesi */}
+              <div>
+                <label className="text-[10px] text-white/40 font-bold block mb-1.5">
+                  Konuyu ne kadar anladın? <span className="text-white/20">— opsiyonel</span>
+                </label>
+                <div className="flex gap-1.5">
+                  {comprehensionOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setComprehension(comprehension === opt.value ? null : opt.value)}
+                      className={`flex-1 py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-all ${
+                        comprehension === opt.value
+                          ? `${opt.color} bg-white/10`
+                          : 'border-white/5 text-white/30 hover:border-white/15'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
