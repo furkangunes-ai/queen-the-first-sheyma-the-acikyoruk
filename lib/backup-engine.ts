@@ -214,3 +214,231 @@ export async function getBackupData(backupId: string, userId: string) {
     where: { id: backupId, userId },
   });
 }
+
+// ---- Restore functions ----
+
+export interface RestoreResult {
+  dataType: string;
+  restored: number;
+  skipped: number;
+  errors: string[];
+}
+
+/**
+ * Yedekten geri yükleme.
+ * Strateji: "merge" — mevcut verileri silmeden, yedekteki eksik kayıtları geri ekler.
+ * Zaten var olan kayıtlar (aynı ID) atlanır.
+ */
+export async function restoreFromBackup(
+  backupId: string,
+  userId: string
+): Promise<RestoreResult> {
+  const backup = await prisma.dataBackup.findFirst({
+    where: { id: backupId, userId },
+  });
+
+  if (!backup) {
+    return { dataType: "unknown", restored: 0, skipped: 0, errors: ["Yedek bulunamadı"] };
+  }
+
+  const records = backup.data as any[];
+  if (!Array.isArray(records) || records.length === 0) {
+    return { dataType: backup.dataType, restored: 0, skipped: 0, errors: ["Yedekte veri yok"] };
+  }
+
+  const result: RestoreResult = {
+    dataType: backup.dataType,
+    restored: 0,
+    skipped: 0,
+    errors: [],
+  };
+
+  switch (backup.dataType) {
+    case "exams":
+      await restoreExams(userId, records, result);
+      break;
+    case "topic_reviews":
+      await restoreTopicReviews(userId, records, result);
+      break;
+    case "daily_studies":
+      await restoreDailyStudies(userId, records, result);
+      break;
+    case "topic_knowledge":
+      await restoreTopicKnowledge(userId, records, result);
+      break;
+    default:
+      result.errors.push(`Bilinmeyen veri tipi: ${backup.dataType}`);
+  }
+
+  return result;
+}
+
+async function restoreExams(userId: string, records: any[], result: RestoreResult) {
+  for (const exam of records) {
+    try {
+      // Zaten varsa atla
+      const exists = await prisma.exam.findUnique({ where: { id: exam.id } });
+      if (exists) {
+        result.skipped++;
+        continue;
+      }
+
+      // examType'ın hâlâ var olduğunu kontrol et
+      const examType = await prisma.examType.findUnique({ where: { id: exam.examTypeId } });
+      if (!examType) {
+        result.errors.push(`Exam ${exam.id}: examType ${exam.examTypeId} bulunamadı`);
+        continue;
+      }
+
+      // Exam'ı oluştur
+      await prisma.exam.create({
+        data: {
+          id: exam.id,
+          userId,
+          examTypeId: exam.examTypeId,
+          title: exam.title,
+          date: new Date(exam.date),
+          notes: exam.notes || null,
+          examCategory: exam.examCategory || null,
+          timeOfDay: exam.timeOfDay || null,
+          environment: exam.environment || null,
+          perceivedDifficulty: exam.perceivedDifficulty || null,
+          biologicalState: exam.biologicalState || null,
+        },
+      });
+
+      // SubjectResult'ları geri yükle
+      if (exam.subjectResults?.length > 0) {
+        for (const sr of exam.subjectResults) {
+          const subjectExists = await prisma.subject.findUnique({ where: { id: sr.subjectId } });
+          if (!subjectExists) continue;
+
+          await prisma.examSubjectResult.create({
+            data: {
+              examId: exam.id,
+              subjectId: sr.subjectId,
+              correctCount: sr.correctCount,
+              wrongCount: sr.wrongCount,
+              emptyCount: sr.emptyCount,
+              netScore: sr.netScore,
+              durationMinutes: sr.durationMinutes || null,
+            },
+          }).catch(() => {}); // Duplicate varsa sessizce geç
+        }
+      }
+
+      result.restored++;
+    } catch (err) {
+      result.errors.push(`Exam ${exam.id}: ${err instanceof Error ? err.message : "Hata"}`);
+    }
+  }
+}
+
+async function restoreTopicReviews(userId: string, records: any[], result: RestoreResult) {
+  for (const review of records) {
+    try {
+      const exists = await prisma.topicReview.findUnique({ where: { id: review.id } });
+      if (exists) {
+        result.skipped++;
+        continue;
+      }
+
+      // FK kontrolleri
+      const subjectExists = await prisma.subject.findUnique({ where: { id: review.subjectId } });
+      if (!subjectExists) {
+        result.errors.push(`TopicReview ${review.id}: subject ${review.subjectId} bulunamadı`);
+        continue;
+      }
+
+      await prisma.topicReview.create({
+        data: {
+          id: review.id,
+          userId,
+          subjectId: review.subjectId,
+          topicId: review.topicId,
+          date: new Date(review.date),
+          duration: review.duration || null,
+          confidence: review.confidence || null,
+          notes: review.notes || null,
+          method: review.method || null,
+        },
+      });
+      result.restored++;
+    } catch (err) {
+      result.errors.push(`TopicReview ${review.id}: ${err instanceof Error ? err.message : "Hata"}`);
+    }
+  }
+}
+
+async function restoreDailyStudies(userId: string, records: any[], result: RestoreResult) {
+  for (const study of records) {
+    try {
+      const exists = await prisma.dailyStudy.findUnique({ where: { id: study.id } });
+      if (exists) {
+        result.skipped++;
+        continue;
+      }
+
+      const subjectExists = await prisma.subject.findUnique({ where: { id: study.subjectId } });
+      if (!subjectExists) {
+        result.errors.push(`DailyStudy ${study.id}: subject ${study.subjectId} bulunamadı`);
+        continue;
+      }
+
+      await prisma.dailyStudy.create({
+        data: {
+          id: study.id,
+          userId,
+          date: new Date(study.date),
+          subjectId: study.subjectId,
+          topicId: study.topicId || null,
+          questionCount: study.questionCount || 0,
+          correctCount: study.correctCount || 0,
+          wrongCount: study.wrongCount || 0,
+          emptyCount: study.emptyCount || 0,
+          difficulty: study.difficulty || null,
+          source: study.source || null,
+          duration: study.duration || null,
+          comprehension: study.comprehension || null,
+          notes: study.notes || null,
+        },
+      });
+      result.restored++;
+    } catch (err) {
+      result.errors.push(`DailyStudy ${study.id}: ${err instanceof Error ? err.message : "Hata"}`);
+    }
+  }
+}
+
+async function restoreTopicKnowledge(userId: string, records: any[], result: RestoreResult) {
+  for (const knowledge of records) {
+    try {
+      // topicKnowledge unique constraint: userId + topicId
+      const exists = await prisma.topicKnowledge.findUnique({
+        where: { userId_topicId: { userId, topicId: knowledge.topicId } },
+      });
+      if (exists) {
+        result.skipped++;
+        continue;
+      }
+
+      const topicExists = await prisma.topic.findUnique({ where: { id: knowledge.topicId } });
+      if (!topicExists) {
+        result.errors.push(`TopicKnowledge: topic ${knowledge.topicId} bulunamadı`);
+        continue;
+      }
+
+      await prisma.topicKnowledge.create({
+        data: {
+          userId,
+          topicId: knowledge.topicId,
+          level: knowledge.level,
+          effectiveLevel: knowledge.effectiveLevel || null,
+        },
+      });
+      result.restored++;
+    } catch (err) {
+      result.errors.push(`TopicKnowledge ${knowledge.topicId}: ${err instanceof Error ? err.message : "Hata"}`);
+    }
+  }
+}
