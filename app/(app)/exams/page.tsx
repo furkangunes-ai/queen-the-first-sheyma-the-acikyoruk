@@ -24,6 +24,7 @@ import { getBranchGroupLabel } from '@/lib/constants';
 import { calculateClarityScore } from '@/lib/exam-metrics';
 import NextTaskWidget from '@/components/exams/next-task-widget';
 import ClarityRing from '@/components/exams/clarity-ring';
+import PillFilter, { type ExamModeFilter as PillExamModeFilter, type SubjectFilter as PillSubjectFilter } from '@/components/exams/pill-filter';
 import AnalyticsView from '@/components/analytics/analytics-view';
 import {
   AreaChart,
@@ -57,7 +58,7 @@ interface ExamListItem {
 }
 
 type PageView = 'list' | 'new-exam' | 'cold-phase' | 'portal';
-type ExamModeFilter = 'all' | 'genel' | 'brans' | 'brans-fen' | 'brans-sosyal' | 'brans-matematik' | 'brans-tek';
+type ExamModeFilter = PillExamModeFilter;
 
 const COLORS = ['#ff2a85', '#ff7eb3', '#00f0ff', '#bb66ff', '#ffb84d', '#ff3366', '#00e5ff', '#ff99cc', '#7c3aed', '#10b981'];
 
@@ -73,16 +74,6 @@ const tooltipStyle = {
     fontWeight: 600,
   },
 };
-
-const MODE_FILTERS: { key: ExamModeFilter; label: string }[] = [
-  { key: 'all', label: 'Hepsi' },
-  { key: 'genel', label: 'Genel' },
-  { key: 'brans', label: 'Tüm Branş' },
-  { key: 'brans-fen', label: 'Fen' },
-  { key: 'brans-sosyal', label: 'Sosyal' },
-  { key: 'brans-matematik', label: 'Matematik' },
-  { key: 'brans-tek', label: 'Tek Ders' },
-];
 
 function matchesMode(exam: ExamListItem, mode: ExamModeFilter): boolean {
   const cat = exam.examCategory;
@@ -126,6 +117,7 @@ export default function ExamsPage() {
   const [view, setView] = useState<PageView>('list');
   const [filterType, setFilterType] = useState<string>('all');
   const [examMode, setExamMode] = useState<ExamModeFilter>('all');
+  const [subjectFilter, setSubjectFilter] = useState<PillSubjectFilter>('all');
   const [examTypes, setExamTypes] = useState<Array<{ id: string; name: string }>>([]);
   const [showCharts, setShowCharts] = useState(() => {
     if (typeof window === 'undefined') return true;
@@ -218,13 +210,36 @@ export default function ExamsPage() {
 
   // ---------- Filtered exams ----------
   const filteredExams = useMemo(() => {
-    return exams.filter((exam) => matchesMode(exam, examMode));
+    return exams.filter((exam) => {
+      if (!matchesMode(exam, examMode)) return false;
+      // Lens Effect: subject filter aktifken sadece o dersi içeren sınavlar
+      if (subjectFilter !== 'all') {
+        return exam.subjectResults.some(sr => sr.subject.name === subjectFilter);
+      }
+      return true;
+    });
+  }, [exams, examMode, subjectFilter]);
+
+  // Available subjects with exam counts (for pill filter row 3)
+  const availableSubjects = useMemo(() => {
+    const modeFiltered = exams.filter((exam) => matchesMode(exam, examMode));
+    const counts = new Map<string, number>();
+    for (const exam of modeFiltered) {
+      for (const sr of exam.subjectResults) {
+        counts.set(sr.subject.name, (counts.get(sr.subject.name) || 0) + 1);
+      }
+    }
+    return Array.from(counts.entries()).map(([name, count]) => ({ name, count }));
   }, [exams, examMode]);
 
   // ---------- Chart data ----------
   const stats = useMemo(() => {
     if (filteredExams.length === 0) return null;
-    const nets = filteredExams.map((e) => getTotalNet(e));
+    const nets = filteredExams.map((e) =>
+      subjectFilter !== 'all'
+        ? (e.subjectResults.find(sr => sr.subject.name === subjectFilter)?.netScore ?? 0)
+        : getTotalNet(e)
+    );
     const maxNet = Math.max(...nets);
     const avgNet = nets.reduce((a, b) => a + b, 0) / nets.length;
     const lastNet = nets[0]; // exams sorted desc
@@ -234,17 +249,23 @@ export default function ExamsPage() {
       avgNet: avgNet.toFixed(1),
       lastNet: lastNet.toFixed(1),
     };
-  }, [filteredExams]);
+  }, [filteredExams, subjectFilter]);
 
   const trendData = useMemo(() => {
     return [...filteredExams]
       .reverse()
-      .map((e) => ({
-        date: formatDateShort(e.date),
-        net: parseFloat(getTotalNet(e).toFixed(1)),
-        title: e.title,
-      }));
-  }, [filteredExams]);
+      .map((e) => {
+        // Lens Effect: subject filter aktifken o dersin netini göster
+        const net = subjectFilter !== 'all'
+          ? (e.subjectResults.find(sr => sr.subject.name === subjectFilter)?.netScore ?? 0)
+          : getTotalNet(e);
+        return {
+          date: formatDateShort(e.date),
+          net: parseFloat(net.toFixed(1)),
+          title: e.title,
+        };
+      });
+  }, [filteredExams, subjectFilter]);
 
   const trendTeaser = useMemo(() => {
     if (filteredExams.length < 3) return null;
@@ -336,43 +357,17 @@ export default function ExamsPage() {
               </motion.button>
             </div>
 
-            {/* Filters */}
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide flex-wrap">
-              <button
-                onClick={() => setFilterType('all')}
-                className={`px-5 py-2 rounded-xl text-sm font-bold tracking-wide transition-all border ${filterType === 'all'
-                    ? 'bg-white/10 text-white border-white/20 shadow-[0_4px_20px_-4px_rgba(255,255,255,0.1)]'
-                    : 'bg-white/[0.02] text-white/50 border-white/5 hover:bg-white/[0.04] hover:text-white/80'
-                  }`}
-              >
-                Tümü
-              </button>
-              {examTypes.map((et) => (
-                <button
-                  key={et.id}
-                  onClick={() => setFilterType(et.id)}
-                  className={`px-5 py-2 rounded-xl text-sm font-bold tracking-wide transition-all border ${filterType === et.id
-                      ? 'bg-blue-500/20 text-blue-300 border-blue-500/30 shadow-[0_4px_20px_-4px_rgba(59,130,246,0.3)]'
-                      : 'bg-white/[0.02] text-white/50 border-white/5 hover:bg-white/[0.04] hover:text-white/80'
-                    }`}
-                >
-                  {et.name}
-                </button>
-              ))}
-              <div className="w-px h-8 bg-white/10 self-center mx-1" />
-              {MODE_FILTERS.map((mode) => (
-                <button
-                  key={mode.key}
-                  onClick={() => setExamMode(mode.key)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold tracking-wide transition-all border whitespace-nowrap ${examMode === mode.key
-                      ? 'bg-pink-500/20 text-pink-300 border-pink-500/30 shadow-[0_4px_20px_-4px_rgba(244,114,182,0.3)]'
-                      : 'bg-white/[0.02] text-white/50 border-white/5 hover:bg-white/[0.04] hover:text-white/80'
-                    }`}
-                >
-                  {mode.label}
-                </button>
-              ))}
-            </div>
+            {/* Kademeli Pill Segmentasyonu */}
+            <PillFilter
+              examTypes={examTypes}
+              availableSubjects={availableSubjects}
+              typeFilter={filterType}
+              modeFilter={examMode}
+              subjectFilter={subjectFilter}
+              onTypeChange={setFilterType}
+              onModeChange={setExamMode}
+              onSubjectChange={setSubjectFilter}
+            />
 
             {/* Charts Section */}
             {!loading && filteredExams.length > 0 && stats && (
@@ -420,8 +415,8 @@ export default function ExamsPage() {
                         {trendData.length >= 2 && (
                           <div className="glass-panel p-5">
                             <h4 className="text-xs font-bold text-white/50 uppercase tracking-widest mb-4 flex items-center gap-2">
-                              <TrendingUp size={14} className="text-pink-400" />
-                              Net Gidişatı
+                              <TrendingUp size={14} className={subjectFilter !== 'all' ? 'text-cyan-400' : 'text-pink-400'} />
+                              {subjectFilter !== 'all' ? `${subjectFilter} Net Gidişatı` : 'Net Gidişatı'}
                             </h4>
                             <ResponsiveContainer width="100%" height={200}>
                               <AreaChart data={trendData}>
@@ -530,31 +525,79 @@ export default function ExamsPage() {
                           </div>
                         </div>
 
-                        {/* Net Score */}
-                        <div className="text-center py-4 mb-5 rounded-xl border border-white/5 bg-gradient-to-br from-white/[0.03] to-white/[0.01] relative z-10 overflow-hidden group/score">
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent -translate-x-[200%] group-hover/score:animate-shimmer" />
-                          <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400 drop-shadow-[0_2px_10px_rgba(255,42,133,0.2)] font-mono">
-                            {getTotalNet(exam).toFixed(1)}
-                          </span>
-                          <div className="flex items-center justify-center gap-1.5 mt-1.5">
-                            <Target size={12} className="text-white/30" />
-                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Toplam Net</span>
-                          </div>
-                        </div>
-
-                        {/* Subject breakdown */}
-                        <div className="space-y-2 mt-auto relative z-10">
-                          {exam.subjectResults.slice(0, 4).map((sr) => (
-                            <div key={sr.subjectId} className="flex items-center justify-between text-[13px] bg-white/[0.02] px-3 py-2 rounded-lg border border-white/5">
-                              <span className="text-white/70 font-medium truncate flex-1">{sr.subject.name}</span>
-                              <div className="flex gap-2.5 items-center ml-3 font-mono">
-                                <span className="text-emerald-400 font-bold">{sr.correctCount}</span>
-                                <span className="text-rose-400 font-bold">{sr.wrongCount}</span>
-                                <span className="text-white/30 font-bold">{sr.emptyCount}</span>
-                                <span className="font-black text-pink-300 w-10 text-right bg-pink-500/10 px-1 py-0.5 rounded">{sr.netScore.toFixed(1)}</span>
-                              </div>
+                        {/* Net Score — Lens Effect: subject filter aktifken o dersin neti büyük */}
+                        {(() => {
+                          const lensSubject = subjectFilter !== 'all'
+                            ? exam.subjectResults.find(sr => sr.subject.name === subjectFilter)
+                            : null;
+                          return (
+                            <div className="text-center py-4 mb-5 rounded-xl border border-white/5 bg-gradient-to-br from-white/[0.03] to-white/[0.01] relative z-10 overflow-hidden group/score">
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent -translate-x-[200%] group-hover/score:animate-shimmer" />
+                              {lensSubject ? (
+                                <>
+                                  <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 drop-shadow-[0_2px_10px_rgba(0,240,255,0.2)] font-mono">
+                                    {lensSubject.netScore.toFixed(1)}
+                                  </span>
+                                  <div className="flex items-center justify-center gap-1.5 mt-1.5">
+                                    <Target size={12} className="text-cyan-400/50" />
+                                    <span className="text-[10px] font-bold text-cyan-400/60 uppercase tracking-widest">{lensSubject.subject.name} Net</span>
+                                  </div>
+                                  <div className="text-[11px] text-white/30 mt-1 font-mono">
+                                    Toplam: {getTotalNet(exam).toFixed(1)}
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400 drop-shadow-[0_2px_10px_rgba(255,42,133,0.2)] font-mono">
+                                    {getTotalNet(exam).toFixed(1)}
+                                  </span>
+                                  <div className="flex items-center justify-center gap-1.5 mt-1.5">
+                                    <Target size={12} className="text-white/30" />
+                                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Toplam Net</span>
+                                  </div>
+                                </>
+                              )}
                             </div>
-                          ))}
+                          );
+                        })()}
+
+                        {/* Subject breakdown — Lens Effect: filtered subject highlighted */}
+                        <div className="space-y-2 mt-auto relative z-10">
+                          {(() => {
+                            // Lens: filtreli ders varsa onu önce göster, diğerlerini küçük
+                            const sorted = subjectFilter !== 'all'
+                              ? [...exam.subjectResults].sort((a, b) =>
+                                  a.subject.name === subjectFilter ? -1 : b.subject.name === subjectFilter ? 1 : 0
+                                )
+                              : exam.subjectResults;
+                            return sorted.slice(0, 4).map((sr) => {
+                              const isLens = subjectFilter !== 'all' && sr.subject.name === subjectFilter;
+                              return (
+                                <div
+                                  key={sr.subjectId}
+                                  className={`flex items-center justify-between rounded-lg border transition-all ${
+                                    isLens
+                                      ? 'text-sm bg-cyan-500/[0.06] px-3 py-2.5 border-cyan-500/20'
+                                      : 'text-[13px] bg-white/[0.02] px-3 py-2 border-white/5'
+                                  }`}
+                                >
+                                  <span className={`font-medium truncate flex-1 ${isLens ? 'text-cyan-300 font-bold' : 'text-white/70'}`}>
+                                    {sr.subject.name}
+                                  </span>
+                                  <div className="flex gap-2.5 items-center ml-3 font-mono">
+                                    <span className="text-emerald-400 font-bold">{sr.correctCount}</span>
+                                    <span className="text-rose-400 font-bold">{sr.wrongCount}</span>
+                                    <span className="text-white/30 font-bold">{sr.emptyCount}</span>
+                                    <span className={`font-black w-10 text-right px-1 py-0.5 rounded ${
+                                      isLens ? 'text-cyan-300 bg-cyan-500/15' : 'text-pink-300 bg-pink-500/10'
+                                    }`}>
+                                      {sr.netScore.toFixed(1)}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            });
+                          })()}
                           {exam.subjectResults.length > 4 && (
                             <div className="text-[11px] font-bold text-white/30 text-center pt-2 tracking-wide uppercase">
                               +{exam.subjectResults.length - 4} ders daha
