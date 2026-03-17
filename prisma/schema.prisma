@@ -55,6 +55,7 @@ model User {
   subscription    UserSubscription?
   passwordResetTokens PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
+  dataBackups    DataBackup[]
 }
 
 // ==================== KLASÖRLER & GÖREVLER ====================
@@ -908,4 +909,26 @@ model TopicBelief {
   @@unique([userId, topicId])
   @@index([userId])
   @@index([topicId])
+}
+
+// ==================== OTOMATİK VERİ YEDEKLEMESİ ====================
+// Kullanıcı verilerinin periyodik anlık görüntüleri (snapshot)
+// Saklama politikası: günlük (7 gün), haftalık (4 hafta), aylık (6 ay)
+
+model DataBackup {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  backupType  String   // "daily" | "weekly" | "monthly"
+  dataType    String   // "exams" | "topic_reviews" | "daily_studies" | "full"
+  data        Json     // Yedeklenen veri (JSON snapshot)
+  recordCount Int      @default(0) // Kaç kayıt yedeklendi
+  sizeBytes   Int      @default(0) // Yaklaşık boyut
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime // Otomatik temizlik tarihi
+
+  @@index([userId])
+  @@index([backupType])
+  @@index([createdAt])
+  @@index([expiresAt])
 }

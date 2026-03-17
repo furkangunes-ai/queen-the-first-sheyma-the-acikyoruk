@@ -250,6 +250,15 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "action ve id gerekli" }, { status: 400 });
     }
 
+    // Güvenlik: Silme işlemlerinde X-Confirm-Delete header'ı zorunlu
+    const confirmHeader = request.headers.get("X-Confirm-Delete");
+    if (confirmHeader !== "confirmed") {
+      return NextResponse.json(
+        { error: "Silme işlemi için X-Confirm-Delete: confirmed header'ı gerekli" },
+        { status: 400 }
+      );
+    }
+
     if (action === "delete_topic") {
       // Check for dependent data
       const topic = await prisma.topic.findUnique({
@@ -270,6 +279,20 @@ export async function DELETE(request: NextRequest) {
 
       if (!topic) {
         return NextResponse.json({ error: "Konu bulunamadı" }, { status: 404 });
+      }
+
+      // Bağımlı veri uyarısı
+      const depCount = topic._count.kazanimlar + topic._count.conceptNodes +
+        topic._count.cognitiveVoids + topic._count.dailyStudies + topic._count.topicKnowledge;
+      if (depCount > 0) {
+        const forceHeader = request.headers.get("X-Force-Delete");
+        if (forceHeader !== "true") {
+          return NextResponse.json({
+            error: `"${topic.name}" konusunda ${depCount} bağımlı kayıt var. Zorla silmek için X-Force-Delete: true header'ı gönderin.`,
+            dependentCounts: topic._count,
+            requiresForce: true,
+          }, { status: 409 });
+        }
       }
 
       // Cascade delete related data

@@ -105,6 +105,15 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get("id");
     if (!id) return NextResponse.json({ error: "ID gerekli" }, { status: 400 });
 
+    // Güvenlik: X-Confirm-Delete header'ı zorunlu
+    const confirmHeader = request.headers.get("X-Confirm-Delete");
+    if (confirmHeader !== "confirmed") {
+      return NextResponse.json(
+        { error: "Silme işlemi için X-Confirm-Delete: confirmed header'ı gerekli" },
+        { status: 400 }
+      );
+    }
+
     const existing = await prisma.topicReview.findFirst({ where: { id, userId } });
     if (!existing) return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
 

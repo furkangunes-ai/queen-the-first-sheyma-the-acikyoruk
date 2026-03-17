@@ -407,7 +407,10 @@ export default function StudyPage() {
 
   async function handleDeleteStudy(id: string) {
     try {
-      const res = await fetch(`/api/daily-study?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/daily-study?id=${id}`, {
+        method: "DELETE",
+        headers: { "X-Confirm-Delete": "confirmed" },
+      });
       if (!res.ok) throw new Error();
       toast.success("Silindi");
       fetchData();
@@ -418,7 +421,10 @@ export default function StudyPage() {
 
   async function handleDeleteReview(id: string) {
     try {
-      const res = await fetch(`/api/topic-reviews?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/topic-reviews?id=${id}`, {
+        method: "DELETE",
+        headers: { "X-Confirm-Delete": "confirmed" },
+      });
       if (!res.ok) throw new Error();
       toast.success("Silindi");
       fetchData();

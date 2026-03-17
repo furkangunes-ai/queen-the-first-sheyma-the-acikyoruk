@@ -276,6 +276,7 @@ export default function MufredatManager() {
     try {
       const res = await fetch(`/api/admin/kazanimlar?kazanimId=${kazanimId}`, {
         method: "DELETE",
+        headers: { "X-Confirm-Delete": "confirmed" },
       });
       if (res.ok) {
         setTopicKazanimlar((prev) => prev.filter((k) => k.id !== kazanimId));
@@ -296,7 +297,7 @@ export default function MufredatManager() {
     try {
       const res = await fetch(
         `/api/admin/kazanimlar?topicId=${selectedTopic.id}`,
-        { method: "DELETE" }
+        { method: "DELETE", headers: { "X-Confirm-Delete": "confirmed" } }
       );
       if (res.ok) {
         const data = await res.json();
