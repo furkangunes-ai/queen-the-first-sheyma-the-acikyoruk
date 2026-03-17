@@ -469,6 +469,15 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    // Güvenlik: Silme işlemlerinde X-Confirm-Delete header'ı zorunlu
+    const confirmHeader = request.headers.get("X-Confirm-Delete");
+    if (confirmHeader !== "confirmed") {
+      return NextResponse.json(
+        { error: "Silme işlemi için X-Confirm-Delete: confirmed header'ı gerekli" },
+        { status: 400 }
+      );
+    }
+
     if (kazanimId) {
       // Delete single kazanım
       await prisma.kazanimProgress.deleteMany({ where: { kazanimId } });

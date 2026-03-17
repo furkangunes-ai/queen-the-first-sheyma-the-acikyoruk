@@ -1169,7 +1169,10 @@ export default function ExamDetailView({ examId, onBack, onDeleted }: ExamDetail
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      const res = await fetch(`/api/exams/${examId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/exams/${examId}`, {
+        method: 'DELETE',
+        headers: { 'X-Confirm-Delete': 'confirmed' },
+      });
       if (!res.ok) throw new Error('Silme başarısız');
       toast.success('Deneme silindi');
       onDeleted ? onDeleted() : onBack();

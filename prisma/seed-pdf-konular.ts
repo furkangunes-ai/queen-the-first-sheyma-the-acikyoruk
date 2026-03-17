@@ -7,8 +7,60 @@
  */
 
 import { PrismaClient } from "@prisma/client";
+import * as readline from "readline";
 
 const prisma = new PrismaClient();
+
+// =====================================================================
+// GÜVENLİK KİLİDİ — Yanlışlıkla çalıştırmayı önler
+// =====================================================================
+
+async function confirmDestructiveAction(): Promise<boolean> {
+  // CI/production ortamında kesinlikle çalışmasın
+  if (process.env.NODE_ENV === "production" || process.env.RAILWAY_ENVIRONMENT) {
+    console.error("❌ PRODUCTION ortamında seed-pdf-konular çalıştırılamaz!");
+    return false;
+  }
+
+  // --force flag'i varsa doğrudan geç (bilinçli kullanım)
+  if (process.argv.includes("--force")) {
+    console.warn("⚠️  --force flag'i kullanıldı, güvenlik kilidi atlandı.\n");
+    return true;
+  }
+
+  // Mevcut veri sayılarını göster
+  const [topicCount, subjectCount, kazanimCount, reviewCount] = await Promise.all([
+    prisma.topic.count(),
+    prisma.subject.count(),
+    prisma.topicKazanim.count(),
+    prisma.topicReview.count(),
+  ]);
+
+  console.log("\n╔══════════════════════════════════════════════════════════╗");
+  console.log("║  ⚠️  DİKKAT: TÜM MÜFREDAT VERİSİ SİLİNECEK!          ║");
+  console.log("╠══════════════════════════════════════════════════════════╣");
+  console.log(`║  Silinecek: ${String(subjectCount).padStart(4)} ders                                ║`);
+  console.log(`║            ${String(topicCount).padStart(4)} konu                                ║`);
+  console.log(`║            ${String(kazanimCount).padStart(4)} kazanım                             ║`);
+  console.log(`║            ${String(reviewCount).padStart(4)} konu tekrar kaydı                   ║`);
+  console.log("╠══════════════════════════════════════════════════════════╣");
+  console.log("║  Bu işlem GERİ ALINAMAZ!                                ║");
+  console.log("╚══════════════════════════════════════════════════════════╝\n");
+
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise((resolve) => {
+    rl.question('Devam etmek için "EVET SIL" yazın: ', (answer) => {
+      rl.close();
+      if (answer.trim() === "EVET SIL") {
+        console.log("✅ Onay alındı, silme işlemi başlıyor...\n");
+        resolve(true);
+      } else {
+        console.log("❌ İptal edildi. Hiçbir veri silinmedi.\n");
+        resolve(false);
+      }
+    });
+  });
+}
 
 // =====================================================================
 // PDF'DEN BİREBİR ÇIKARILMIŞ KONU LİSTELERİ
@@ -619,6 +671,11 @@ const AYT_SUBJECTS: SubjectDef[] = [
 // =====================================================================
 
 async function main() {
+  const confirmed = await confirmDestructiveAction();
+  if (!confirmed) {
+    process.exit(1);
+  }
+
   console.log("🗑️  Mevcut konu verileri temizleniyor...\n");
 
   // 1. Kazanım verilerini sil

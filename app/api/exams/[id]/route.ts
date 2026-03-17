@@ -118,8 +118,20 @@ export async function DELETE(
     const userId = (session.user as any).id;
     const { id } = await params;
 
+    // Güvenlik: X-Confirm-Delete header'ı zorunlu
+    const confirmHeader = request.headers.get("X-Confirm-Delete");
+    if (confirmHeader !== "confirmed") {
+      return NextResponse.json(
+        { error: "Silme işlemi için X-Confirm-Delete: confirmed header'ı gerekli" },
+        { status: 400 }
+      );
+    }
+
     const existing = await prisma.exam.findFirst({
       where: { id, userId },
+      include: {
+        _count: { select: { subjectResults: true, cognitiveVoids: true } },
+      },
     });
 
     if (!existing) {
@@ -131,7 +143,13 @@ export async function DELETE(
 
     await prisma.exam.delete({ where: { id } });
 
-    return NextResponse.json({ message: "Exam deleted" });
+    return NextResponse.json({
+      message: "Deneme silindi",
+      deleted: {
+        subjectResults: existing._count.subjectResults,
+        cognitiveVoids: existing._count.cognitiveVoids,
+      },
+    });
   } catch (error) {
     logApiError("exams/:id", error);
     return NextResponse.json(

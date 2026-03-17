@@ -148,7 +148,10 @@ export default function CurriculumManager() {
     if (!confirm(`"${topicName}" konusunu silmek istediginize emin misiniz? Tum kazanimlari ve baglantilari da silinecek.`))
       return;
     try {
-      const res = await fetch(`/api/admin/curriculum?action=delete_topic&id=${topicId}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/curriculum?action=delete_topic&id=${topicId}`, {
+        method: "DELETE",
+        headers: { "X-Confirm-Delete": "confirmed", "X-Force-Delete": "true" },
+      });
       if (res.ok) {
         toast.success(`"${topicName}" silindi`);
         fetchTree();
@@ -169,7 +172,10 @@ export default function CurriculumManager() {
     let failCount = 0;
     for (const topicId of selectedTopics) {
       try {
-        const res = await fetch(`/api/admin/curriculum?action=delete_topic&id=${topicId}`, { method: "DELETE" });
+        const res = await fetch(`/api/admin/curriculum?action=delete_topic&id=${topicId}`, {
+          method: "DELETE",
+          headers: { "X-Confirm-Delete": "confirmed", "X-Force-Delete": "true" },
+        });
         if (res.ok) {
           successCount++;
         } else {
@@ -190,7 +196,10 @@ export default function CurriculumManager() {
   const deleteSubject = async (subjectId: string, subjectName: string) => {
     if (!confirm(`"${subjectName}" dersini silmek istediginize emin misiniz?`)) return;
     try {
-      const res = await fetch(`/api/admin/curriculum?action=delete_subject&id=${subjectId}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/curriculum?action=delete_subject&id=${subjectId}`, {
+        method: "DELETE",
+        headers: { "X-Confirm-Delete": "confirmed" },
+      });
       if (res.ok) {
         toast.success(`"${subjectName}" silindi`);
         fetchTree();
