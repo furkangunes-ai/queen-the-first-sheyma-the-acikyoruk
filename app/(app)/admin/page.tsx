@@ -22,6 +22,7 @@ import UserOverview from '@/components/admin/user-overview';
 import CurriculumManager from '@/components/admin/curriculum-manager';
 import AINodeLinker from '@/components/admin/ai-node-linker';
 import BackupManager from '@/components/admin/backup-manager';
+import QuestionBankManager from '@/components/admin/question-bank-manager';
 
 // ---------- types ----------
 
@@ -105,7 +106,7 @@ export default function AdminPage() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const isAdmin = (session?.user as any)?.role === 'admin';
-  const [activeTab, setActiveTab] = useState<'genel' | 'dag' | 'abonelikler' | 'ai-edit' | 'kullanicilar' | 'mufredat' | 'yedekler'>('genel');
+  const [activeTab, setActiveTab] = useState<'genel' | 'dag' | 'abonelikler' | 'ai-edit' | 'kullanicilar' | 'mufredat' | 'yedekler' | 'sorubankasi'>('genel');
 
   // Redirect non-admin users
   useEffect(() => {
@@ -372,6 +373,19 @@ export default function AdminPage() {
         >
           <Network size={16} />
           DAG
+        </button>
+        <button
+          role="tab"
+          aria-selected={activeTab === 'sorubankasi'}
+          onClick={() => setActiveTab('sorubankasi')}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black tracking-wider transition-all whitespace-nowrap ${
+            activeTab === 'sorubankasi'
+              ? 'bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-white border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+              : 'bg-white/[0.03] text-white/50 border border-white/5 hover:bg-white/[0.06]'
+          }`}
+        >
+          <FileText size={16} />
+          SORU BANKASI
         </button>
         <button
           role="tab"
@@ -770,6 +784,10 @@ export default function AdminPage() {
           {/* Toplu Import */}
           <BulkImport />
         </div>
+      )}
+
+      {activeTab === 'sorubankasi' && (
+        <QuestionBankManager />
       )}
 
       {activeTab === 'yedekler' && (

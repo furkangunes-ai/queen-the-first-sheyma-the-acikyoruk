@@ -167,6 +167,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { path: '/', label: 'Genel Bakış', icon: LayoutDashboard },
+  { path: '/quiz', label: 'Soru Çöz', icon: Sparkles },
   { path: '/study', label: 'Ders Çalıştım', icon: BookOpenCheck },
   { path: '/exams', label: 'Denemeler', icon: GraduationCap },
   { path: '/strategy', label: 'Strateji', icon: BrainCircuit },

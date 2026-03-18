@@ -151,6 +151,7 @@ model Subject {
   weeklyPlanItems WeeklyPlanItem[]
   spacedRepetitionItems SpacedRepetitionItem[]
   targetScores   TargetScore[]
+  questionBanks  QuestionBank[]
   sortOrder       Int      @default(0)
 
   @@index([examTypeId])
@@ -178,6 +179,7 @@ model Topic {
   kazanimlar       TopicKazanim[]
   conceptNodes     ConceptNode[]
   topicBeliefs     TopicBelief[]
+  questionBanks    QuestionBank[]
   sortOrder       Int      @default(0)
 
   @@index([subjectId])
@@ -656,10 +658,14 @@ model UserBadge {
 
 model QuestionBank {
   id         String             @id @default(cuid())
-  type       String             // "paragraph" | "vocabulary" | ...
+  type       String             @default("mcq") // "mcq" | "paragraph" | "vocabulary"
   difficulty Int                @default(3) // 1-5
   title      String?
-  content    String             // Paragraf metni
+  content    String?            // Opsiyonel paragraf / açıklama metni
+  subjectId  String?
+  subject    Subject?           @relation(fields: [subjectId], references: [id])
+  topicId    String?
+  topic      Topic?             @relation(fields: [topicId], references: [id])
   questions  QuestionBankItem[]
   createdBy  String
   creator    User               @relation(fields: [createdBy], references: [id])
@@ -667,6 +673,8 @@ model QuestionBank {
 
   @@index([type, difficulty])
   @@index([createdBy])
+  @@index([subjectId])
+  @@index([topicId])
 }
 
 model QuestionBankItem {
@@ -674,8 +682,8 @@ model QuestionBankItem {
   questionBankId String
   questionBank   QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
   question       String
-  options        Json         // ["A seçeneği", "B seçeneği", "C seçeneği", "D seçeneği"]
-  correctAnswer  Int          // 0-3 (index)
+  options        Json         // ["A", "B", "C", "D", "E"] — 4 veya 5 şık
+  correctAnswer  Int          // 0-4 (index)
   explanation    String?
   sortOrder      Int          @default(0)
 }
